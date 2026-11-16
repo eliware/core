@@ -1,0 +1,10 @@
+version: "15.1"
+description: Guidance for Core Networking Manager.
+directives:
+  - id: E-9300.0
+    dos:
+      - Provide a Node.js CLI with help, version, argument checks, and tests.
+      - Provide a web application with public assets, documented routes, and a browser build.
+      - Use the npm publication workflow for package releases.
+    donts:
+      - Do not publish an unfinished package version.

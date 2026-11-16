@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Version control state
+.git/
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Build output
+dist/
+build/
+
+# Generated artifacts and caches
+artifacts/
+.cache/
+
+# Runtime data
+logs/
+*.log
+*.pid
+*.seed
+
+# Machine-specific files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local agent state
+.agentx*
+generated/
+test-results/
+.env*
+!.env*.example
