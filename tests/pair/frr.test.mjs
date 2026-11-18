@@ -50,9 +50,21 @@ test("rejects invalid weights and different weighted neighbor sets", () => {
 test("allows HA-specific preferences across external neighbors", () => {
   const [core1, core2] = texts();
   const preferences = core2
-    .replace("neighbor 10.0.0.10 weight 300", "neighbor 10.0.0.10 weight 200")
+    .replace(
+      " neighbor 10.0.0.10 remote-as 65200",
+      " neighbor 10.0.0.30 remote-as 65200\n neighbor 10.0.0.10 remote-as 65200",
+    )
+    .replace(
+      " neighbor 10.0.0.10 weight 300",
+      " neighbor 10.0.0.30 weight 250\n neighbor 10.0.0.10 weight 200",
+    )
+    .replace(" neighbor 10.0.0.20 remote-as 65200", " neighbor 10.0.0.20 remote-as 65200")
     .replace("neighbor 10.0.0.20 weight 200", "neighbor 10.0.0.20 weight 300");
-  expect(validateFrrPair(core1, preferences).errors).toEqual([]);
+  const left = core1.replace(
+    " neighbor 10.0.0.20 weight 200",
+    " neighbor 10.0.0.20 weight 200\n neighbor 10.0.0.30 remote-as 65200\n neighbor 10.0.0.30 weight 250",
+  );
+  expect(validateFrrPair(left, preferences).errors).toEqual([]);
 });
 
 test("rejects neighbor sets that differ even when weight keys match", () => {
@@ -73,6 +85,23 @@ test("rejects route preference maps with different neighbor keys", () => {
 
   expect(validateFrrPair(core1, altered).errors).toContain(
     "FRR route preference weights must cover the same neighbors on both routers.",
+  );
+});
+
+test("rejects weight changes that do not reverse neighbor preference", () => {
+  const [core1, core2] = texts();
+  const altered = core2.replace("neighbor 10.0.0.10 weight 300", "neighbor 10.0.0.10 weight 250");
+
+  expect(validateFrrPair(core1, altered).errors).toContain(
+    "FRR weight differences must express reciprocal high availability preferences.",
+  );
+
+  const oneLeft = core1.replace(/\n neighbor 10\.0\.0\.20 (?:remote-as 65200|weight 200)/gu, "");
+  const oneRight = core2
+    .replace(/\n neighbor 10\.0\.0\.20 (?:remote-as 65200|weight 200)/gu, "")
+    .replace("neighbor 10.0.0.10 weight 300", "neighbor 10.0.0.10 weight 250");
+  expect(validateFrrPair(oneLeft, oneRight).errors).toContain(
+    "FRR weight differences must express reciprocal high availability preferences.",
   );
 });
 

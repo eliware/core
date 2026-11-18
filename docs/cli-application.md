@@ -60,7 +60,7 @@ It compares the file inventory and contents under `etc/`, `var/`, and `scripts/`
 It permits only documented HA-specific differences and checks that paired values agree or use reciprocal partner values.
 
 Pair checks include FRR peer addresses, autonomous system numbers, and neighbor sets.
-Each router may use different valid FRR weights to set its high availability route preferences.
+Each router may use different FRR weights when the neighbor rankings are reciprocal.
 They include Kea DHCPv4 HA roles and URLs, Keepalived VRRP IDs and virtual addresses, and reciprocal priorities.
 They also include conntrackd peer identifiers and FRR connected prefix identifiers.
 Other unexpected file or content differences fail the compare command.

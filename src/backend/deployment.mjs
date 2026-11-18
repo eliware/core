@@ -36,6 +36,13 @@ export default function createDeploymentManager({
     const steps = [];
     let previousCommit;
     let reloadStarted = false;
+    const releaseLockSafely = () => {
+      try {
+        releaseLock?.();
+      } catch {
+        status.update({ lockReleaseError: "Deployment lock cleanup failed." });
+      }
+    };
     const step = (name, command, args) =>
       runDeploymentStep({
         name,
@@ -85,7 +92,7 @@ export default function createDeploymentManager({
         finishedAt: now().toISOString(),
         steps,
       });
-      releaseLock?.();
+      releaseLockSafely();
       try {
         await notify(`Core deployment ${runId} succeeded on ${branch}.`);
       } catch {
@@ -113,7 +120,7 @@ export default function createDeploymentManager({
           now,
         }),
       );
-      releaseLock?.();
+      releaseLockSafely();
       try {
         await notify(
           `Core deployment ${runId} failed at ${status.get().failedStep}.${recovery ? ` ${recovery}` : ""}`,
@@ -123,7 +130,7 @@ export default function createDeploymentManager({
       }
       return { accepted: true, runId };
     } finally {
-      releaseLock?.();
+      releaseLockSafely();
     }
   }
   function start(event) {

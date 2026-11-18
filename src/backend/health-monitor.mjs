@@ -98,9 +98,7 @@ export default function createHealthMonitor({
       generation += 1;
       if (timer) clearInterval(timer);
       timer = undefined;
-      const activeCheck = running;
       running = undefined;
-      if (activeCheck) await activeCheck;
     },
   };
 }

@@ -19,7 +19,7 @@ directives:
       - Compare tracked and untracked configuration files in both repositories.
       - Require matching configuration except for documented high-availability differences.
       - Check that high-availability peer addresses and roles are reciprocal.
-      - When HA router preferences are distinct, allow valid FRR weight maps.
+      - When routers use distinct FRR rankings, require opposite rankings across the pair.
       - Keep `compare` read-only and report unexpected configuration differences.
       - Run `npm run preflight` to call `core-cli preflight` in a router repository.
       - Run `npm run compare` to call `core-cli compare <partner repo>` from each repository.

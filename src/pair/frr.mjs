@@ -33,5 +33,27 @@ function checkWeights(left, right, errors) {
   const peers2 = [...right.neighbors].map((key) => (key === right.peer.ip ? "@peer" : key)).sort();
   if (JSON.stringify(peers1) !== JSON.stringify(peers2)) {
     errors.push("FRR neighbor sets must match across both repositories.");
+    return;
   }
+  const external = keys1.filter((key) => key !== "@peer");
+  const first = new Map(external.map((key) => [key, left.weights.get(key)]));
+  const second = new Map(external.map((key) => [key, right.weights.get(key)]));
+  if (!hasReciprocalPreferences(external, first, second)) {
+    errors.push("FRR weight differences must express reciprocal high availability preferences.");
+  }
+}
+
+function hasReciprocalPreferences(neighbors, first, second) {
+  if (neighbors.every((neighbor) => first.get(neighbor) === second.get(neighbor))) return true;
+  let distinct = false;
+  for (let index = 0; index < neighbors.length; index += 1) {
+    const neighbor = neighbors[index];
+    if (first.get(neighbor) !== second.get(neighbor)) distinct = true;
+    for (const other of neighbors.slice(index + 1)) {
+      const firstOrder = Math.sign(first.get(neighbor) - first.get(other));
+      const secondOrder = Math.sign(second.get(neighbor) - second.get(other));
+      if (firstOrder !== -secondOrder) return false;
+    }
+  }
+  return distinct && neighbors.length > 1;
 }

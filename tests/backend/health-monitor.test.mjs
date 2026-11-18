@@ -139,8 +139,9 @@ test("ignores setup failures after the monitor stops", async () => {
 test("stops notifying when shutdown begins during an alert", async () => {
   let monitor;
   let finishStop;
-  const onUnhealthy = jest.fn(() => {
-    finishStop = monitor.stop();
+  const onUnhealthy = jest.fn(async () => {
+    await monitor.stop();
+    finishStop = true;
   });
   monitor = createHealthMonitor({
     units: ["one.service", "two.service"],
@@ -150,7 +151,7 @@ test("stops notifying when shutdown begins during an alert", async () => {
     onUnhealthy,
   });
   const result = await monitor.check();
-  await finishStop;
+  expect(finishStop).toBe(true);
   expect(result.status).toBe("unhealthy");
   expect(onUnhealthy).toHaveBeenCalledTimes(1);
 });

@@ -34,7 +34,14 @@ async function waitFor(manager, status) {
 test("runs the deployment steps in order and records success", async () => {
   const run = successfulRun();
   const notify = jest.fn();
-  const manager = createManager({ repositoryPath: "/router/core1", run, notify });
+  const manager = createManager({
+    repositoryPath: "/router/core1",
+    run,
+    notify,
+    acquireLock: () => () => {
+      throw new Error("lock cleanup failed");
+    },
+  });
   const started = manager.start("delivery-1");
   expect(started).toEqual({ accepted: true, runId: expect.any(String) });
   await waitFor(manager, "succeeded");
@@ -63,6 +70,7 @@ test("runs the deployment steps in order and records success", async () => {
     "npm run reload",
   ]);
   expect(notify).toHaveBeenCalledWith(expect.stringContaining("succeeded"));
+  expect(manager.getStatus().lockReleaseError).toBe("Deployment lock cleanup failed.");
 });
 
 test("uses the default command adapter and clock", async () => {

@@ -76,11 +76,30 @@ test("reports a lock release failure after deployment completion", async () => {
   });
 
   manager.start("push");
-  for (let attempt = 0; attempt < 100 && manager.getStatus().status !== "failed"; attempt += 1)
+  for (let attempt = 0; attempt < 100 && manager.getStatus().status !== "succeeded"; attempt += 1)
     await Promise.resolve();
   for (let attempt = 0; attempt < 20 && !manager.getStatus().notificationError; attempt += 1)
     await Promise.resolve();
 
-  expect(manager.getStatus().error).toBe("lock release failed");
+  expect(manager.getStatus().status).toBe("succeeded");
+  expect(manager.getStatus().lockReleaseError).toBe("Deployment lock cleanup failed.");
   expect(manager.getStatus().notificationError).toBe("Discord notification failed.");
+});
+
+test("reports unexpected deployment setup failures", async () => {
+  const manager = createDeploymentManager({
+    repositoryPath: "/router/config",
+    now: () => {
+      throw new Error("clock unavailable");
+    },
+  });
+
+  manager.start("push");
+  for (let attempt = 0; attempt < 100 && !manager.getStatus().error; attempt += 1)
+    await Promise.resolve();
+
+  expect(manager.getStatus()).toMatchObject({
+    status: "failed",
+    error: "clock unavailable",
+  });
 });
