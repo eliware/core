@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import listRepositoryFiles from "./repo-files.mjs";
 import normalizePairFile from "./pair/normalize.mjs";
 import validatePair from "./pair/rules.mjs";
+import loadRepository from "./pair/repository.mjs";
 
 export default function compareRepositories(
   root,
@@ -19,8 +20,8 @@ export default function compareRepositories(
   if (partnerInventory.error)
     return { ok: false, lines: [`FAIL Partner repo: ${partnerInventory.error}`] };
 
-  const local = loadRepo(root, localInventory.files, readFile);
-  const partner = loadRepo(partnerRoot, partnerInventory.files, readFile);
+  const local = loadRepository(root, localInventory.files, readFile);
+  const partner = loadRepository(partnerRoot, partnerInventory.files, readFile);
   if (local.error || partner.error) {
     return { ok: false, lines: [`FAIL ${local.error ?? partner.error}`] };
   }
@@ -73,25 +74,4 @@ export default function compareRepositories(
     lines.push(`HA-specific files (${variants.length}): ${variants.join(", ")}`);
   }
   return { ok: errors.length === 0, lines };
-}
-
-function loadRepo(root, allFiles, readFile) {
-  if (!allFiles.includes("package.json")) return { error: "package.json is missing." };
-  let packageJson;
-  try {
-    packageJson = JSON.parse(readFile(resolve(root, "package.json"), "utf8"));
-  } catch {
-    return { error: "package.json is not valid JSON." };
-  }
-  const name = packageJson.name?.split("/").at(-1);
-  if (!name) return { error: "package.json has no repository name." };
-  const paths = allFiles.filter((file) => /^(etc|var|scripts)\//u.test(file));
-  try {
-    return {
-      name,
-      files: new Map(paths.map((file) => [file, readFile(resolve(root, file), "utf8")])),
-    };
-  } catch {
-    return { error: "A configuration file could not be read." };
-  }
 }

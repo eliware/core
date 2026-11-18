@@ -5,6 +5,7 @@ import runDeploymentStep from "./deployment/step.mjs";
 import recoverDeployment from "./deployment/recovery.mjs";
 import createDeploymentStatus from "./deployment/status.mjs";
 import acquireDeploymentLock from "./deployment/lock.mjs";
+import reportSetupFailure from "./deployment/setup-failure.mjs";
 
 const execFile = promisify(nodeExecFile);
 export default function createDeploymentManager({
@@ -128,21 +129,7 @@ export default function createDeploymentManager({
     active = true;
     void execute(event, runId, releaseLock).catch(async (error) => {
       active = false;
-      const failure = String(error?.message ?? error).slice(0, 300);
-      status.set({
-        runId,
-        event,
-        status: "failed",
-        error: failure,
-        startedAt: status.get().startedAt,
-        finishedAt: status.timestamp(() => now().toISOString(), status.get().startedAt),
-        steps: status.get().steps,
-      });
-      try {
-        await notify(`Core deployment ${runId} failed at deployment setup. ${failure}`);
-      } catch {
-        status.update({ notificationError: "Discord notification failed." });
-      }
+      await reportSetupFailure({ error, event, runId, status, notify, now });
     });
     return { accepted: true, runId };
   }

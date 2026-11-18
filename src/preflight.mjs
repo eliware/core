@@ -5,6 +5,7 @@ import listRepositoryFiles from "./repo-files.mjs";
 import parseConfigFile from "./config-parser.mjs";
 import validateConfigFiles from "./preflight-config.mjs";
 import validatePackageMetadata from "./preflight/package-metadata.mjs";
+import isParseableConfig from "./preflight/config-files.mjs";
 
 export default async function preflight(
   root,
@@ -82,16 +83,4 @@ export default async function preflight(
     lines.push(`PASS parsed JSON, JSONC, and YAML (${supported.length} files)`);
   lines.push(...errors);
   return { ok: errors.length === 0, lines };
-}
-
-function isParseableConfig(file) {
-  return (
-    file === "package.json" ||
-    file === "package-lock.json" ||
-    file.endsWith(".yaml") ||
-    file.endsWith(".yml") ||
-    file.endsWith(".json") ||
-    file.endsWith(".jsonc") ||
-    (/^etc\/kea\/.+\.conf$/u.test(file) && file.endsWith(".conf"))
-  );
 }
