@@ -6,6 +6,7 @@ import recoverDeployment from "./deployment/recovery.mjs";
 import createDeploymentStatus from "./deployment/status.mjs";
 import acquireDeploymentLock from "./deployment/lock.mjs";
 import reportSetupFailure from "./deployment/setup-failure.mjs";
+import createDeploymentAdmission from "./deployment/admission.mjs";
 
 const execFile = promisify(nodeExecFile);
 export default function createDeploymentManager({
@@ -19,9 +20,15 @@ export default function createDeploymentManager({
   snowflake = {},
   acquireLock = acquireDeploymentLock,
 } = {}) {
-  let active = false;
   const status = createDeploymentStatus();
   const generateRunId = createRunId ?? createSnowflakeGenerator(snowflake);
+  const admit = createDeploymentAdmission({
+    repositoryPath,
+    generateRunId,
+    acquireLock,
+    reportSetupFailure: (error, event, runId) =>
+      reportSetupFailure({ error, event, runId, status, notify, now }),
+  });
   async function execute(event, runId, releaseLock) {
     let startedAt;
     const steps = [];
@@ -64,7 +71,6 @@ export default function createDeploymentManager({
         steps,
       });
       releaseLock?.();
-      active = false;
       try {
         await notify(`Core deployment ${runId} succeeded on ${branch}.`);
       } catch {
@@ -94,7 +100,6 @@ export default function createDeploymentManager({
         steps,
       });
       releaseLock?.();
-      active = false;
       try {
         await notify(
           `Core deployment ${runId} failed at ${failedStep}.${recovery ? ` ${recovery}` : ""}`,
@@ -105,33 +110,10 @@ export default function createDeploymentManager({
       return { accepted: true, runId };
     } finally {
       releaseLock?.();
-      active = false;
     }
   }
   function start(event) {
-    if (!repositoryPath) return { accepted: false, status: "unconfigured" };
-    if (active) return { accepted: false, status: "busy" };
-    let runId;
-    try {
-      runId = generateRunId();
-    } catch {
-      return { accepted: false, status: "unavailable" };
-    }
-    let releaseLock;
-    try {
-      releaseLock = acquireLock(repositoryPath);
-    } catch (error) {
-      return {
-        accepted: false,
-        status: error?.message?.includes("deployment process is active") ? "busy" : "unavailable",
-      };
-    }
-    active = true;
-    void execute(event, runId, releaseLock).catch(async (error) => {
-      active = false;
-      await reportSetupFailure({ error, event, runId, status, notify, now });
-    });
-    return { accepted: true, runId };
+    return admit(event, execute);
   }
   return { start, getStatus: status.get };
 }

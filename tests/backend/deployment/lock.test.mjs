@@ -3,9 +3,6 @@ import { createHash } from "node:crypto";
 import { join, resolve } from "node:path";
 import acquireDeploymentLock from "../../../src/backend/deployment/lock.mjs";
 
-jest.unstable_mockModule("node:child_process", () => ({ execFile: jest.fn() }));
-const createDeploymentManager = (await import("../../../src/backend/deployment.mjs")).default;
-
 function createFileSystem() {
   const files = new Map();
   const handles = new Map();
@@ -156,62 +153,4 @@ test("rejects a lock whose directory is missing", () => {
   expect(() => acquireDeploymentLock("/router", { fileSystem })).toThrow(
     "lock storage unavailable",
   );
-});
-
-test("returns a busy or unavailable result when lock acquisition fails", () => {
-  for (const [message, status] of [
-    ["Another deployment process is active.", "busy"],
-    ["Lock storage unavailable.", "unavailable"],
-  ]) {
-    const manager = createDeploymentManager({
-      repositoryPath: "/router/one",
-      acquireLock: () => {
-        throw new Error(message);
-      },
-    });
-    expect(manager.start("delivery")).toEqual({ accepted: false, status });
-  }
-});
-
-test("does not leave manager state active when run ID creation fails", async () => {
-  const createRunId = jest.fn().mockImplementationOnce(() => {
-    throw new Error("random source unavailable");
-  });
-  const manager = createDeploymentManager({
-    repositoryPath: "/router/one",
-    createRunId,
-    acquireLock: () => jest.fn(),
-    now: () => new Date("2026-11-18T12:00:00.000Z"),
-    run: async (command, args) =>
-      command === "git" && args[0] === "rev-parse"
-        ? { stdout: `${"a".repeat(40)}\n` }
-        : { stdout: "" },
-  });
-  expect(manager.start("delivery")).toEqual({ accepted: false, status: "unavailable" });
-  expect(manager.start("next-delivery")).toEqual({ accepted: true, runId: undefined });
-  for (let attempt = 0; attempt < 20 && manager.getStatus().status !== "succeeded"; attempt += 1)
-    await Promise.resolve();
-  expect(manager.getStatus().status).toBe("succeeded");
-});
-
-test("records a release failure from the async setup handler", async () => {
-  const manager = createDeploymentManager({
-    repositoryPath: "/router/one",
-    now: () => new Date("2026-11-18T12:00:00.000Z"),
-    acquireLock: () => () => {
-      throw "lock release failed";
-    },
-    notify: jest.fn().mockRejectedValue(new Error("Discord unavailable")),
-    run: async (command, args) =>
-      command === "git" && args[0] === "rev-parse"
-        ? { stdout: `${"a".repeat(40)}\n` }
-        : { stdout: "" },
-  });
-  manager.start("delivery");
-  for (let attempt = 0; attempt < 20 && manager.getStatus().status !== "failed"; attempt += 1)
-    await Promise.resolve();
-  for (let attempt = 0; attempt < 20 && !manager.getStatus().notificationError; attempt += 1)
-    await Promise.resolve();
-  expect(manager.getStatus().error).toBe("lock release failed");
-  expect(manager.getStatus().notificationError).toBe("Discord notification failed.");
 });

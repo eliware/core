@@ -4,14 +4,13 @@ import validateDiscordUrl from "./config/discord-url.mjs";
 import parseHealthUnits from "./config/health-units.mjs";
 import parseSnowflakeOptions from "./config/snowflake.mjs";
 import mapApplicationConfig from "./config/application.mjs";
+import validateEndpoints from "./config/endpoints.mjs";
 
 export default function loadApplicationConfig({ environment }) {
   const application = mapApplicationConfig(environment);
   const tcpEndpoint = parseTcpEndpoint(application.port);
   const webhookEndpoint = parseTcpEndpoint(application.webhookPort);
-  if (tcpEndpoint === webhookEndpoint) {
-    throw new Error("PORT and WEBHOOK_PORT must use different TCP endpoints.");
-  }
+  validateEndpoints(tcpEndpoint, webhookEndpoint);
   const githubBranch = validateBranch(application.githubBranch);
   const discordWebhookUrl = validateDiscordUrl(application.discordWebhookUrl);
   const healthUnits = parseHealthUnits(application.healthUnits);

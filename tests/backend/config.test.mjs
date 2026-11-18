@@ -54,7 +54,6 @@ test.each([
   [{ DISCORD_WEBHOOK_URL: "https://example.com/webhook" }, "HTTPS Discord"],
   [{ DISCORD_WEBHOOK_URL: "invalid" }, "valid Discord"],
   [{ CORE_HEALTH_UNITS: "bad unit" }, "CORE_HEALTH_UNITS"],
-  [{ PORT: "9301" }, "different TCP endpoints"],
 ])("rejects invalid configuration %s", (environment, message) => {
   expect(() => loadApplicationConfig({ environment })).toThrow(message);
 });

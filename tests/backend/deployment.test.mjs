@@ -260,6 +260,25 @@ test("releases deployment state while setup failure notification is pending", as
   await waitFor(manager, "succeeded");
 });
 
+test("reports a lock release failure after deployment completion", async () => {
+  const manager = createManager({
+    repositoryPath: "/router/config",
+    acquireLock: () => () => {
+      throw "lock release failed";
+    },
+    notify: jest.fn().mockRejectedValue(new Error("Discord unavailable")),
+    run: successfulRun(),
+  });
+
+  manager.start("push");
+  const status = await waitFor(manager, "failed");
+  for (let attempt = 0; attempt < 20 && !manager.getStatus().notificationError; attempt += 1)
+    await Promise.resolve();
+
+  expect(status.error).toBe("lock release failed");
+  expect(manager.getStatus().notificationError).toBe("Discord notification failed.");
+});
+
 test("restores the prior commit when a deployment step changes the worktree", async () => {
   const run = successfulRun();
   run.mockImplementation(async (command, args) => {

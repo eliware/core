@@ -1,6 +1,7 @@
 import { readFile, realpath } from "node:fs/promises";
-import { isAbsolute, relative, resolve, sep } from "node:path";
+import { resolve } from "node:path";
 import readAsset from "./reader.mjs";
+import assertAssetPathWithinRoot from "./path-policy.mjs";
 
 export default async function readRouteAsset(
   route,
@@ -15,29 +16,14 @@ export default async function readRouteAsset(
 
   const assetRoot = resolve(root);
   const assetPath = resolve(assetRoot, route.file);
-  const relativePath = relative(assetRoot, assetPath);
-  if (
-    relativePath === "" ||
-    relativePath === ".." ||
-    relativePath.startsWith(`..${sep}`) ||
-    isAbsolute(relativePath)
-  ) {
-    throw new RangeError("asset path must stay within its configured root");
-  }
+  assertAssetPathWithinRoot(assetRoot, assetPath);
 
   try {
     const [realRoot, realAsset] = await Promise.all([
       resolvePath(assetRoot),
       resolvePath(assetPath),
     ]);
-    const realRelativePath = relative(realRoot, realAsset);
-    if (
-      realRelativePath === ".." ||
-      realRelativePath.startsWith(`..${sep}`) ||
-      isAbsolute(realRelativePath)
-    ) {
-      throw new RangeError("asset path must stay within its configured root");
-    }
+    assertAssetPathWithinRoot(realRoot, realAsset);
     return await readAsset(realAsset, read);
   } catch (error) {
     if (error?.code === "ENOENT" || error?.code === "ENOTDIR") return null;
