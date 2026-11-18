@@ -149,15 +149,12 @@ test("rejects null bytes in configuration text", () => {
   expect(result.errors).toContain("FAIL etc/chrony.conf: file contains a null byte.");
 });
 
-test("requires a router package identity and required service files", () => {
+test("requires router service files without a deployment-specific package identity", () => {
   const state = setup();
   const invalidName = validateConfigFiles(state.root, state.files, {
     readFile: state.readFile,
     repositoryName: "@eliware/other",
   });
-  expect(invalidName.errors).toContain(
-    "FAIL package.json name must be @eliware/core1 or @eliware/core2.",
-  );
   expect(
     invalidName.errors.some((error) => error.includes("required router configuration is missing")),
   ).toBe(true);

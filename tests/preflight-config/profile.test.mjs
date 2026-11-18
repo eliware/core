@@ -18,17 +18,13 @@ const files = [
   "etc/wireguard/wg0.conf",
 ];
 
-test("accepts either router profile with all required files", () => {
-  expect(validateProfile(files, "@eliware/core1")).toEqual([]);
-  expect(validateProfile(files, "@eliware/core2")).toEqual([]);
+test("accepts a generic router profile with all required files", () => {
+  expect(validateProfile(files, "@eliware/router-east")).toEqual([]);
 });
 
-test("reports an unsupported profile and missing required paths", () => {
+test("reports missing required paths without checking deployment names", () => {
   expect(validateProfile([], "@eliware/other")).toEqual(
-    expect.arrayContaining([
-      "FAIL package.json name must be @eliware/core1 or @eliware/core2.",
-      "FAIL required router configuration is missing: etc/chrony.conf.",
-    ]),
+    expect.arrayContaining(["FAIL required router configuration is missing: etc/chrony.conf."]),
   );
 });
 

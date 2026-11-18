@@ -38,20 +38,6 @@ test.each([
       healthUnits: [],
     },
   ],
-  [
-    "Core2 default webhook port",
-    { CORE_REPO_PATH: "C:\\router\\core2" },
-    {
-      tcpEndpoint: 9300,
-      webhookEndpoint: 9302,
-      logLevel: "info",
-      repositoryPath: "C:\\router\\core2",
-      githubWebhookSecret: undefined,
-      discordWebhookUrl: undefined,
-      githubBranch: "main",
-      healthUnits: [],
-    },
-  ],
 ])("maps %s to the application configuration", (_name, environment, expected) => {
   expect(loadApplicationConfig({ environment })).toEqual(expected);
 });

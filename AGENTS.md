@@ -22,9 +22,12 @@ Keep each source and test module focused on one responsibility.
 Run `npm ci` to install locked dependencies.
 Run `npm test` for aggregate validation.
 Run `npm run lint` for lint checks.
-Run `npm run audit` for dependency checks.
-Run `npm run format` to format files.
-Run `npm run format:check` to check formatting.
+Run `npm run audit` to check dependencies for known vulnerabilities. Run `npm test` after changing dependency metadata.
+
+Run `npm run format` to format maintained files. Then run `npm run format:check` and `npm test` to verify changes.
+Run `npm run format:check` to check formatting without changing files.
+
+Run `npm run pack` to check package contents and packaging rules.
 
 ## Security
 

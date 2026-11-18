@@ -37,23 +37,23 @@ Open `http://localhost:9300/` to view the dashboard.
 The server reads values from its process environment and the `.env` file in its working directory.
 Copy `.env.example` to `.env`, then set values for each router.
 
-| Name                    | Required  | Default                                                                     | Accepted values                                                  |
-| ----------------------- | --------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `PORT`                  | No        | `9300`                                                                      | Dashboard port from `1` through `65535`.                         |
-| `WEBHOOK_PORT`          | No        | Core1 uses `9301`. Core2 uses `9302` when `CORE_REPO_PATH` ends in `core2`. | Webhook port from `1` through `65535`, separate from `PORT`.     |
-| `LOG_LEVEL`             | No        | `info`                                                                      | `error`, `warn`, `info`, `http`, `verbose`, `debug`, or `silly`. |
-| `CORE_REPO_PATH`        | For hooks | —                                                                           | Router configuration repository path.                            |
-| `GITHUB_WEBHOOK_SECRET` | For hooks | —                                                                           | Secret used to authenticate GitHub webhook signatures.           |
-| `DISCORD_WEBHOOK_URL`   | No        | —                                                                           | Discord webhook URL for rich embed notifications.                |
-| `CORE_GITHUB_BRANCH`    | No        | `main`                                                                      | Branch deployed from the configuration repository.               |
-| `CORE_HEALTH_UNITS`     | No        | —                                                                           | Comma-separated systemd unit names to monitor.                   |
+| Name                    | Required  | Default | Accepted values                                                  |
+| ----------------------- | --------- | ------- | ---------------------------------------------------------------- |
+| `PORT`                  | No        | `9300`  | Dashboard port from `1` through `65535`.                         |
+| `WEBHOOK_PORT`          | No        | `9301`  | Webhook port from `1` through `65535`, separate from `PORT`.     |
+| `LOG_LEVEL`             | No        | `info`  | `error`, `warn`, `info`, `http`, `verbose`, `debug`, or `silly`. |
+| `CORE_REPO_PATH`        | For hooks | —       | Router configuration repository path.                            |
+| `GITHUB_WEBHOOK_SECRET` | For hooks | —       | Secret used to authenticate GitHub webhook signatures.           |
+| `DISCORD_WEBHOOK_URL`   | No        | —       | Discord webhook URL for rich embed notifications.                |
+| `CORE_GITHUB_BRANCH`    | No        | `main`  | Branch deployed from the configuration repository.               |
+| `CORE_HEALTH_UNITS`     | No        | —       | Comma-separated systemd unit names to monitor.                   |
 
 The server rejects invalid ports and rejects equal dashboard and webhook ports.
 The dashboard and webhook TCP endpoint numbers must not be the same.
 Both listeners accept connections on all network interfaces.
 The `LOG_LEVEL` value sets the minimum level for application log messages.
 
-Set `PORT` to `9300` for the read-only dashboard. Set `WEBHOOK_PORT` to `9301` on Core1 or `9302` on Core2.
+Set `PORT` to `9300` for the read-only dashboard. Set `WEBHOOK_PORT` to a distinct port for each server.
 The application rejects equal dashboard and webhook ports.
 
 Set both `CORE_REPO_PATH` and `GITHUB_WEBHOOK_SECRET` to enable deployment hooks.

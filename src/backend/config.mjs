@@ -5,9 +5,7 @@ import parseHealthUnits from "./config/health-units.mjs";
 
 export default function loadApplicationConfig({ environment }) {
   const tcpEndpoint = parseTcpEndpoint(environment.PORT);
-  const repositoryName = environment.CORE_REPO_PATH?.split(/[\\/]/u).filter(Boolean).at(-1);
-  const defaultWebhookPort = repositoryName?.toLowerCase() === "core2" ? "9302" : "9301";
-  const webhookEndpoint = parseTcpEndpoint(environment.WEBHOOK_PORT ?? defaultWebhookPort);
+  const webhookEndpoint = parseTcpEndpoint(environment.WEBHOOK_PORT ?? "9301");
   if (tcpEndpoint === webhookEndpoint) {
     throw new Error("PORT and WEBHOOK_PORT must use different TCP endpoints.");
   }

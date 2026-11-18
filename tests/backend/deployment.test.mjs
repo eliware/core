@@ -260,14 +260,9 @@ test("records an unexpected deployment setup error", async () => {
   await waitFor(manager, "succeeded");
 });
 
-test("preserves worktree changes created after deployment begins", async () => {
+test("restores the prior commit when a deployment step changes the worktree", async () => {
   const run = successfulRun();
-  let statusChecks = 0;
   run.mockImplementation(async (command, args) => {
-    if (command === "git" && args[0] === "status") {
-      statusChecks += 1;
-      return { stdout: statusChecks === 1 ? "" : " M router.conf\n" };
-    }
     if (command === "git" && args[0] === "rev-parse") return { stdout: `${commit}\n` };
     if (command === "npm" && args[0] === "test") throw new Error("tests failed");
     return { stdout: "" };
@@ -275,6 +270,7 @@ test("preserves worktree changes created after deployment begins", async () => {
   const manager = createManager({ repositoryPath: "/router/core1", run });
   manager.start("delivery-worktree-change");
   const status = await waitFor(manager, "failed");
-  expect(status.recovery).toContain("Local changes were preserved");
-  expect(run).not.toHaveBeenCalledWith("git", ["reset", "--hard", commit], expect.any(Object));
+  expect(status.recovery).toBeUndefined();
+  expect(run).toHaveBeenCalledWith("git", ["reset", "--hard", commit], expect.any(Object));
+  expect(run).toHaveBeenCalledWith("git", ["clean", "-fd"], expect.any(Object));
 });

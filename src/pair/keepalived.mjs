@@ -1,8 +1,8 @@
 import parseInstances from "./keepalived/instances.mjs";
 
-export default function validateKeepalived(core1, core2, core1Text = "", core2Text = "") {
-  const first = parseInstances(core1Text);
-  const second = parseInstances(core2Text);
+export default function validateKeepalived(left, right, leftText = "", rightText = "") {
+  const first = parseInstances(leftText);
+  const second = parseInstances(rightText);
   if (!first || !second) return ["Both repos need parsable Keepalived VRRP instances."];
   const errors = [];
   if (first.size !== second.size) errors.push("Keepalived VRRP instance sets must match.");
@@ -25,6 +25,6 @@ export default function validateKeepalived(core1, core2, core1Text = "", core2Te
     const backup = a.state === "BACKUP" ? a.priority : b.priority;
     if (!(master > backup)) errors.push(`Keepalived ${name} MASTER priority must be higher.`);
   }
-  if (core1.routerId === core2.routerId) errors.push("Keepalived router IDs must differ.");
+  if (left.routerId === right.routerId) errors.push("Keepalived router IDs must differ.");
   return errors;
 }

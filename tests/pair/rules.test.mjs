@@ -15,9 +15,9 @@ test("accepts reciprocal router, DHCP, Keepalived, and conntrack settings", () =
   expect(validatePair("core1", "core2", core1, core2).errors).toEqual([]);
 });
 
-test("requires a Core1 and Core2 pair with FRR configuration", () => {
+test("requires two distinct repository names and FRR configuration", () => {
   const [core1, core2] = maps();
-  expect(validatePair("core1", "other", core1, core2).errors[0]).toContain("requires one");
+  expect(validatePair("same", "same", core1, core2).errors[0]).toContain("different package names");
   core1.delete("etc/frr/frr.conf");
   expect(validatePair("core1", "core2", core1, core2).errors[0]).toContain("frr.conf");
 });
@@ -41,7 +41,6 @@ test("reports broken FRR identities, peers, weights, and neighbor sets", () => {
   );
 
   const errors = validatePair("core1", "core2", core1, core2).errors.join(" ");
-  expect(errors).toContain("hostname must identify core1");
   expect(errors).toContain("weight outside the valid range");
   expect(errors).toContain("neighbor sets must match");
   expect(errors).toContain("peer addresses must point");
@@ -68,9 +67,9 @@ test("rejects unmatched weight maps and malformed Kea settings", () => {
 
   const errors = validatePair("core1", "core2", core1, core2).errors.join(" ");
   expect(errors).toContain("route preference weights must cover the same neighbors");
-  expect(errors).toContain("Kea core1 DHCPv4 HA configuration is missing or invalid");
-  expect(errors).toContain("Kea core2 must name itself");
-  expect(errors).toContain("Kea core2 HA URL must use its FRR router ID");
+  expect(errors).toContain("Kea DHCPv4 HA configuration is missing or invalid");
+  expect(errors).toContain("Kea must name its FRR hostname");
+  expect(errors).toContain("Kea local HA URL must use its FRR router ID");
 });
 
 test("rejects incorrect Keepalived, conntrackd, and connected prefix relationships", () => {
@@ -96,7 +95,7 @@ test("rejects incorrect Keepalived, conntrackd, and connected prefix relationshi
   expect(errors).toContain("peer addresses must be reciprocal");
   expect(errors).toContain("one MASTER and one BACKUP");
   expect(errors).toContain("Conntrackd peer addresses");
-  expect(errors).toContain("connected prefix on core2");
+  expect(errors).toContain("connected prefix on the second repository");
 });
 
 test("rejects missing VRRP instances and invalid priority pairs", () => {

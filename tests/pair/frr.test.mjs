@@ -20,7 +20,7 @@ test("uses empty default FRR text when no configs are supplied", () => {
   expect(validateFrrPair().errors[0]).toContain("parsable etc/frr/frr.conf");
 });
 
-test("reports invalid hostnames, local peer addresses, and missing peer weights", () => {
+test("reports local peer addresses and missing peer weights", () => {
   let [core1, core2] = texts();
   core1 = core1
     .replace("hostname core1.purinton.us", "hostname wrong.example")
@@ -29,9 +29,8 @@ test("reports invalid hostnames, local peer addresses, and missing peer weights"
   core2 = core2.replace("bgp router-id 10.0.0.2", "bgp router-id 10.0.0.1");
 
   const errors = validateFrrPair(core1, core2).errors.join(" ");
-  expect(errors).toContain("hostname must identify core1");
   expect(errors).toContain("cannot use its own router ID as its peer");
-  expect(errors).toContain("must set a weight for its core peer");
+  expect(errors).toContain("must set a weight for its peer");
   expect(errors).toContain("peer addresses must point");
 });
 
@@ -69,6 +68,6 @@ test("rejects neighbor sets that differ even when weight keys match", () => {
   );
 
   expect(validateFrrPair(core1, altered).errors).toContain(
-    "FRR neighbor sets must match across both routers.",
+    "FRR neighbor sets must match across both repositories.",
   );
 });

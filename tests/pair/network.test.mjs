@@ -24,8 +24,12 @@ test("reports bad peer addresses and host prefixes", () => {
   const errors = validateNetworkPair(node1, node2, "bad", "bad", "address=bad", "address=bad");
 
   expect(errors).toContain("Conntrackd peer addresses must match the reciprocal FRR router IDs.");
-  expect(errors).toContain("FRR connected prefix on core1 must use its local router ID.");
-  expect(errors).toContain("FRR connected prefix on core2 must use its local router ID.");
+  expect(errors).toContain(
+    "FRR connected prefix on the first repository must use its local router ID.",
+  );
+  expect(errors).toContain(
+    "FRR connected prefix on the second repository must use its local router ID.",
+  );
 });
 
 test("uses empty default network files when inputs are omitted", () => {

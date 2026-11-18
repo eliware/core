@@ -18,8 +18,6 @@ const requiredFiles = [
 export default function validateProfile(files, repositoryName) {
   if (repositoryName === undefined) return [];
   const errors = [];
-  if (!["@eliware/core1", "@eliware/core2"].includes(repositoryName))
-    errors.push("FAIL package.json name must be @eliware/core1 or @eliware/core2.");
   for (const file of requiredFiles) {
     if (!files.includes(file))
       errors.push(`FAIL required router configuration is missing: ${file}.`);

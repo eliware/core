@@ -35,7 +35,7 @@ test("compares the whole pair and reports expected HA differences", () => {
   expect(result.lines).toContain("PASS expected HA differences (6 files)");
 });
 
-test("supports comparison from Core2 to Core1", () => {
+test("supports comparison from the partner repository", () => {
   const state = setup();
 
   const result = compareRepositories(state.partnerRoot, "../core1", state);
@@ -110,14 +110,12 @@ test("reports file inventory and unapproved content differences", () => {
   );
 });
 
-test("reports unsupported pairs and unreadable config files", () => {
+test("accepts generic pair names and reports unreadable config files", () => {
   const unsupported = setup();
   unsupported.repositories.get(unsupported.partnerRoot)["package.json"] = JSON.stringify({
     name: "@eliware/other",
   });
-  expect(compareRepositories(unsupported.root, "../core2", unsupported).lines.join(" ")).toContain(
-    "one @eliware/core1",
-  );
+  expect(compareRepositories(unsupported.root, "../core2", unsupported).ok).toBe(true);
 
   const unreadable = setup();
   unreadable.repositories.get(unreadable.root)["package.json"] = "bad JSON";
@@ -133,4 +131,12 @@ test("reports unsupported pairs and unreadable config files", () => {
   expect(
     compareRepositories(unreadableConfig.root, "../core2", unreadableConfig).lines.join(" "),
   ).toContain("could not be read");
+});
+
+test("rejects repositories with the same package name", () => {
+  const state = setup();
+  state.repositories.get(state.root)["package.json"] = JSON.stringify({ name: "@eliware/core2" });
+  const result = compareRepositories(state.root, "../core2", state);
+  expect(result.ok).toBe(false);
+  expect(result.lines.join(" ")).toContain("different package names");
 });

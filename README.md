@@ -29,7 +29,7 @@ Core Networking Manager.
 
 ## Features
 
-Core Networking Manager provides `core-cli` and `core-web` for the Core1 and Core2 router pair.
+Core Networking Manager provides `core-cli` and `core-web` for managed router configurations.
 The web application provides a read-only dashboard and a signed GitHub deployment listener.
 
 ## Requirements
@@ -48,7 +48,7 @@ npm install --save-dev @eliware/core
 ## Usage
 
 Run `core-cli preflight` from a router configuration repository to validate its files.
-Run `core-cli compare ../core2` from Core1 or `core-cli compare ../core1` from Core2.
+Run `core-cli compare <partner-repo>` to validate a high availability pair.
 Read the [CLI guide](docs/cli-application.md) and [web application guide](docs/web-application.md) for command and deployment details.
 Read [release notes](RELEASE_NOTES.md) for version history.
 
@@ -59,11 +59,14 @@ Read [AGENTS.md](AGENTS.md), the [documentation index](docs/README.md), and the 
 ## Testing
 
 Run `npm test` for aggregate validation.
-Run `npm run build` to build the browser assets.
-Run `npm run screenshots` or `npm run lighthouse` for browser checks after starting the server.
+Run `npm run build` to build the browser assets. This command first runs `npm run prebuild`, which checks the webpack command version.
+Run `npm run screenshots` or `npm run lighthouse` after starting the server to check browser behavior. Lighthouse also checks web app install and offline requirements.
 Run `npm run puppeteer` once to install Chrome for browser checks.
-Run `npm run pack` to check package contents.
-The build runs `npm run prebuild` first to check the webpack command.
+
+Run `npm run pack` to check package contents and packaging rules.
+Run `npm run format` to apply formatting to maintained files. Then run `npm run format:check` and `npm test` to verify the changes.
+Run `npm run audit` to check dependencies for known vulnerabilities. Run `npm test` after changing dependency metadata.
+Run `npm run lint` to run lint checks without the full aggregate validation.
 
 ## Troubleshooting
 
@@ -80,22 +83,22 @@ Keep `.env` files outside Git and limit dashboard access because the dashboard h
 
 ## Configuration
 
-| Name                    | Required | Default                                                                     | Purpose                                                                                                                            |
-| ----------------------- | -------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `PORT`                  | No       | `9300`                                                                      | Dashboard port.                                                                                                                    |
-| `WEBHOOK_PORT`          | No       | Core1 uses `9301`. Core2 uses `9302` when `CORE_REPO_PATH` ends in `core2`. | Separate webhook TCP endpoint.                                                                                                     |
-| `CORE_REPO_PATH`        | No       | None                                                                        | Local configuration repository path. Required to enable deployments.                                                               |
-| `GITHUB_WEBHOOK_SECRET` | No       | None                                                                        | Secret for signed GitHub pushes. Required to enable deployments.                                                                   |
-| `CORE_GITHUB_BRANCH`    | No       | `main`                                                                      | Branch name that starts with a letter or number, uses letters, numbers, dots, underscores, slashes, or hyphens, and excludes `..`. |
-| `DISCORD_WEBHOOK_URL`   | No       | None                                                                        | HTTPS Discord webhook URL for rich embed notifications.                                                                            |
-| `CORE_HEALTH_UNITS`     | No       | None                                                                        | Comma-separated systemd unit names ending in `.service`.                                                                           |
-| `LOG_LEVEL`             | No       | `info`                                                                      | Log level passed to the application logger.                                                                                        |
+| Name                    | Required | Default | Purpose                                                                                                                            |
+| ----------------------- | -------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`                  | No       | `9300`  | Dashboard port.                                                                                                                    |
+| `WEBHOOK_PORT`          | No       | `9301`  | Separate webhook TCP endpoint. Set a distinct value for each server.                                                               |
+| `CORE_REPO_PATH`        | No       | None    | Local configuration repository path. Required to enable deployments.                                                               |
+| `GITHUB_WEBHOOK_SECRET` | No       | None    | Secret for signed GitHub pushes. Required to enable deployments.                                                                   |
+| `CORE_GITHUB_BRANCH`    | No       | `main`  | Branch name that starts with a letter or number, uses letters, numbers, dots, underscores, slashes, or hyphens, and excludes `..`. |
+| `DISCORD_WEBHOOK_URL`   | No       | None    | HTTPS Discord webhook URL for rich embed notifications.                                                                            |
+| `CORE_HEALTH_UNITS`     | No       | None    | Comma-separated systemd unit names ending in `.service`.                                                                           |
+| `LOG_LEVEL`             | No       | `info`  | Log level passed to the application logger.                                                                                        |
 
 The dashboard and webhook TCP endpoint numbers must not be the same. The application reads values from its process environment and `.env` in its working directory.
 
 ## Operations
 
-On Core1, set `WEBHOOK_PORT=9301`. On Core2, set `WEBHOOK_PORT=9302`.
+Set `WEBHOOK_PORT` to a distinct value on each server.
 Run `npm run build`, then start `core-web` from each router configuration repository.
 Push each router repository separately to control deployment timing.
 
@@ -103,7 +106,7 @@ Push each router repository separately to control deployment timing.
 
 Run `core-cli --help` to print command usage. Run `core-cli --version` to print the package version.
 Run `core-cli preflight` from a router configuration repository to validate its files.
-Run `core-cli compare <partner repo>` to compare the Core1 and Core2 configuration pair.
+Run `core-cli compare <partner repo>` to compare two router configuration repositories.
 Run `core-cli` with no arguments to print help. Read the [CLI guide](docs/cli-application.md) for argument rules and validation details.
 
 ## Exit codes

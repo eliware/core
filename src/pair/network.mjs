@@ -1,6 +1,6 @@
 export default function validateNetworkPair(
-  core1,
-  core2,
+  left,
+  right,
   conntrack1 = "",
   conntrack2 = "",
   script1 = "",
@@ -12,20 +12,20 @@ export default function validateNetworkPair(
   if (
     !first ||
     !second ||
-    first.local !== core1.routerId ||
-    first.peer !== core2.routerId ||
-    second.local !== core2.routerId ||
-    second.peer !== core1.routerId
+    first.local !== left.routerId ||
+    first.peer !== right.routerId ||
+    second.local !== right.routerId ||
+    second.peer !== left.routerId
   ) {
     errors.push("Conntrackd peer addresses must match the reciprocal FRR router IDs.");
   }
   for (const [name, node, script] of [
-    ["core1", core1, script1],
-    ["core2", core2, script2],
+    ["first", left, script1],
+    ["second", right, script2],
   ]) {
     const address = script.match(/^address="([^"]+)"/mu)?.[1];
     if (!address?.startsWith(`${node.routerId}/`)) {
-      errors.push(`FRR connected prefix on ${name} must use its local router ID.`);
+      errors.push(`FRR connected prefix on the ${name} repository must use its local router ID.`);
     }
   }
   return errors;

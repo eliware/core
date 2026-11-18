@@ -46,6 +46,21 @@ test("reports systemctl as unavailable when the command is missing", async () =>
   expect(monitor.getStatus().units[0].detail).toBe("systemctl is unavailable");
 });
 
+test("updates unit health when the clock fails", async () => {
+  const monitor = createHealthMonitor({
+    units: ["frr.service"],
+    checkUnit: async () => {},
+    now: () => {
+      throw new Error("clock unavailable");
+    },
+  });
+  await expect(monitor.check()).resolves.toEqual({
+    status: "healthy",
+    checkedAt: null,
+    units: [{ name: "frr.service", status: "healthy", checkedAt: null }],
+  });
+});
+
 test("keeps health checks successful when an unhealthy callback rejects", async () => {
   const monitor = createHealthMonitor({
     units: ["frr.service"],

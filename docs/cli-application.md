@@ -1,6 +1,6 @@
 # CLI guide
 
-This guide explains how to validate one router repository and check the Core1 and Core2 pair.
+This guide explains how to validate one router repository and compare a high availability pair.
 
 ## Requirements
 
@@ -15,10 +15,10 @@ Install Bash when the repository contains shell scripts. Preflight runs `bash -n
 | `core-cli --help`                 | Print help.                             |
 | `core-cli --version`              | Print the package version.              |
 | `core-cli preflight`              | Validate the current router repository. |
-| `core-cli compare <partner repo>` | Validate the Core1 and Core2 pair.      |
+| `core-cli compare <partner repo>` | Validate two partner repositories.      |
 
 Run `core-cli preflight` from the root of a router configuration repository.
-Run `core-cli compare ../core2` from Core1 or `core-cli compare ../core1` from Core2.
+Run `core-cli compare ../partner` from each repository.
 The compare command accepts a filesystem path to the partner repository.
 The commands do not call router-native validators, reload services, or change router configuration.
 
@@ -29,7 +29,7 @@ The compare command requires exactly one non-empty partner path.
 
 Preflight checks formatting, package metadata, required files, syntax, and supported configuration files.
 It verifies that `package.json` and `package-lock.json` identify the same supported package and version.
-The package name must be `@eliware/core1` or `@eliware/core2`.
+The package name and version must match the package lock file.
 It parses JSON, JSONC, YAML, and Kea configuration files.
 It runs `node --check` on JavaScript module files and `bash -n` on shell scripts.
 It validates supported files under `etc/`, `var/`, and `scripts/` with the bundled Node.js validators.
@@ -55,7 +55,7 @@ Preflight can create ignored test coverage or log files. It does not reload serv
 
 ## Pair validation
 
-Compare checks that one repository is Core1 and the other is Core2.
+Compare checks that both repositories have different package names.
 It compares the file inventory and contents under `etc/`, `var/`, and `scripts/`.
 It permits only documented HA-specific differences and checks that paired values agree or use reciprocal partner values.
 

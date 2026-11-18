@@ -7,7 +7,7 @@ import normalizeShell from "./normalizers/shell.mjs";
 
 export default function normalizePairFile(path, text, node) {
   let normalized = text.replaceAll("\r\n", "\n");
-  normalized = normalized.replace(/\/eliware\/core[12](?=\/)/gu, "/eliware/core");
+  normalized = normalized.replace(/\/eliware\/[^/]+(?=\/)/gu, "/eliware/router");
   normalized = normalizeFrr(path, normalized, node);
   normalized = normalizeKea(path, normalized);
   normalized = normalizeKeepalived(path, normalized);

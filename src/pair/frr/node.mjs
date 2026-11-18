@@ -1,13 +1,10 @@
-export default function validateFrrNode(node, name) {
+export default function validateFrrNode(node) {
   const errors = [];
-  if (!node.hostname.startsWith(`${name}.`)) errors.push(`FRR hostname must identify ${name}.`);
-  if (node.peer.ip === node.routerId)
-    errors.push(`FRR ${name} cannot use its own router ID as its peer.`);
-  if (!node.weights.has(node.peer.ip))
-    errors.push(`FRR ${name} must set a weight for its core peer.`);
+  if (node.peer.ip === node.routerId) errors.push("FRR cannot use its own router ID as its peer.");
+  if (!node.weights.has(node.peer.ip)) errors.push("FRR must set a weight for its peer.");
   for (const weight of node.weights.values()) {
     if (!Number.isInteger(weight) || weight < 1 || weight > 65535) {
-      errors.push(`FRR ${name} has a weight outside the valid range.`);
+      errors.push("FRR has a weight outside the valid range.");
       break;
     }
   }
