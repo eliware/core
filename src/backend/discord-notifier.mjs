@@ -1,3 +1,5 @@
+import createDiscordPayload from "./discord/payload.mjs";
+
 export default async function sendDiscordNotification({
   webhookUrl,
   message,
@@ -11,21 +13,7 @@ export default async function sendDiscordNotification({
   const response = await fetcher(webhookUrl, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      embeds: [
-        {
-          title: title.slice(0, 256),
-          description: message.slice(0, 4000),
-          color,
-          timestamp: now().toISOString(),
-          fields: fields.slice(0, 25).map(({ name, value, inline = false }) => ({
-            name: String(name).slice(0, 256),
-            value: String(value).slice(0, 1024),
-            inline,
-          })),
-        },
-      ],
-    }),
+    body: JSON.stringify(createDiscordPayload({ message, title, color, fields, now })),
     signal: AbortSignal.timeout(10_000),
   });
   if (!response.ok) throw new Error(`Discord notification failed with HTTP ${response.status}.`);

@@ -1,4 +1,5 @@
 import { isIP } from "node:net";
+import tokenizeDnsRecord from "./dns/tokenize.mjs";
 
 export default function validateDns(file, text) {
   const errors = [];
@@ -16,7 +17,7 @@ export default function validateDns(file, text) {
     parentheses += (line.match(/\(/gu) ?? []).length - (line.match(/\)/gu) ?? []).length;
     pending += `${pending ? " " : ""}${line}`;
     if (parentheses > 0) continue;
-    const tokens = tokenize(pending);
+    const tokens = tokenizeDnsRecord(pending);
     pending = "";
     if (tokens[0]?.startsWith("$")) continue;
     const typeIndex = tokens.findIndex((token) =>
@@ -56,8 +57,4 @@ function validDnsName(name) {
     name === "." ||
     /^(?:[A-Za-z0-9_*-][A-Za-z0-9_*-]*\.)*[A-Za-z0-9_*-]+\.?$/u.test(name)
   );
-}
-
-function tokenize(line) {
-  return line.replace(/[()]/gu, " ").match(/"(?:[^"\\]|\\.)*"|\S+/gu) ?? [];
 }

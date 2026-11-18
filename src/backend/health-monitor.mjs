@@ -1,5 +1,6 @@
 import { execFile as nodeExecFile } from "node:child_process";
 import { promisify } from "node:util";
+import checkHealthUnit from "./health/check-unit.mjs";
 
 const execFile = promisify(nodeExecFile);
 
@@ -17,21 +18,7 @@ export default function createHealthMonitor({
 
   async function check() {
     if (running) return running;
-    running = Promise.all(
-      units.map(async (name) => {
-        try {
-          await checkUnit(name);
-          return { name, status: "healthy", checkedAt: now().toISOString() };
-        } catch (error) {
-          return {
-            name,
-            status: "unhealthy",
-            checkedAt: now().toISOString(),
-            detail: error?.code === "ENOENT" ? "systemctl is unavailable" : "Unit is not active",
-          };
-        }
-      }),
-    )
+    running = Promise.all(units.map((name) => checkHealthUnit(name, checkUnit, now)))
       .then(async (results) => {
         checks = results;
         for (const result of results) {

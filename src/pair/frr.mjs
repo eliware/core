@@ -1,4 +1,5 @@
 import parseFrr from "./frr-parser.mjs";
+import validateFrrNode from "./frr/node.mjs";
 
 export default function validateFrrPair(core1Text = "", core2Text = "") {
   const core1 = parseFrr(core1Text);
@@ -6,9 +7,7 @@ export default function validateFrrPair(core1Text = "", core2Text = "") {
   if (!core1 || !core2) {
     return { errors: ["Both repos need a parsable etc/frr/frr.conf file."] };
   }
-  const errors = [];
-  checkNode(core1, "core1", errors);
-  checkNode(core2, "core2", errors);
+  const errors = [...validateFrrNode(core1, "core1"), ...validateFrrNode(core2, "core2")];
   if (core1.peer.ip !== core2.routerId || core2.peer.ip !== core1.routerId) {
     errors.push("FRR core peer addresses must point to the partner router ID in both repos.");
   }
@@ -17,20 +16,6 @@ export default function validateFrrPair(core1Text = "", core2Text = "") {
   }
   checkWeights(core1, core2, errors);
   return { core1, core2, errors };
-}
-
-function checkNode(node, name, errors) {
-  if (!node.hostname.startsWith(`${name}.`)) errors.push(`FRR hostname must identify ${name}.`);
-  if (node.peer.ip === node.routerId)
-    errors.push(`FRR ${name} cannot use its own router ID as its peer.`);
-  if (!node.weights.has(node.peer.ip))
-    errors.push(`FRR ${name} must set a weight for its core peer.`);
-  for (const weight of node.weights.values()) {
-    if (!Number.isInteger(weight) || weight < 1 || weight > 65535) {
-      errors.push(`FRR ${name} has a weight outside the valid range.`);
-      break;
-    }
-  }
 }
 
 function checkWeights(core1, core2, errors) {

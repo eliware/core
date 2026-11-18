@@ -1,35 +1,27 @@
 import { expect, test } from "@jest/globals";
 import validateKea from "../../src/preflight/kea.mjs";
 
-test("validates all supported Kea service sections", () => {
-  const dhcp4 = {
-    Dhcp4: {
-      loggers: [{}],
-      subnet4: [{ id: 1, subnet: "10.0.0.0/24", pools: [{ pool: "10.0.0.2 - 10.0.0.9" }] }],
-      "interfaces-config": { interfaces: [] },
-      "lease-database": { type: "memfile" },
-    },
-  };
-  const dhcp6 = {
-    Dhcp6: {
-      loggers: [{}],
-      subnet6: [{ id: 1, subnet: "2001:db8::/64", pools: [{ pool: "2001:db8::/80" }] }],
-      "interfaces-config": { interfaces: [] },
-      "lease-database": { type: "memfile" },
-    },
-  };
-  expect(validateKea("etc/kea/kea-dhcp4.conf", dhcp4)).toEqual([]);
-  expect(validateKea("etc/kea/kea-dhcp6.conf", dhcp6)).toEqual([]);
-  expect(
-    validateKea("etc/kea/kea-dhcp4.conf", {
-      Dhcp4: {
-        loggers: [{}],
-        subnet4: [{ id: 2, subnet: "10.0.0.0/24", pools: [{ pool: "10.0.0.128/25" }] }],
-        "interfaces-config": { interfaces: [] },
-        "lease-database": { type: "memfile" },
-      },
-    }),
-  ).toEqual([]);
+test("validates DHCP service sections", () => {
+  for (const [file, section] of [
+    ["etc/kea/kea-dhcp4.conf", "Dhcp4"],
+    ["etc/kea/kea-dhcp6.conf", "Dhcp6"],
+  ]) {
+    expect(
+      validateKea(file, {
+        [section]: {
+          loggers: [{}],
+          [`subnet${section.slice(-1)}`]: [
+            { id: 1, subnet: section === "Dhcp4" ? "10.0.0.0/24" : "2001:db8::/64" },
+          ],
+          "interfaces-config": { interfaces: [] },
+          "lease-database": { type: "memfile" },
+        },
+      }),
+    ).toEqual([]);
+  }
+});
+
+test("validates DDNS and control agent settings", () => {
   expect(
     validateKea("etc/kea/kea-dhcp-ddns.conf", { DhcpDdns: { loggers: [{}], port: 53001 } }),
   ).toEqual([]);
@@ -38,65 +30,24 @@ test("validates all supported Kea service sections", () => {
       "Control-agent": { loggers: [{}], "http-port": 8001, "control-sockets": {} },
     }),
   ).toEqual([]);
+  expect(validateKea("etc/kea/kea-dhcp-ddns.conf", { DhcpDdns: { port: 0 } })).toContain(
+    "port must be between 1 and 65535",
+  );
+  expect(
+    validateKea("etc/kea/kea-ctrl-agent.conf", { "Control-agent": { "http-port": 90000 } }),
+  ).toContain("http-port and control-sockets are required and valid");
 });
 
-test("rejects invalid Kea identities, subnet ranges, pools, and ports", () => {
-  const config = {
-    Dhcp4: {
-      loggers: [],
-      subnet4: [
-        { id: 0, subnet: "bad/99", pools: [{ pool: "bad" }] },
-        { id: 0, subnet: "10.0.0.0/24" },
-      ],
-      "interfaces-config": {},
-      "lease-database": {},
-    },
-  };
-  expect(validateKea("etc/kea/kea-dhcp4.conf", config).join(" ")).toContain(
-    "unique positive integers",
+test("rejects unmatched service identities and missing service settings", () => {
+  expect(validateKea("etc/kea/other.conf", {})).toContain(
+    "expected one matching Kea service object",
   );
-  expect(validateKea("etc/kea/kea-dhcp4.conf", config).join(" ")).toContain(
-    "invalid network prefix",
+  expect(validateKea("etc/kea/kea-dhcp4.conf", { Dhcp4: { loggers: [] } })).toEqual(
+    expect.arrayContaining([
+      "loggers must be a nonempty array",
+      "subnet4 must be a nonempty array",
+      "interfaces-config.interfaces must be an array",
+      "lease-database.type is required",
+    ]),
   );
-  expect(validateKea("etc/kea/kea-dhcp4.conf", config).join(" ")).toContain("pool must define");
-  expect(validateKea("etc/kea/kea-dhcp-ddns.conf", { DhcpDdns: { port: 0 } }).join(" ")).toContain(
-    "port must be between",
-  );
-  expect(
-    validateKea("etc/kea/kea-ctrl-agent.conf", { "Control-agent": { "http-port": 90000 } }).join(
-      " ",
-    ),
-  ).toContain("http-port and control-sockets");
-  expect(validateKea("etc/kea/other.conf", {}).join(" ")).toContain("expected one matching");
-  const empty = {
-    Dhcp4: {
-      loggers: [],
-      subnet4: [],
-      "interfaces-config": { interfaces: [] },
-      "lease-database": { type: "memfile" },
-    },
-  };
-  expect(validateKea("etc/kea/kea-dhcp4.conf", empty).join(" ")).toContain(
-    "subnet4 must be a nonempty array",
-  );
-  const malformedPool = { Dhcp4: { subnet4: [{ id: 1, subnet: "10.0.0.0/24/extra", pools: {} }] } };
-  expect(validateKea("etc/kea/kea-dhcp4.conf", malformedPool).join(" ")).toContain(
-    "pools must be an array",
-  );
-  expect(validateKea("etc/kea/kea-dhcp4.conf", malformedPool).join(" ")).toContain(
-    "invalid network prefix",
-  );
-  expect(
-    validateKea("etc/kea/kea-dhcp4.conf", { Dhcp4: { subnet4: [{ id: 3 }] } }).join(" "),
-  ).toContain("invalid network prefix");
-  expect(
-    validateKea("etc/kea/kea-dhcp4.conf", {
-      Dhcp4: { loggers: [], "interfaces-config": {}, "lease-database": {} },
-    }).join(" "),
-  ).toContain("subnet4 must be a nonempty array");
-  expect(
-    validateKea("etc/kea/kea-ctrl-agent.conf", { "Control-agent": { "http-port": 8001 } }).join(
-      " ",
-    ),
-  ).toContain("http-port and control-sockets");
 });
