@@ -1,6 +1,8 @@
+import parseFrr from "./frr-parser.mjs";
+
 export default function validateFrrPair(core1Text = "", core2Text = "") {
-  const core1 = readFrr(core1Text);
-  const core2 = readFrr(core2Text);
+  const core1 = parseFrr(core1Text);
+  const core2 = parseFrr(core2Text);
   if (!core1 || !core2) {
     return { errors: ["Both repos need a parsable etc/frr/frr.conf file."] };
   }
@@ -15,34 +17,6 @@ export default function validateFrrPair(core1Text = "", core2Text = "") {
   }
   checkWeights(core1, core2, errors);
   return { core1, core2, errors };
-}
-
-function readFrr(text) {
-  const hostname = text.match(/^hostname\s+(\S+)/mu)?.[1];
-  const asn = Number(text.match(/^router bgp\s+(\d+)/mu)?.[1]);
-  const routerId = text.match(/^\s+bgp router-id\s+(\S+)/mu)?.[1];
-  const peerIp = text.match(/^\s*neighbor\s+(\S+)\s+description core peer\s*$/mu)?.[1];
-  const peerAsn = text.match(
-    new RegExp(`^\\s*neighbor\\s+${escapeRegex(peerIp)}\\s+remote-as\\s+(\\d+)`, "mu"),
-  )?.[1];
-  if (!hostname || !Number.isInteger(asn) || !routerId || !peerIp || !peerAsn) return null;
-  const weights = new Map(
-    [...text.matchAll(/^\s*neighbor\s+(\S+)\s+weight\s+(\d+)\s*$/gmu)].map((item) => [
-      item[1],
-      Number(item[2]),
-    ]),
-  );
-  const neighbors = new Set(
-    [...text.matchAll(/^\s*neighbor\s+(\S+)\s+remote-as\s+\d+\s*$/gmu)].map((item) => item[1]),
-  );
-  return {
-    hostname,
-    asn,
-    routerId,
-    peer: { ip: peerIp, asn: Number(peerAsn) },
-    weights,
-    neighbors,
-  };
 }
 
 function checkNode(node, name, errors) {
@@ -80,8 +54,4 @@ function checkWeights(core1, core2, errors) {
   if (JSON.stringify(peers1) !== JSON.stringify(peers2)) {
     errors.push("FRR neighbor sets must match across both routers.");
   }
-}
-
-function escapeRegex(value = "") {
-  return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
 }

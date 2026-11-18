@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import listRepositoryFiles from "./repo-files.mjs";
 import parseConfigFile from "./config-parser.mjs";
 import validateConfigFiles from "./preflight-config.mjs";
+import validatePackageMetadata from "./preflight/package-metadata.mjs";
 
 export default async function preflight(
   root,
@@ -35,23 +36,7 @@ export default async function preflight(
     }
   }
 
-  if (!packageJson || !inventory.files.includes("package-lock.json")) {
-    errors.push("FAIL package.json or package-lock.json is missing.");
-  } else {
-    try {
-      const lock = JSON.parse(readFile(resolve(root, "package-lock.json"), "utf8"));
-      if (
-        lock.name !== packageJson.name ||
-        lock.version !== packageJson.version ||
-        lock.packages?.[""]?.name !== packageJson.name ||
-        lock.packages?.[""]?.version !== packageJson.version
-      ) {
-        errors.push("FAIL package.json and package-lock.json names or versions do not match.");
-      }
-    } catch {
-      errors.push("FAIL package-lock.json is not valid JSON.");
-    }
-  }
+  errors.push(...validatePackageMetadata(packageJson, inventory.files, root, readFile));
 
   const format = run(
     platform === "win32" ? "cmd.exe" : "npm",
