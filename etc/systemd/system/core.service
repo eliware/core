@@ -1,0 +1,19 @@
+[Unit]
+Description=Core Networking Manager web service
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/eliware/core
+Environment=NODE_ENV=production
+EnvironmentFile=-/eliware/core/.env
+ExecStart=/usr/local/bin/node /eliware/core/bin/core-web.mjs
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=30s
+KillSignal=SIGTERM
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target
