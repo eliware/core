@@ -10,6 +10,7 @@ export default function acquireDeploymentLock(repositoryPath, options = {}) {
   const isProcessAlive = options.isProcessAlive ?? defaultIsProcessAlive;
   const key = createHash("sha256").update(resolve(repositoryPath)).digest("hex");
   const lockPath = join(directory, `eliware-deployment-${key}.lock`);
+  const recoveryPath = `${lockPath}.recovery`;
   let descriptor;
   try {
     descriptor = fileSystem.openSync(lockPath, "wx", 0o600);
@@ -24,7 +25,23 @@ export default function acquireDeploymentLock(repositoryPath, options = {}) {
     if (!Number.isInteger(owner) || owner < 1)
       throw new Error("A deployment lock has invalid data.");
     if (isProcessAlive(owner)) throw new Error("Another deployment process is active.");
-    fileSystem.unlinkSync(lockPath);
+    let recoveryDescriptor;
+    try {
+      recoveryDescriptor = fileSystem.openSync(recoveryPath, "wx", 0o600);
+    } catch (recoveryError) {
+      if (recoveryError.code === "EEXIST")
+        throw new Error("Another deployment process is recovering a stale lock.");
+      throw recoveryError;
+    }
+    try {
+      const currentOwner = Number(fileSystem.readFileSync(lockPath, "utf8"));
+      if (currentOwner !== owner || isProcessAlive(currentOwner))
+        throw new Error("Another deployment process is active.");
+      fileSystem.unlinkSync(lockPath);
+    } finally {
+      fileSystem.closeSync(recoveryDescriptor);
+      fileSystem.unlinkSync(recoveryPath);
+    }
     descriptor = fileSystem.openSync(lockPath, "wx", 0o600);
   }
   fileSystem.writeFileSync(descriptor, String(processId));

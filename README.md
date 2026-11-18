@@ -30,7 +30,8 @@ Core Networking Manager.
 ## Features
 
 Core Networking Manager provides `core-cli` and `core-web` for managed router configurations.
-The web application provides a read-only dashboard and a signed GitHub deployment listener.
+The web application provides a read-only dashboard and an optional GitHub deployment listener.
+The listener accepts signed pushes when its repository path and webhook secret are configured.
 
 ## Requirements
 
@@ -73,7 +74,7 @@ Run `npm run lint` to run lint checks without the full aggregate validation.
 
 If the application rejects a port, set a different integer from `1` through `65535` for each listener.
 If a new checkout returns HTTP 404 for `/client.js`, run `npm run build` and confirm that `dist/client.js` exists.
-If the webhook returns HTTP 503, set `CORE_REPO_PATH` and `GITHUB_WEBHOOK_SECRET` in `.env`.
+If the webhook returns HTTP 503, check every required value in `.env` and examine the startup log for errors.
 If health status says `unconfigured`, set `CORE_HEALTH_UNITS` to one or more systemd unit names.
 Read the [CLI guide](docs/cli-application.md) for CLI exit codes and validation failures.
 

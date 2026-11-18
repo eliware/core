@@ -4,7 +4,8 @@ export default function registerWebhookRoutes(
   server,
   { secret, branch = "main", enabled = true, deployment },
 ) {
-  const deliveries = new Set();
+  const deliveries = new Map();
+  const maximumRememberedDeliveries = 1000;
 
   server.post("/api/github/webhook", async (request, reply) => {
     if (!enabled || !secret) return reply.code(503).send({ error: "Webhook is not configured." });
@@ -32,7 +33,9 @@ export default function registerWebhookRoutes(
 
     const result = deployment.start(delivery);
     if (!result.accepted) return reply.code(409).send(result);
-    deliveries.add(delivery);
+    deliveries.set(delivery, true);
+    if (deliveries.size > maximumRememberedDeliveries)
+      deliveries.delete(deliveries.keys().next().value);
     return reply.code(202).send(result);
   });
 }

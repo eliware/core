@@ -77,6 +77,8 @@ It stops the sequence at the first failed command.
 If a command fails before reload, the application resets the repository to the previous commit without reloading router processes.
 If the new reload fails, the application resets the repository and attempts to reload the previous configuration.
 If Git cannot restore the previous commit, the application records that failure and does not reload the current configuration.
+
+The application preserves untracked files during recovery.
 The dashboard shows the latest deployment result until the process restarts.
 
 ## Health monitoring and notifications
@@ -186,7 +188,7 @@ npm run screenshots
 npm run lighthouse
 ```
 
-The screenshot command saves desktop and mobile images under the ignored `artifacts/` directory.
+The screenshot command saves one page image under the ignored `artifacts/` directory.
 Set `WEB_URL` to change the server address.
 Set `SCREENSHOT_PATH` to select a screenshot output file.
 

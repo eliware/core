@@ -69,6 +69,62 @@ test("replaces a stale process lock", () => {
   jest.restoreAllMocks();
 });
 
+test("does not recover a stale lock while another process holds the recovery guard", () => {
+  const fileSystem = createFileSystem();
+  const directory = "/tmp/locks";
+  const repositoryPath = "/router/repo";
+  const path = lockPath(directory, repositoryPath);
+  fileSystem.files.set(path, "99999999");
+  fileSystem.files.set(`${path}.recovery`, "456");
+  jest.spyOn(process, "kill").mockImplementation(() => {
+    throw Object.assign(new Error("process is not running"), { code: "ESRCH" });
+  });
+  expect(() => acquireDeploymentLock(repositoryPath, { directory, fileSystem })).toThrow(
+    "recovering a stale lock",
+  );
+  expect(fileSystem.files.get(path)).toBe("99999999");
+  jest.restoreAllMocks();
+});
+
+test("reports recovery guard storage errors", () => {
+  const fileSystem = createFileSystem();
+  const path = lockPath("/tmp/locks", "/router/repo");
+  fileSystem.files.set(path, "99999999");
+  const openSync = fileSystem.openSync;
+  fileSystem.openSync = (file, flags, mode) => {
+    if (file.endsWith(".recovery")) throw new Error("recovery storage unavailable");
+    return openSync(file, flags, mode);
+  };
+  expect(() =>
+    acquireDeploymentLock("/router/repo", {
+      directory: "/tmp/locks",
+      fileSystem,
+      isProcessAlive: () => false,
+    }),
+  ).toThrow("recovery storage unavailable");
+});
+
+test("keeps a lock when its owner changes during stale recovery", () => {
+  const fileSystem = createFileSystem();
+  const path = lockPath("/tmp/locks", "/router/repo");
+  fileSystem.files.set(path, "99999999");
+  const readFileSync = fileSystem.readFileSync;
+  let reads = 0;
+  fileSystem.readFileSync = (file, encoding) => {
+    reads += 1;
+    if (reads === 2) fileSystem.files.set(path, "456");
+    return readFileSync(file, encoding);
+  };
+  expect(() =>
+    acquireDeploymentLock("/router/repo", {
+      directory: "/tmp/locks",
+      fileSystem,
+      isProcessAlive: () => false,
+    }),
+  ).toThrow("Another deployment process is active");
+  expect(fileSystem.files.get(path)).toBe("456");
+});
+
 test.each(["", "invalid"])("rejects an unreadable or invalid lock owner: %s", (owner) => {
   const fileSystem = createFileSystem();
   const directory = "/tmp/locks";

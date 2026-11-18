@@ -135,7 +135,7 @@ test("rejects duplicate deliveries and busy deployment requests", async () => {
   await server.close();
 });
 
-test("rejects oversized delivery IDs and remembers processed IDs", async () => {
+test("rejects oversized delivery IDs and bounds remembered deliveries", async () => {
   const body = JSON.stringify({ ref: "refs/heads/main" });
   const { server, deployment } = await setup();
   const oversized = await server.inject({
@@ -160,8 +160,16 @@ test("rejects oversized delivery IDs and remembers processed IDs", async () => {
     headers: signedHeaders(body, { "x-github-delivery": "delivery-0" }),
     payload: body,
   });
-  expect(duplicate.json()).toEqual({ accepted: false, reason: "duplicate delivery" });
-  expect(deployment.start).toHaveBeenCalledTimes(1001);
+  expect(duplicate.statusCode).toBe(202);
+  expect(deployment.start).toHaveBeenCalledTimes(1002);
+  const recentDuplicate = await server.inject({
+    method: "POST",
+    url: "/api/github/webhook",
+    headers: signedHeaders(body, { "x-github-delivery": "delivery-1000" }),
+    payload: body,
+  });
+  expect(recentDuplicate.json()).toEqual({ accepted: false, reason: "duplicate delivery" });
+  expect(deployment.start).toHaveBeenCalledTimes(1002);
   await server.close();
 });
 
