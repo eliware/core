@@ -243,8 +243,38 @@ test("records an unexpected deployment setup error", async () => {
       if (calls === 1) throw "clock failed";
       return fixedNow();
     },
+    notify: jest.fn().mockRejectedValue(new Error("Discord unavailable")),
   });
   manager.start("delivery-11");
+  await waitFor(manager, "failed");
   await Promise.resolve();
-  expect(manager.getStatus()).toMatchObject({ status: "failed", error: "clock failed" });
+  await Promise.resolve();
+  expect(manager.getStatus()).toMatchObject({
+    status: "failed",
+    error: "clock failed",
+    finishedAt: expect.any(String),
+    notificationError: "Discord notification failed.",
+  });
+  await Promise.resolve();
+  expect(manager.start("delivery-12")).toMatchObject({ accepted: true });
+  await waitFor(manager, "succeeded");
+});
+
+test("preserves worktree changes created after deployment begins", async () => {
+  const run = successfulRun();
+  let statusChecks = 0;
+  run.mockImplementation(async (command, args) => {
+    if (command === "git" && args[0] === "status") {
+      statusChecks += 1;
+      return { stdout: statusChecks === 1 ? "" : " M router.conf\n" };
+    }
+    if (command === "git" && args[0] === "rev-parse") return { stdout: `${commit}\n` };
+    if (command === "npm" && args[0] === "test") throw new Error("tests failed");
+    return { stdout: "" };
+  });
+  const manager = createManager({ repositoryPath: "/router/core1", run });
+  manager.start("delivery-worktree-change");
+  const status = await waitFor(manager, "failed");
+  expect(status.recovery).toContain("Local changes were preserved");
+  expect(run).not.toHaveBeenCalledWith("git", ["reset", "--hard", commit], expect.any(Object));
 });

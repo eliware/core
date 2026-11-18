@@ -3,6 +3,7 @@ export default function createShutdownHook({
   webhookServer,
   log,
   stopHealthMonitor = () => {},
+  isListening,
 }) {
   let stopped = false;
   let shutdownPromise;
@@ -17,7 +18,9 @@ export default function createShutdownHook({
         Promise.all(
           [server, webhookServer]
             .filter(Boolean)
-            .filter((item) => !item.server || item.server.listening)
+            .filter((item) =>
+              isListening ? isListening(item) : !item.server || item.server.listening,
+            )
             .map((item) => item.close()),
         ),
       )

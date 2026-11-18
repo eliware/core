@@ -7,6 +7,9 @@ export default async function recoverDeployment({
 }) {
   let recovery;
   try {
+    const changes = await run("git", ["status", "--porcelain"], { cwd: repositoryPath });
+    if (String(changes.stdout ?? "").trim())
+      throw new Error("Repository changed during deployment. Local changes were preserved.");
     await run("git", ["reset", "--hard", previousCommit], { cwd: repositoryPath });
     steps.push({ name: "restore previous commit", status: "passed" });
     if (reloadStarted) {

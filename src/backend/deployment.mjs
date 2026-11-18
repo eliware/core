@@ -115,18 +115,27 @@ export default function createDeploymentManager({
     if (active) return { accepted: false, status: "busy" };
     active = true;
     const runId = randomUUID();
-    void execute(event, runId).catch((error) => {
-      status.set({
-        runId,
-        event,
-        status: "failed",
-        error: String(error?.message ?? error).slice(0, 300),
-        startedAt: status.get().startedAt,
-        finishedAt: now().toISOString(),
-        steps: status.get().steps,
+    void execute(event, runId)
+      .catch(async (error) => {
+        const failure = String(error?.message ?? error).slice(0, 300);
+        status.set({
+          runId,
+          event,
+          status: "failed",
+          error: failure,
+          startedAt: status.get().startedAt,
+          finishedAt: status.timestamp(() => now().toISOString(), status.get().startedAt),
+          steps: status.get().steps,
+        });
+        try {
+          await notify(`Core deployment ${runId} failed at deployment setup. ${failure}`);
+        } catch {
+          status.update({ notificationError: "Discord notification failed." });
+        }
+      })
+      .finally(() => {
+        active = false;
       });
-      active = false;
-    });
     return { accepted: true, runId };
   }
 

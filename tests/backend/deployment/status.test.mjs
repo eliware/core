@@ -25,3 +25,18 @@ test("merges status updates without exposing nested references", () => {
     steps: [{ name: "npm ci" }],
   });
 });
+
+test("uses a fallback timestamp when the clock fails", () => {
+  const status = createDeploymentStatus();
+  expect(status.timestamp(() => "time", "fallback")).toBe("time");
+  expect(
+    status.timestamp(() => {
+      throw new Error("clock unavailable");
+    }, "fallback"),
+  ).toBe("fallback");
+  expect(
+    status.timestamp(() => {
+      throw new Error("clock unavailable");
+    }),
+  ).toBeNull();
+});

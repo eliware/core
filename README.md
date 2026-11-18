@@ -60,6 +60,10 @@ Read [AGENTS.md](AGENTS.md), the [documentation index](docs/README.md), and the 
 
 Run `npm test` for aggregate validation.
 Run `npm run build` to build the browser assets.
+Run `npm run screenshots` or `npm run lighthouse` for browser checks after starting the server.
+Run `npm run puppeteer` once to install Chrome for browser checks.
+Run `npm run pack` to check package contents.
+The build runs `npm run prebuild` first to check the webpack command.
 
 ## Troubleshooting
 
@@ -76,18 +80,18 @@ Keep `.env` files outside Git and limit dashboard access because the dashboard h
 
 ## Configuration
 
-| Name                    | Required | Default | Purpose                                                              |
-| ----------------------- | -------- | ------- | -------------------------------------------------------------------- |
-| `PORT`                  | No       | `9300`  | Dashboard port.                                                      |
-| `WEBHOOK_PORT`          | No       | `9301`  | Separate webhook port. Use `9302` on Core2.                          |
-| `CORE_REPO_PATH`        | No       | None    | Local configuration repository path. Required to enable deployments. |
-| `GITHUB_WEBHOOK_SECRET` | No       | None    | Secret for signed GitHub pushes. Required to enable deployments.     |
-| `CORE_GITHUB_BRANCH`    | No       | `main`  | Branch that triggers deployment.                                     |
-| `DISCORD_WEBHOOK_URL`   | No       | None    | HTTPS Discord webhook URL for rich embed notifications.              |
-| `CORE_HEALTH_UNITS`     | No       | None    | Comma-separated systemd unit names ending in `.service`.             |
-| `LOG_LEVEL`             | No       | `info`  | Log level passed to the application logger.                          |
+| Name                    | Required | Default                                                                     | Purpose                                                                                                                            |
+| ----------------------- | -------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`                  | No       | `9300`                                                                      | Dashboard port.                                                                                                                    |
+| `WEBHOOK_PORT`          | No       | Core1 uses `9301`. Core2 uses `9302` when `CORE_REPO_PATH` ends in `core2`. | Separate webhook TCP endpoint.                                                                                                     |
+| `CORE_REPO_PATH`        | No       | None                                                                        | Local configuration repository path. Required to enable deployments.                                                               |
+| `GITHUB_WEBHOOK_SECRET` | No       | None                                                                        | Secret for signed GitHub pushes. Required to enable deployments.                                                                   |
+| `CORE_GITHUB_BRANCH`    | No       | `main`                                                                      | Branch name that starts with a letter or number, uses letters, numbers, dots, underscores, slashes, or hyphens, and excludes `..`. |
+| `DISCORD_WEBHOOK_URL`   | No       | None                                                                        | HTTPS Discord webhook URL for rich embed notifications.                                                                            |
+| `CORE_HEALTH_UNITS`     | No       | None                                                                        | Comma-separated systemd unit names ending in `.service`.                                                                           |
+| `LOG_LEVEL`             | No       | `info`                                                                      | Log level passed to the application logger.                                                                                        |
 
-The dashboard and webhook ports must use different numbers. The application reads values from its process environment and `.env` in its working directory.
+The dashboard and webhook TCP endpoint numbers must not be the same. The application reads values from its process environment and `.env` in its working directory.
 
 ## Operations
 

@@ -20,6 +20,7 @@ export default async function startWebApplication(dependencies) {
   dependencies.registerHandlers({ log });
   const server = dependencies.createServer();
   const webhookServer = dependencies.createServer();
+  const openServers = new Set();
   dependencies.registerWebRoutes(server, {
     publicRoot: dependencies.resolve("public"),
     buildRoot: dependencies.resolve("dist"),
@@ -40,11 +41,14 @@ export default async function startWebApplication(dependencies) {
     webhookServer,
     log,
     stopHealthMonitor: healthMonitor.stop,
+    isListening: (item) => openServers.has(item),
   });
   dependencies.registerSignals({ log, shutdownHook });
   try {
     await server.listen({ port: tcpEndpoint, host: "0.0.0.0" });
+    openServers.add(server);
     await webhookServer.listen({ port: webhookEndpoint, host: "0.0.0.0" });
+    openServers.add(webhookServer);
     healthMonitor.start();
   } catch (error) {
     await shutdownHook();

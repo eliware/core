@@ -2,6 +2,8 @@ import { expect, jest, test } from "@jest/globals";
 import { resolve } from "node:path";
 import readRouteAsset from "../../../src/backend/asset/serving.mjs";
 
+const resolvePath = async (file) => resolve(file);
+
 test.each([
   ["public", { root: "public", file: "index.html" }, "public", "index.html"],
   ["build", { root: "build", file: "client.js" }, "dist", "client.js"],
@@ -9,7 +11,7 @@ test.each([
   const read = jest.fn().mockResolvedValue("asset");
 
   await expect(
-    readRouteAsset(route, { publicRoot: "public", buildRoot: "dist", read }),
+    readRouteAsset(route, { publicRoot: "public", buildRoot: "dist", read, resolvePath }),
   ).resolves.toBe("asset");
   expect(read).toHaveBeenCalledWith(resolve(rootName, file));
 });
@@ -35,20 +37,36 @@ test("returns no asset for a missing route", async () => {
 test("rejects route files outside their configured asset root", async () => {
   const read = jest.fn();
 
-  expect(() =>
+  await expect(
     readRouteAsset(
       { root: "public", file: "../../private/secret.txt" },
       { publicRoot: "public", buildRoot: "dist", read },
     ),
-  ).toThrow("asset path must stay within its configured root");
+  ).rejects.toThrow("asset path must stay within its configured root");
   expect(read).not.toHaveBeenCalled();
 });
 
 test.each([[{ root: "unknown", file: "asset.txt" }], [{ root: "public" }]])(
   "rejects incomplete asset route metadata: %p",
-  (route) => {
-    expect(() =>
+  async (route) => {
+    await expect(
       readRouteAsset(route, { publicRoot: "public", buildRoot: "dist", read: jest.fn() }),
-    ).toThrow("asset route must include a configured root and file");
+    ).rejects.toThrow("asset route must include a configured root and file");
   },
 );
+
+test("rejects symlinks that resolve outside the configured asset root", async () => {
+  const root = resolve("public");
+  const outside = resolve("private/secret.txt");
+  const read = jest.fn();
+  const resolvePathMock = jest.fn(async (file) =>
+    file === resolve(root, "leak.txt") ? outside : file,
+  );
+  await expect(
+    readRouteAsset(
+      { root: "public", file: "leak.txt" },
+      { publicRoot: root, buildRoot: "dist", read, resolvePath: resolvePathMock },
+    ),
+  ).rejects.toThrow("asset path must stay within its configured root");
+  expect(read).not.toHaveBeenCalled();
+});

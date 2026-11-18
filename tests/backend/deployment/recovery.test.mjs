@@ -41,7 +41,11 @@ test("reports reset and restored reload failures", async () => {
   const reloadSteps = [];
   await expect(
     recoverDeployment({
-      run: jest.fn().mockResolvedValueOnce({}).mockRejectedValueOnce(new Error("reload denied")),
+      run: jest
+        .fn()
+        .mockResolvedValueOnce({})
+        .mockResolvedValueOnce({})
+        .mockRejectedValueOnce(new Error("reload denied")),
       repositoryPath: "/router",
       previousCommit: "abc",
       reloadStarted: true,

@@ -37,18 +37,19 @@ Open `http://localhost:9300/` to view the dashboard.
 The server reads values from its process environment and the `.env` file in its working directory.
 Copy `.env.example` to `.env`, then set values for each router.
 
-| Name                    | Required  | Default | Accepted values                                                  |
-| ----------------------- | --------- | ------- | ---------------------------------------------------------------- |
-| `PORT`                  | No        | `9300`  | Dashboard port from `1` through `65535`.                         |
-| `WEBHOOK_PORT`          | No        | `9301`  | Webhook port from `1` through `65535`, separate from `PORT`.     |
-| `LOG_LEVEL`             | No        | `info`  | `error`, `warn`, `info`, `http`, `verbose`, `debug`, or `silly`. |
-| `CORE_REPO_PATH`        | For hooks | —       | Router configuration repository path.                            |
-| `GITHUB_WEBHOOK_SECRET` | For hooks | —       | Secret used to authenticate GitHub webhook signatures.           |
-| `DISCORD_WEBHOOK_URL`   | No        | —       | Discord webhook URL for rich embed notifications.                |
-| `CORE_GITHUB_BRANCH`    | No        | `main`  | Branch deployed from the configuration repository.               |
-| `CORE_HEALTH_UNITS`     | No        | —       | Comma-separated systemd unit names to monitor.                   |
+| Name                    | Required  | Default                                                                     | Accepted values                                                  |
+| ----------------------- | --------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `PORT`                  | No        | `9300`                                                                      | Dashboard port from `1` through `65535`.                         |
+| `WEBHOOK_PORT`          | No        | Core1 uses `9301`. Core2 uses `9302` when `CORE_REPO_PATH` ends in `core2`. | Webhook port from `1` through `65535`, separate from `PORT`.     |
+| `LOG_LEVEL`             | No        | `info`                                                                      | `error`, `warn`, `info`, `http`, `verbose`, `debug`, or `silly`. |
+| `CORE_REPO_PATH`        | For hooks | —                                                                           | Router configuration repository path.                            |
+| `GITHUB_WEBHOOK_SECRET` | For hooks | —                                                                           | Secret used to authenticate GitHub webhook signatures.           |
+| `DISCORD_WEBHOOK_URL`   | No        | —                                                                           | Discord webhook URL for rich embed notifications.                |
+| `CORE_GITHUB_BRANCH`    | No        | `main`                                                                      | Branch deployed from the configuration repository.               |
+| `CORE_HEALTH_UNITS`     | No        | —                                                                           | Comma-separated systemd unit names to monitor.                   |
 
 The server rejects invalid ports and rejects equal dashboard and webhook ports.
+The dashboard and webhook TCP endpoint numbers must not be the same.
 Both listeners accept connections on all network interfaces.
 The `LOG_LEVEL` value sets the minimum level for application log messages.
 
@@ -222,7 +223,8 @@ Run the aggregate checks before you commit:
 npm test
 ```
 
-The aggregate command checks tests, lint, formatting, dependencies, and the browser build.
+The aggregate command checks tests, lint, formatting, dependencies, and package rules.
+Run `npm run build` separately to build browser assets.
 Run focused tests by passing one or more test file paths:
 
 ```sh
@@ -232,6 +234,8 @@ npm test -- tests/backend/config.test.mjs tests/frontend/service/worker.test.mjs
 
 Run `npm run lint`, `npm run audit`, and `npm run format:check` to run individual checks.
 Run `npm run format` to apply the repository formatter.
+Run `npm run pack` to check the files included in the package.
+The build runs `npm run prebuild` first to check the webpack command.
 
 ## Troubleshooting
 

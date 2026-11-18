@@ -10,5 +10,12 @@ export default function createDeploymentStatus(initial = {}) {
     update(patch) {
       snapshot = { ...snapshot, ...structuredClone(patch) };
     },
+    timestamp(read, fallback) {
+      try {
+        return read();
+      } catch {
+        return fallback ?? null;
+      }
+    },
   };
 }

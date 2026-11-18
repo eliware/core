@@ -82,7 +82,11 @@ test.each([
       webhookServer: deps.webhookServer,
       log: deps.log,
       stopHealthMonitor: deps.healthMonitor.stop,
+      isListening: expect.any(Function),
     });
+    const isListening = deps.values.createShutdownHook.mock.calls[0][0].isListening;
+    expect(isListening(deps.server)).toBe(true);
+    expect(isListening(deps.webhookServer)).toBe(true);
     expect(deps.server.listen).toHaveBeenCalledWith({ port: tcpEndpoint, host: "0.0.0.0" });
     expect(deps.webhookServer.listen).toHaveBeenCalledWith({
       port: webhookEndpoint,

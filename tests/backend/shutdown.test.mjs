@@ -69,3 +69,17 @@ test("stops health polling and skips a webhook listener that never opened", asyn
   expect(server.close).toHaveBeenCalledTimes(1);
   expect(webhookServer.close).not.toHaveBeenCalled();
 });
+
+test("does not close listeners that failed before opening", async () => {
+  const server = { close: jest.fn() };
+  const webhookServer = { close: jest.fn() };
+  const shutdown = createShutdownHook({
+    server,
+    webhookServer,
+    log: { info: jest.fn() },
+    isListening: () => false,
+  });
+  await shutdown();
+  expect(server.close).not.toHaveBeenCalled();
+  expect(webhookServer.close).not.toHaveBeenCalled();
+});
