@@ -37,16 +37,18 @@ Open `http://localhost:9300/` to view the dashboard.
 The server reads values from its process environment and the `.env` file in its working directory.
 Copy `.env.example` to `.env`, then set values for each router.
 
-| Name                    | Required  | Default | Accepted values                                                  |
-| ----------------------- | --------- | ------- | ---------------------------------------------------------------- |
-| `PORT`                  | No        | `9300`  | Dashboard port from `1` through `65535`.                         |
-| `WEBHOOK_PORT`          | No        | `9301`  | Webhook port from `1` through `65535`, separate from `PORT`.     |
-| `LOG_LEVEL`             | No        | `info`  | `error`, `warn`, `info`, `http`, `verbose`, `debug`, or `silly`. |
-| `CORE_REPO_PATH`        | For hooks | —       | Router configuration repository path.                            |
-| `GITHUB_WEBHOOK_SECRET` | For hooks | —       | Secret used to authenticate GitHub webhook signatures.           |
-| `DISCORD_WEBHOOK_URL`   | No        | —       | Discord webhook URL for rich embed notifications.                |
-| `CORE_GITHUB_BRANCH`    | No        | `main`  | Branch deployed from the configuration repository.               |
-| `CORE_HEALTH_UNITS`     | No        | —       | Comma-separated systemd unit names to monitor.                   |
+| Name                    | Required  | Default                | Accepted values                                                  |
+| ----------------------- | --------- | ---------------------- | ---------------------------------------------------------------- |
+| `PORT`                  | No        | `9300`                 | Dashboard port from `1` through `65535`.                         |
+| `WEBHOOK_PORT`          | No        | `9301`                 | Webhook port from `1` through `65535`, separate from `PORT`.     |
+| `LOG_LEVEL`             | No        | `info`                 | `error`, `warn`, `info`, `http`, `verbose`, `debug`, or `silly`. |
+| `CORE_REPO_PATH`        | For hooks | —                      | Router configuration repository path.                            |
+| `GITHUB_WEBHOOK_SECRET` | For hooks | —                      | Secret used to authenticate GitHub webhook signatures.           |
+| `DISCORD_WEBHOOK_URL`   | No        | —                      | Discord webhook URL for rich embed notifications.                |
+| `CORE_GITHUB_BRANCH`    | No        | `main`                 | Branch deployed from the configuration repository.               |
+| `CORE_HEALTH_UNITS`     | No        | —                      | Comma-separated systemd unit names to monitor.                   |
+| `SNOWFLAKE_WORKER_ID`   | No        | `0`                    | Snowflake worker value from `0` through `31`.                    |
+| `SNOWFLAKE_PROCESS_ID`  | No        | Process ID modulo `32` | Snowflake process value from `0` through `31`.                   |
 
 The server rejects invalid ports and rejects equal dashboard and webhook ports.
 The dashboard and webhook TCP endpoint numbers must not be the same.
@@ -81,6 +83,8 @@ If Git cannot restore the previous commit, the application records that failure 
 The application preserves untracked files during recovery.
 Set the systemd unit umask to `0022` so router processes can read files that Git pulls.
 The dashboard shows the latest deployment result until the process restarts.
+The application creates decimal deployment IDs with `@eliware/common` snowflakes.
+Set a unique worker and process pair for every active instance.
 
 ## Health monitoring and notifications
 

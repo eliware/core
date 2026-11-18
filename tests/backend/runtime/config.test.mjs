@@ -18,6 +18,7 @@ test("loads environment values before assembling application configuration", () 
     discordWebhookUrl: undefined,
     githubBranch: "main",
     healthUnits: [],
+    snowflake: { workerId: 0 },
   });
   expect(loadEnvironment).toHaveBeenCalledTimes(1);
 });

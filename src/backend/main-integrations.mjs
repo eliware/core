@@ -14,6 +14,7 @@ export default function createApplicationIntegrations(configuration, dependencie
   const deployment = dependencies.createDeploymentManager({
     repositoryPath: configuration.repositoryPath,
     branch: configuration.githubBranch,
+    snowflake: configuration.snowflake,
     notify,
   });
   return { healthMonitor, deployment };

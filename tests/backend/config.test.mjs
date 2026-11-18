@@ -12,6 +12,8 @@ test.each([
       DISCORD_WEBHOOK_URL: "https://discord.com/api/webhooks/123/token",
       CORE_GITHUB_BRANCH: "production",
       CORE_HEALTH_UNITS: "sshd.service, frr.service",
+      SNOWFLAKE_WORKER_ID: "7",
+      SNOWFLAKE_PROCESS_ID: "11",
     },
     {
       tcpEndpoint: 8080,
@@ -22,6 +24,7 @@ test.each([
       discordWebhookUrl: "https://discord.com/api/webhooks/123/token",
       githubBranch: "production",
       healthUnits: ["sshd.service", "frr.service"],
+      snowflake: { workerId: 7, processId: 11 },
     },
   ],
   [
@@ -36,6 +39,7 @@ test.each([
       discordWebhookUrl: undefined,
       githubBranch: "main",
       healthUnits: [],
+      snowflake: { workerId: 0 },
     },
   ],
 ])("maps %s to the application configuration", (_name, environment, expected) => {

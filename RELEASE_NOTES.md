@@ -4,6 +4,7 @@
 
 ### Changed
 
+- Use decimal Snowflake IDs for deployment runs.
 - Update package dependencies to their latest releases.
 - Allow expected FRR route preference variation during pair compare.
 - Include development dependencies during router deployment checks.

@@ -2,6 +2,7 @@ import parseTcpEndpoint from "./port.mjs";
 import validateBranch from "./config/branch.mjs";
 import validateDiscordUrl from "./config/discord-url.mjs";
 import parseHealthUnits from "./config/health-units.mjs";
+import parseSnowflakeOptions from "./config/snowflake.mjs";
 
 export default function loadApplicationConfig({ environment }) {
   const tcpEndpoint = parseTcpEndpoint(environment.PORT);
@@ -12,6 +13,7 @@ export default function loadApplicationConfig({ environment }) {
   const githubBranch = validateBranch(environment.CORE_GITHUB_BRANCH);
   const discordWebhookUrl = validateDiscordUrl(environment.DISCORD_WEBHOOK_URL);
   const healthUnits = parseHealthUnits(environment.CORE_HEALTH_UNITS);
+  const snowflake = parseSnowflakeOptions(environment);
 
   return {
     tcpEndpoint,
@@ -22,5 +24,6 @@ export default function loadApplicationConfig({ environment }) {
     discordWebhookUrl,
     githubBranch,
     healthUnits,
+    snowflake,
   };
 }

@@ -1,13 +1,12 @@
 import { execFile as nodeExecFile } from "node:child_process";
 import { promisify } from "node:util";
-import { randomUUID } from "node:crypto";
+import { createSnowflakeGenerator } from "@eliware/common";
 import runDeploymentStep from "./deployment/step.mjs";
 import recoverDeployment from "./deployment/recovery.mjs";
 import createDeploymentStatus from "./deployment/status.mjs";
 import acquireDeploymentLock from "./deployment/lock.mjs";
 
 const execFile = promisify(nodeExecFile);
-
 export default function createDeploymentManager({
   repositoryPath,
   branch = "main",
@@ -15,11 +14,13 @@ export default function createDeploymentManager({
   run = (command, args, options) => execFile(command, args, { ...options, windowsHide: true }),
   recover = recoverDeployment,
   now = () => new Date(),
-  createRunId = randomUUID,
+  createRunId,
+  snowflake = {},
   acquireLock = acquireDeploymentLock,
 } = {}) {
   let active = false;
   const status = createDeploymentStatus();
+  const generateRunId = createRunId ?? createSnowflakeGenerator(snowflake);
   async function execute(event, runId, releaseLock) {
     let startedAt;
     const steps = [];
@@ -111,7 +112,7 @@ export default function createDeploymentManager({
     if (active) return { accepted: false, status: "busy" };
     let runId;
     try {
-      runId = createRunId();
+      runId = generateRunId();
     } catch {
       return { accepted: false, status: "unavailable" };
     }

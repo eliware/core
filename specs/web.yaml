@@ -21,6 +21,8 @@ directives:
       - Restore the previous commit without reloading applications when an earlier step fails.
       - Restore the previous commit and reload its configuration when `npm run reload` fails.
       - Send Discord notifications for deployment success and failure.
+      - Use decimal deployment identifiers from `@eliware/common` snowflakes.
+      - Use a unique snowflake worker and process pair for each active application instance.
       - Check configured essential applications every five minutes.
       - Send a Discord notification when an essential application is unhealthy.
       - Provide a graphical, single-page, read-only health dashboard.

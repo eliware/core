@@ -23,6 +23,7 @@ test("wires deployment, health checks, and Discord using runtime settings", asyn
     discordWebhookUrl: "https://discord.com/webhook",
     githubBranch: "main",
     healthUnits: ["frr.service"],
+    snowflake: { workerId: 1 },
   };
   const integrations = createApplicationIntegrations(configuration, dependencies, log);
   expect(dependencies.createHealthMonitor).toHaveBeenCalledWith({
@@ -41,6 +42,7 @@ test("wires deployment, health checks, and Discord using runtime settings", asyn
   expect(dependencies.createDeploymentManager).toHaveBeenCalledWith({
     repositoryPath: "/etc/eliware/core1",
     branch: "main",
+    snowflake: { workerId: 1 },
     notify: expect.any(Function),
   });
   expect(integrations.deployment).toBeDefined();

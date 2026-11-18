@@ -94,6 +94,8 @@ Keep `.env` files outside Git and limit dashboard access because the dashboard h
 | `CORE_GITHUB_BRANCH`    | No       | `main`                   | Branch name with slash-separated segments that start with a letter, number, or underscore, and excludes `..`. |
 | `DISCORD_WEBHOOK_URL`   | No       | None                     | HTTPS Discord webhook URL for rich embed notifications.                                                       |
 | `CORE_HEALTH_UNITS`     | No       | Empty list               | Comma-separated systemd unit names ending in `.service`.                                                      |
+| `SNOWFLAKE_WORKER_ID`   | No       | `0`                      | Snowflake worker value from `0` through `31`.                                                                 |
+| `SNOWFLAKE_PROCESS_ID`  | No       | Process ID modulo `32`   | Snowflake process value from `0` through `31`.                                                                |
 | `LOG_LEVEL`             | No       | `info`                   | Log level passed to the application logger.                                                                   |
 | `WEB_URL`               | No       | `http://127.0.0.1:9300/` | Server URL used by the screenshot command.                                                                    |
 | `SCREENSHOT_PATH`       | No       | `artifacts/home.png`     | Output file used by the screenshot command.                                                                   |

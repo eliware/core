@@ -47,6 +47,7 @@ test("loads application configuration through the production dependency", () => 
       discordWebhookUrl: undefined,
       githubBranch: "main",
       healthUnits: [],
+      snowflake: { workerId: 0 },
     });
   } finally {
     if (originalPort === undefined) delete process.env.PORT;
