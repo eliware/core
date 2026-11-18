@@ -88,7 +88,8 @@ Follow the approved release process to publish the npm package.
 Run `core-cli --help` to print command usage. Run `core-cli --version` to print the package version.
 Run `core-cli preflight` from a router config repo to check formatting and supported file syntax.
 Preflight checks required router files and validates DNS, Kea, WireGuard, firewall, FRR, HAProxy, Keepalived, systemd, Chrony, and shell structure with Node.js.
-It runs `npm run format:check` and checks JavaScript syntax with Node.js. It does not call router tools.
+It runs `npm run format:check`, checks JavaScript syntax with Node.js, and checks shell scripts with `bash -n`.
+It does not call router configuration tools.
 
 Run `core-cli compare <partner repo>` to check file inventory, matching config, and reciprocal HA settings.
 Resolve `<partner repo>` from the current repository directory. Use `../core2` from Core1 or `../core1` from Core2.

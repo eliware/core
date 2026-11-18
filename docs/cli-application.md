@@ -12,7 +12,8 @@ Run `core-cli compare <partner repo>` to check the Core1 and Core2 pair.
 Run `core-cli` with no arguments to show help.
 
 `preflight` checks required router files and supported JSON, JSONC, YAML, JavaScript, and router settings with Node.js.
-It checks DNS, Kea, WireGuard, firewall, FRR, HAProxy, Keepalived, systemd, Chrony, and shell structure. It returns exit code 1 when a check fails.
+It checks DNS, Kea, WireGuard, firewall, FRR, HAProxy, Keepalived, systemd, Chrony, and shell structure. It uses `bash -n` for shell syntax.
+It returns exit code 1 when a check fails.
 
 `compare` accepts one partner repository path relative to the current repository. It checks matching config files and reciprocal HA settings.
 It returns exit code 1 when the pair fails validation. Invalid syntax or unsupported arguments return exit code 2.

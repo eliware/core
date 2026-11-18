@@ -79,10 +79,16 @@ test("checks formatting, parsable files, scripts, and configuration with Node.js
   expect(result.ok).toBe(true);
   expect(result.lines).toContain("PASS repository formatting");
   expect(result.lines).toContain("PASS JavaScript syntax (1 files)");
+  expect(result.lines).toContain("PASS Bash syntax (1 files)");
   expect(result.lines).toContain("PASS parsed JSON, JSONC, and YAML (4 files)");
   expect(result.lines).toContain("PASS Node.js configuration checks (5 files)");
   expect(result.lines.some((line) => line.startsWith("SKIP"))).toBe(false);
   expect(state.run).toHaveBeenCalled();
+  expect(state.run).toHaveBeenCalledWith(
+    "bash",
+    ["-n"],
+    expect.objectContaining({ input: "#!/usr/bin/env bash\ntrue\n" }),
+  );
   expect(state.root).toBe("C:/router");
 });
 
@@ -90,7 +96,7 @@ test("runs identical configuration checks on Windows", async () => {
   const state = setup({ platform: "win32" });
   state.run.mockReturnValue({ error: { code: "ENOENT" } });
   state.run.mockImplementation((command) =>
-    command === "cmd.exe" || command === "node-test"
+    command === "cmd.exe" || command === "node-test" || command === "bash"
       ? { status: 0 }
       : { error: { code: "ENOENT" } },
   );
@@ -128,8 +134,35 @@ test("reports parse, lock, formatting, script, and domain validation failures", 
   );
   expect(result.lines).toContain("FAIL repository formatting check.");
   expect(result.lines).toContain("FAIL JavaScript syntax: scripts/status.mjs.");
+  expect(result.lines).toContain("FAIL Bash syntax: scripts/check.sh.");
   expect(result.lines.some((line) => line.includes("filter table is required"))).toBe(true);
   expect(result.lines.some((line) => line.includes("unmatched if keyword"))).toBe(true);
+});
+
+test("fails shell validation when Bash is unavailable", async () => {
+  const state = setup();
+  state.run.mockImplementation((command) =>
+    command === "bash" ? { error: { code: "ENOENT" } } : { status: 0 },
+  );
+
+  const result = await preflight(state.root, state.options);
+
+  expect(result.ok).toBe(false);
+  expect(result.lines).toContain("FAIL Bash syntax: scripts/check.sh.");
+});
+
+test("fails shell validation when a script cannot be read", async () => {
+  const state = setup();
+  state.readFile.mockImplementation((path) => {
+    if (path.endsWith("check.sh")) throw new Error("denied");
+    const file = path.replaceAll("\\", "/").split("/router/").at(-1);
+    return state.contents.get(file);
+  });
+
+  const result = await preflight(state.root, state.options);
+
+  expect(result.ok).toBe(false);
+  expect(result.lines).toContain("FAIL Bash syntax: scripts/check.sh.");
 });
 
 test("reports missing repository files and read failures", async () => {
