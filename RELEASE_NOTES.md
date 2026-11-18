@@ -7,6 +7,7 @@
 - Update package dependencies to their latest releases.
 - Allow expected FRR route preference variation during pair compare.
 - Include development dependencies during router deployment checks.
+- Set the systemd umask to keep pulled configuration files readable.
 
 ### Added
 

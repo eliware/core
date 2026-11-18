@@ -79,6 +79,7 @@ If the new reload fails, the application resets the repository and attempts to r
 If Git cannot restore the previous commit, the application records that failure and does not reload the current configuration.
 
 The application preserves untracked files during recovery.
+Set the systemd unit umask to `0022` so router processes can read files that Git pulls.
 The dashboard shows the latest deployment result until the process restarts.
 
 ## Health monitoring and notifications
