@@ -2,11 +2,11 @@
 
 ## Project
 
-See [README.md](README.md) for the purpose, owner, and scope of Core Networking Manager.
+This repository maintains Core Networking Manager, an npm package with CLI and web applications.
 
 ## Scope and boundaries
 
-Keep project requirements and behavior in the specifications and maintained code.
+Keep requirements in specifications and behavior in maintained code.
 
 ## Layout
 
@@ -20,14 +20,14 @@ Keep each source and test module focused on one responsibility.
 ## Validation
 
 Run `npm ci` to install locked dependencies.
-Run `npm test` for aggregate validation.
-Run `npm run lint` for lint checks.
-Run `npm run audit` to check dependencies for known vulnerabilities. Run `npm test` after changing dependency metadata.
+Run `npm test` for aggregate validation before a commit, milestone, or release.
 
-Run `npm run format` to format maintained files. Then run `npm run format:check` and `npm test` to verify changes.
-Run `npm run format:check` to check formatting without changing files.
-
-Run `npm run pack` to check package contents and packaging rules.
+Run `npm run lint` to check source code.
+Run `npm run audit` to check dependencies.
+Run `npm run format` to format maintained files.
+Run `npm run format:check` to check formatting.
+Run `npm run build` to build browser assets.
+Run `npm run pack` to check package contents.
 
 ## Security
 
@@ -39,6 +39,7 @@ Update user documentation and RELEASE_NOTES.md when user-visible behavior change
 
 ## Application
 
+Keep launchers in `bin/`, implementation modules in `src/`, and tests in `tests/`.
 Run focused tests first during development.
 Run one test file with `npm test -- tests/path/to/example.test.mjs`.
 Run multiple test files with `npm test -- tests/path/to/first.test.mjs tests/path/to/second.test.mjs`.

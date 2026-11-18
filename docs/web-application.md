@@ -55,6 +55,15 @@ The dashboard and webhook TCP endpoint numbers must not be the same.
 Both listeners accept connections on all network interfaces.
 The `LOG_LEVEL` value sets the minimum level for application log messages.
 
+The screenshot and PWA audit commands also read these process environment values:
+
+| Name              | Default                  | Purpose                                  |
+| ----------------- | ------------------------ | ---------------------------------------- |
+| `WEB_URL`         | `http://127.0.0.1:9300/` | Server URL used by browser checks.       |
+| `SCREENSHOT_PATH` | `artifacts/home.png`     | Output path used by the screenshot tool. |
+
+These values do not configure the web server.
+
 Set `PORT` to `9300` for the read-only dashboard. Set `WEBHOOK_PORT` to a distinct port for each server.
 The application rejects equal dashboard and webhook ports.
 
