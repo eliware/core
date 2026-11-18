@@ -1,6 +1,13 @@
 export default function isBalanced(text, pair = "{}") {
   const [open, close] = pair;
-  let depth = 0;
+  const opening = new Set(["{", "[", "(", open]);
+  const closing = new Map([
+    ["}", "{"],
+    ["]", "["],
+    [")", "("],
+    [close, open],
+  ]);
+  const stack = [];
   let quote = "";
   let escaped = false;
   for (const char of text) {
@@ -8,8 +15,8 @@ export default function isBalanced(text, pair = "{}") {
     else if (char === "\\" && quote) escaped = true;
     else if (quote && char === quote) quote = "";
     else if (!quote && (char === '"' || char === "'")) quote = char;
-    else if (!quote && char === open) depth += 1;
-    else if (!quote && char === close && --depth < 0) return false;
+    else if (!quote && opening.has(char)) stack.push(char);
+    else if (!quote && closing.has(char) && stack.pop() !== closing.get(char)) return false;
   }
-  return !quote && depth === 0;
+  return !quote && stack.length === 0;
 }

@@ -42,16 +42,24 @@ test("runs the deployment steps in order and records success", async () => {
     ["git", ["status", "--porcelain"]],
     ["git", ["rev-parse", "HEAD"]],
     ["git", ["pull", "--ff-only", "--", "origin", "main"]],
+    ["git", ["status", "--porcelain"]],
     ["npm", ["ci", "--include=dev"]],
+    ["git", ["status", "--porcelain"]],
     ["npm", ["test"]],
+    ["git", ["status", "--porcelain"]],
     ["npm", ["run", "preflight"]],
+    ["git", ["status", "--porcelain"]],
     ["npm", ["run", "reload"]],
   ]);
   expect(manager.getStatus().steps.map(({ name }) => name)).toEqual([
     "git pull",
+    "git status after git pull",
     "npm ci --include=dev",
+    "git status after npm ci --include=dev",
     "npm test",
+    "git status after npm test",
     "npm run preflight",
+    "git status after npm run preflight",
     "npm run reload",
   ]);
   expect(notify).toHaveBeenCalledWith(expect.stringContaining("succeeded"));
@@ -197,7 +205,7 @@ test("records a failed command that does not provide an error message", async ()
   manager.start("delivery-10");
   const status = await waitFor(manager, "failed");
   expect(status.steps[0]).toEqual({ name: "git pull", status: "passed" });
-  expect(status.steps[1]).toEqual({
+  expect(status.steps.find(({ name }) => name === "npm ci --include=dev")).toEqual({
     name: "npm ci --include=dev",
     status: "failed",
     detail: "null",
@@ -206,11 +214,15 @@ test("records a failed command that does not provide an error message", async ()
 
 test("rejects concurrent deployments for one repository and records notification failures", async () => {
   let finishStatus;
+  let firstStatus = true;
   const run = jest.fn((command, args) => {
-    if (command === "git" && args[0] === "status")
+    if (command === "git" && args[0] === "status" && firstStatus) {
+      firstStatus = false;
       return new Promise((resolve) => {
         finishStatus = resolve;
       });
+    }
+    if (command === "git" && args[0] === "status") return Promise.resolve({ stdout: "" });
     if (command === "git" && args[0] === "rev-parse")
       return Promise.resolve({ stdout: `${commit}\n` });
     return Promise.resolve({ stdout: "" });
@@ -260,25 +272,6 @@ test("releases deployment state while setup failure notification is pending", as
   await waitFor(manager, "succeeded");
 });
 
-test("reports a lock release failure after deployment completion", async () => {
-  const manager = createManager({
-    repositoryPath: "/router/config",
-    acquireLock: () => () => {
-      throw "lock release failed";
-    },
-    notify: jest.fn().mockRejectedValue(new Error("Discord unavailable")),
-    run: successfulRun(),
-  });
-
-  manager.start("push");
-  const status = await waitFor(manager, "failed");
-  for (let attempt = 0; attempt < 20 && !manager.getStatus().notificationError; attempt += 1)
-    await Promise.resolve();
-
-  expect(status.error).toBe("lock release failed");
-  expect(manager.getStatus().notificationError).toBe("Discord notification failed.");
-});
-
 test("restores the prior commit when a deployment step changes the worktree", async () => {
   const run = successfulRun();
   run.mockImplementation(async (command, args) => {
@@ -286,7 +279,11 @@ test("restores the prior commit when a deployment step changes the worktree", as
     if (command === "npm" && args[0] === "test") throw new Error("tests failed");
     return { stdout: "" };
   });
-  const manager = createManager({ repositoryPath: "/router/core1", run });
+  const manager = createManager({
+    repositoryPath: "/router/core1",
+    run,
+    acquireLock: () => () => {},
+  });
   manager.start("delivery-worktree-change");
   const status = await waitFor(manager, "failed");
   expect(status.recovery).toBeUndefined();

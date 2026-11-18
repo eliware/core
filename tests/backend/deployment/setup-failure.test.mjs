@@ -2,6 +2,9 @@ import { expect, jest, test } from "@jest/globals";
 import createDeploymentStatus from "../../../src/backend/deployment/status.mjs";
 import reportSetupFailure from "../../../src/backend/deployment/setup-failure.mjs";
 
+jest.unstable_mockModule("node:child_process", () => ({ execFile: jest.fn() }));
+const createDeploymentManager = (await import("../../../src/backend/deployment.mjs")).default;
+
 function setup({
   error = new Error("setup failed"),
   notify = jest.fn(),
@@ -56,4 +59,28 @@ test("formats non-error setup failures", async () => {
   await reportSetupFailure(state);
 
   expect(state.status.get().error).toBe("null");
+});
+
+test("reports a lock release failure after deployment completion", async () => {
+  const manager = createDeploymentManager({
+    repositoryPath: "/router/config",
+    acquireLock: () => () => {
+      throw "lock release failed";
+    },
+    notify: jest.fn().mockRejectedValue(new Error("Discord unavailable")),
+    now: () => new Date("2026-11-18T12:00:00.000Z"),
+    run: async (command, args) =>
+      command === "git" && args[0] === "rev-parse"
+        ? { stdout: `${"a".repeat(40)}\n` }
+        : { stdout: "" },
+  });
+
+  manager.start("push");
+  for (let attempt = 0; attempt < 100 && manager.getStatus().status !== "failed"; attempt += 1)
+    await Promise.resolve();
+  for (let attempt = 0; attempt < 20 && !manager.getStatus().notificationError; attempt += 1)
+    await Promise.resolve();
+
+  expect(manager.getStatus().error).toBe("lock release failed");
+  expect(manager.getStatus().notificationError).toBe("Discord notification failed.");
 });

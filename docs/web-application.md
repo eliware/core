@@ -81,6 +81,9 @@ The webhook accepts a valid push asynchronously and returns HTTP 202 while deplo
 It returns HTTP 409 when deployment is in progress.
 It returns HTTP 401 for an invalid signature and HTTP 503 when deployment settings are missing.
 It requires a clean repository before it starts a deployment.
+It checks that the repository remains clean after Git pull and each npm validation command.
+If a check finds changes, the sequence stops and recovery restores the previous commit.
+
 The server rejects JSON request bodies larger than 1 MiB.
 It remembers accepted GitHub request IDs until the application restarts.
 

@@ -8,6 +8,7 @@ import acquireDeploymentLock from "./deployment/lock.mjs";
 import reportSetupFailure from "./deployment/setup-failure.mjs";
 import createDeploymentAdmission from "./deployment/admission.mjs";
 import createFailureStatus from "./deployment/failure-status.mjs";
+import verifyDeploymentWorktree from "./deployment/worktree.mjs";
 
 const execFile = promisify(nodeExecFile);
 export default function createDeploymentManager({
@@ -46,6 +47,15 @@ export default function createDeploymentManager({
         onStart: (currentStep, priorSteps) =>
           status.update({ currentStep, steps: structuredClone(priorSteps) }),
       });
+    const verifyCleanWorktree = (afterStep) =>
+      verifyDeploymentWorktree({
+        afterStep,
+        repositoryPath,
+        run,
+        steps,
+        onStart: (currentStep, priorSteps) =>
+          status.update({ currentStep, steps: structuredClone(priorSteps) }),
+      });
     try {
       startedAt = now().toISOString();
       status.set({ runId, event, status: "running", startedAt, finishedAt: null, steps });
@@ -57,9 +67,13 @@ export default function createDeploymentManager({
       if (!/^[a-f0-9]{40,64}$/.test(commit)) throw new Error("Git returned an invalid commit ID.");
       previousCommit = commit;
       await step("git pull", "git", ["pull", "--ff-only", "--", "origin", branch]);
+      await verifyCleanWorktree("git pull");
       await step("npm ci --include=dev", "npm", ["ci", "--include=dev"]);
+      await verifyCleanWorktree("npm ci --include=dev");
       await step("npm test", "npm", ["test"]);
+      await verifyCleanWorktree("npm test");
       await step("npm run preflight", "npm", ["run", "preflight"]);
+      await verifyCleanWorktree("npm run preflight");
       reloadStarted = true;
       await step("npm run reload", "npm", ["run", "reload"]);
       status.set({

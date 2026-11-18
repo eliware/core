@@ -34,15 +34,19 @@ export default function createDeploymentAdmission({
         active = false;
       }
     };
-    void execute(event, runId, release).catch(async (error) => {
-      active = false;
-      try {
-        release();
-      } catch {
-        // Preserve setup failure reporting when lock cleanup also fails.
-      }
-      await reportSetupFailure(error, event, runId);
-    });
+    void execute(event, runId, release)
+      .catch(async (error) => {
+        active = false;
+        try {
+          release();
+        } catch {
+          // Preserve setup failure reporting when lock cleanup also fails.
+        }
+        await reportSetupFailure(error, event, runId);
+      })
+      .catch(() => {
+        active = false;
+      });
     return { accepted: true, runId };
   };
 }
