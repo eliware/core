@@ -4,7 +4,7 @@ export default function createPairRepo(name) {
   const asn = name === "core1" ? 65001 : 65002;
   const peerAsn = name === "core1" ? 65002 : 65001;
   const master = name === "core1";
-  const weight = name === "core1" ? 300 : 200;
+  const weight = 300;
   const frr = [
     `hostname ${name}.purinton.us`,
     `router bgp ${asn}`,
@@ -15,7 +15,7 @@ export default function createPairRepo(name) {
     " neighbor 10.0.0.10 remote-as 65200",
     ` neighbor 10.0.0.10 weight ${weight}`,
     " neighbor 10.0.0.20 remote-as 65200",
-    ` neighbor 10.0.0.20 weight ${name === "core1" ? 200 : 300}`,
+    " neighbor 10.0.0.20 weight 200",
   ].join("\n");
   const kea = {
     Dhcp4: {

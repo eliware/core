@@ -109,6 +109,20 @@ test("rejects malformed configuration, invalid references, and broken shell bloc
   expect(result.errors.join(" ")).toContain("quoted string is not closed");
 });
 
+test("reports invalid Kea JSONC syntax before domain validation", () => {
+  const state = setup();
+  state.contents.set("etc/kea/kea-dhcp4.conf", '{ "Dhcp4": ');
+  const result = validateConfigFiles(state.root, ["etc/kea/kea-dhcp4.conf"], {
+    readFile: state.readFile,
+  });
+  expect(result.errors).toContain(
+    "FAIL etc/kea/kea-dhcp4.conf: invalid JSON syntax (ValueExpected).",
+  );
+  expect(result.errors).not.toContain(
+    "FAIL etc/kea/kea-dhcp4.conf: expected one matching Kea service object.",
+  );
+});
+
 test("reports unreadable tracked configuration", () => {
   const state = setup();
   const result = validateConfigFiles(state.root, ["etc/chrony.conf"], {

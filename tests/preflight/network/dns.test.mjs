@@ -21,3 +21,24 @@ test("requires complete DNS zone records and balanced parentheses", () => {
     validateDns("test.zone", "$TTL 3600\n@ IN SOA ns.test. host.test. (1\n").join(" "),
   ).toContain("parentheses are not balanced");
 });
+
+test("accepts standard zone directives and reports malformed directives", () => {
+  const zone =
+    "$ORIGIN example.test.\n$TTL 1h\n$INCLUDE child.zone child.example.test.\n$GENERATE 1-2 host$.example.test. A 192.0.2.$\n@ IN SOA ns.example.test. host.example.test. ( 1 3600 600 86400 300 )\n@ IN NS ns.example.test.\n";
+  expect(validateDns("test.zone", zone)).toEqual([]);
+  expect(validateDns("test.zone", "$INCLUDE\n").join(" ")).toContain(
+    "invalid DNS directive $INCLUDE",
+  );
+  expect(validateDns("test.zone", "$UNKNOWN value\n").join(" ")).toContain(
+    "invalid DNS directive $UNKNOWN",
+  );
+  expect(validateDns("test.zone", "$GENERATE invalid host A 192.0.2.$\n").join(" ")).toContain(
+    "invalid DNS directive $GENERATE",
+  );
+  expect(validateDns("test.zone", "$GENERATE 1-3 host$\n").join(" ")).toContain(
+    "invalid DNS directive $GENERATE",
+  );
+  expect(validateDns("test.zone", "$GENERATE\n").join(" ")).toContain(
+    "invalid DNS directive $GENERATE",
+  );
+});

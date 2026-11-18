@@ -3,6 +3,7 @@ import Fastify from "fastify";
 export default function createWebServer() {
   const server = Fastify({
     logger: false,
+    bodyLimit: 1024 * 1024,
     ajv: { customOptions: { removeAdditional: false } },
   });
   server.removeContentTypeParser("application/json");

@@ -68,6 +68,8 @@ The webhook accepts a valid push asynchronously and returns HTTP 202 while deplo
 It returns HTTP 409 when deployment is in progress.
 It returns HTTP 401 for an invalid signature and HTTP 503 when deployment settings are missing.
 It requires a clean repository before it starts a deployment.
+The server rejects JSON request bodies larger than 1 MiB.
+It remembers accepted GitHub request IDs until the application restarts.
 
 The application runs `git pull --ff-only origin <branch>`, `npm ci`, `npm test`, `npm run preflight`, and `npm run reload` in order.
 It stops the sequence at the first failed command.
@@ -189,7 +191,8 @@ Set `SCREENSHOT_PATH` to select a screenshot output file.
 The Lighthouse command writes its report to `artifacts/lighthouse.json`.
 It checks performance, best practices, SEO, and accessibility.
 Puppeteer then checks the manifest, install icons, preview images, worker control, and offline page load.
-The audit passes when each check passes and the Accessibility score is at least 95 out of 100.
+
+The PWA audit passes when each browser and offline check passes. Lighthouse writes its own report.
 These browser checks run outside `npm test` and CI.
 Stop the server after browser validation.
 

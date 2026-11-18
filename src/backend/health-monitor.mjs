@@ -22,7 +22,13 @@ export default function createHealthMonitor({
       .then(async (results) => {
         checks = results;
         for (const result of results) {
-          if (result.status === "unhealthy") await onUnhealthy(result);
+          if (result.status === "unhealthy") {
+            try {
+              await onUnhealthy(result);
+            } catch {
+              // Notification failures do not change health results or stop future checks.
+            }
+          }
         }
         return getStatus();
       })

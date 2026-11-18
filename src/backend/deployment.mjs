@@ -12,6 +12,7 @@ export default function createDeploymentManager({
   branch = "main",
   notify = async () => {},
   run = (command, args, options) => execFile(command, args, { ...options, windowsHide: true }),
+  recover = recoverDeployment,
   now = () => new Date(),
 } = {}) {
   let active = false;
@@ -76,9 +77,15 @@ export default function createDeploymentManager({
       return { accepted: true, runId };
     } catch (error) {
       const failedStep = error.stepName ?? "repository check";
-      const recovery = previousCommit
-        ? await recoverDeployment({ run, repositoryPath, previousCommit, reloadStarted, steps })
-        : undefined;
+      let recovery;
+      if (previousCommit) {
+        try {
+          recovery = await recover({ run, repositoryPath, previousCommit, reloadStarted, steps });
+        } catch (recoveryError) {
+          recovery = `Recovery failed: ${String(recoveryError?.message ?? recoveryError).slice(0, 200)}`;
+          steps.push({ name: "restore previous commit", status: "failed" });
+        }
+      }
       status.set({
         runId,
         event,

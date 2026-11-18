@@ -47,7 +47,13 @@ test("runs the deployment steps in order and records success", async () => {
     ["npm", ["run", "preflight"]],
     ["npm", ["run", "reload"]],
   ]);
-  expect(manager.getStatus().steps).toHaveLength(5);
+  expect(manager.getStatus().steps.map(({ name }) => name)).toEqual([
+    "git pull",
+    "npm ci",
+    "npm test",
+    "npm run preflight",
+    "npm run reload",
+  ]);
   expect(notify).toHaveBeenCalledWith(expect.stringContaining("succeeded"));
 });
 
@@ -113,6 +119,41 @@ test("reports rollback failure after a deployment error", async () => {
   const status = await waitFor(manager, "failed");
   expect(status.recovery).toContain("restore failed");
   expect(status.steps.at(-1)).toEqual({ name: "restore previous commit", status: "failed" });
+});
+
+test("records deployment failure when recovery unexpectedly rejects", async () => {
+  const run = successfulRun();
+  run.mockImplementation(async (command, args) => {
+    if (command === "git" && args[0] === "rev-parse") return { stdout: `${commit}\n` };
+    if (command === "npm" && args[0] === "ci") throw new Error("install failed");
+    return { stdout: "" };
+  });
+  const manager = createManager({
+    repositoryPath: "/router/core1",
+    run,
+    recover: jest.fn().mockRejectedValue(new Error("unexpected recovery error")),
+  });
+  manager.start("delivery-recovery-error");
+  const status = await waitFor(manager, "failed");
+  expect(status.failedStep).toBe("npm ci");
+  expect(status.recovery).toBe("Recovery failed: unexpected recovery error");
+});
+
+test("records recovery rejection values without a message", async () => {
+  const run = successfulRun();
+  run.mockImplementation(async (command, args) => {
+    if (command === "git" && args[0] === "rev-parse") return { stdout: `${commit}\n` };
+    if (command === "npm" && args[0] === "ci") throw new Error("install failed");
+    return { stdout: "" };
+  });
+  const manager = createManager({
+    repositoryPath: "/router/core1",
+    run,
+    recover: jest.fn().mockRejectedValue(null),
+  });
+  manager.start("delivery-null-recovery-error");
+  const status = await waitFor(manager, "failed");
+  expect(status.recovery).toBe("Recovery failed: null");
 });
 
 test("reports a failed reload of the restored configuration", async () => {

@@ -54,7 +54,7 @@ test("rejects unmatched weight maps and malformed Kea settings", () => {
     "etc/frr/frr.conf",
     core2
       .get("etc/frr/frr.conf")
-      .replace("neighbor 10.0.0.20 weight 300", "neighbor 10.0.0.21 weight 300")
+      .replace("neighbor 10.0.0.20 weight 200", "neighbor 10.0.0.21 weight 200")
       .replace("neighbor 10.0.0.20 remote-as 65200", "neighbor 10.0.0.21 remote-as 65200"),
   );
   core1.set("etc/kea/kea-dhcp4.conf", "not JSON");

@@ -128,6 +128,7 @@ Run `core-cli` with no arguments to print help. Read the [CLI guide](docs/cli-ap
 
 Unsupported methods on page and asset routes return HTTP 405. Unknown paths return HTTP 404.
 The separate webhook listener accepts `POST /api/github/webhook` on `WEBHOOK_PORT`.
+The server limits JSON request bodies to 1 MiB.
 
 ## Assets
 
@@ -143,7 +144,7 @@ Run `npm run puppeteer` to install Chrome before browser checks.
 ## Build
 
 Run `npm run build` to create `dist/client.js` and `dist/service-worker.js`.
-Run `npm test` for aggregate validation, which includes the browser build.
+Run `npm test` for aggregate validation. Run `npm run build` separately to build browser assets.
 
 ## Deployment
 
@@ -153,6 +154,8 @@ If a step fails before reload, the application restores the previous commit with
 If reload fails, the application restores the previous commit and attempts to reload its configuration.
 Read the [web application guide](docs/web-application.md) for the full deployment and recovery process.
 Follow the approved npm publication process to publish package releases.
+
+The process stores accepted GitHub request IDs in memory and rejects repeat requests.
 
 ## Support
 

@@ -39,8 +39,10 @@ function validateFile(file, text, files, readFile, root) {
   const invalid = (message) => errors.push(`FAIL ${file}: ${message}.`);
   if (text.includes("\0")) invalid("file contains a null byte");
   if (/^etc\/kea\/.+\.conf$/u.test(file)) {
-    const parsed = parseConfigFile(file, text).value;
-    errors.push(...validateKea(file, parsed).map((message) => `FAIL ${file}: ${message}.`));
+    const parsed = parseConfigFile(file, text);
+    if (parsed.error) errors.push(`FAIL ${file}: ${parsed.error}.`);
+    else
+      errors.push(...validateKea(file, parsed.value).map((message) => `FAIL ${file}: ${message}.`));
   }
   if (file === "etc/wireguard/wg0.conf") errors.push(...validateWireguard(file, text));
   errors.push(...validateStructured(file, text, files, root, readFile));

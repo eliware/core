@@ -14,6 +14,7 @@ test("creates Fastify with the application server options", () => {
 
   expect(createServer).toHaveBeenCalledWith({
     logger: false,
+    bodyLimit: 1024 * 1024,
     ajv: { customOptions: { removeAdditional: false } },
   });
   expect(server.removeContentTypeParser).toHaveBeenCalledWith("application/json");

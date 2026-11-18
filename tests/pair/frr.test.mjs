@@ -39,15 +39,25 @@ test("rejects invalid and asymmetric route weights", () => {
   const [core1, core2] = texts();
   const invalid = core1.replace("neighbor 10.0.0.10 weight 300", "neighbor 10.0.0.10 weight 70000");
   const asymmetric = core2.replace(
-    "neighbor 10.0.0.20 weight 300",
     "neighbor 10.0.0.20 weight 200",
+    "neighbor 10.0.0.20 weight 300",
   );
 
   expect(validateFrrPair(invalid, core2).errors.join(" ")).toContain(
     "weight outside the valid range",
   );
   expect(validateFrrPair(core1, asymmetric).errors.join(" ")).toContain(
-    "weights must be reciprocal",
+    "weights must match per neighbor",
+  );
+});
+
+test("rejects preferences swapped between external neighbors", () => {
+  const [core1, core2] = texts();
+  const swapped = core2
+    .replace("neighbor 10.0.0.10 weight 300", "neighbor 10.0.0.10 weight 200")
+    .replace("neighbor 10.0.0.20 weight 200", "neighbor 10.0.0.20 weight 300");
+  expect(validateFrrPair(core1, swapped).errors).toContain(
+    "FRR route preference weights must match per neighbor across both routers.",
   );
 });
 

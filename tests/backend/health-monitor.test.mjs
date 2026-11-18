@@ -46,6 +46,19 @@ test("reports systemctl as unavailable when the command is missing", async () =>
   expect(monitor.getStatus().units[0].detail).toBe("systemctl is unavailable");
 });
 
+test("keeps health checks successful when an unhealthy callback rejects", async () => {
+  const monitor = createHealthMonitor({
+    units: ["frr.service"],
+    checkUnit: async () => {
+      throw new Error("inactive");
+    },
+    onUnhealthy: async () => {
+      throw new Error("notification failed");
+    },
+  });
+  await expect(monitor.check()).resolves.toMatchObject({ status: "unhealthy" });
+});
+
 test("reports an unconfigured state and manages one polling timer", () => {
   const timer = { unref: jest.fn() };
   const setIntervalFn = jest.fn(() => timer);

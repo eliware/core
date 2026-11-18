@@ -29,14 +29,20 @@ function checkWeights(core1, core2, errors) {
     errors.push("FRR route preference weights must cover the same neighbors on both routers.");
     return;
   }
-  const values1 = [...core1.weights.values()].sort((a, b) => a - b);
-  const values2 = [...core2.weights.values()].sort((a, b) => a - b);
-  if (JSON.stringify(values1) !== JSON.stringify(values2)) {
-    errors.push("FRR HA route preference weights must be reciprocal across the pair.");
+  const weights1 = normalizeWeights(core1);
+  const weights2 = normalizeWeights(core2);
+  if (JSON.stringify(weights1) !== JSON.stringify(weights2)) {
+    errors.push("FRR route preference weights must match per neighbor across both routers.");
   }
   const peers1 = [...core1.neighbors].map((key) => (key === core1.peer.ip ? "@peer" : key)).sort();
   const peers2 = [...core2.neighbors].map((key) => (key === core2.peer.ip ? "@peer" : key)).sort();
   if (JSON.stringify(peers1) !== JSON.stringify(peers2)) {
     errors.push("FRR neighbor sets must match across both routers.");
   }
+}
+
+function normalizeWeights(node) {
+  return [...node.weights.entries()]
+    .map(([neighbor, weight]) => [neighbor === node.peer.ip ? "@peer" : neighbor, weight])
+    .sort(([left], [right]) => left.localeCompare(right));
 }
