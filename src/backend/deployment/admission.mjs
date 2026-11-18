@@ -27,16 +27,12 @@ export default function createDeploymentAdmission({
     let released = false;
     const release = () => {
       if (released) return;
-      try {
-        releaseLock?.();
-        released = true;
-      } finally {
-        active = false;
-      }
+      releaseLock?.();
+      released = true;
+      active = false;
     };
     void execute(event, runId, release)
       .catch(async (error) => {
-        active = false;
         try {
           release();
         } catch {
@@ -44,9 +40,7 @@ export default function createDeploymentAdmission({
         }
         await reportSetupFailure(error, event, runId);
       })
-      .catch(() => {
-        active = false;
-      });
+      .catch(() => {});
     return { accepted: true, runId };
   };
 }

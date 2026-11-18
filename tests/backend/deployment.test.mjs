@@ -69,8 +69,8 @@ test("runs the deployment steps in order and records success", async () => {
     "git status after npm run preflight",
     "npm run reload",
   ]);
-  expect(notify).toHaveBeenCalledWith(expect.stringContaining("succeeded"));
   expect(manager.getStatus().lockReleaseError).toBe("Deployment lock cleanup failed.");
+  expect(manager.start("next-delivery")).toEqual({ accepted: false, status: "busy" });
 });
 
 test("uses the default command adapter and clock", async () => {

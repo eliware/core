@@ -1,8 +1,10 @@
 import { execFile as nodeExecFile } from "node:child_process";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { promisify } from "node:util";
 import checkHealthUnit from "./health/check-unit.mjs";
 
 const execFile = promisify(nodeExecFile);
+const notificationContext = new AsyncLocalStorage();
 
 export default function createHealthMonitor({
   units = [],
@@ -32,7 +34,7 @@ export default function createHealthMonitor({
           if (checkGeneration !== generation) break;
           if (result.status === "unhealthy") {
             try {
-              await onUnhealthy(result);
+              await notificationContext.run(current, () => onUnhealthy(result));
             } catch {
               // Notification failures do not change health results or stop future checks.
             }
@@ -109,8 +111,11 @@ export default function createHealthMonitor({
     async stop() {
       stopped = true;
       generation += 1;
+      restartScheduled = false;
       if (timer !== undefined) clearIntervalFn(timer);
       timer = undefined;
+      const activeCheck = running;
+      if (activeCheck && notificationContext.getStore() !== activeCheck) await activeCheck;
     },
   };
 }

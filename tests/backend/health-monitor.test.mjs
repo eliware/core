@@ -228,9 +228,15 @@ test("stops an active check before it updates health or sends an alert", async (
   });
 
   monitor.start();
-  const stopped = monitor.stop();
+  let stopResolved = false;
+  const stopped = monitor.stop().then(() => {
+    stopResolved = true;
+  });
+  await Promise.resolve();
+  expect(stopResolved).toBe(false);
   finishCheck(new Error("inactive"));
   await stopped;
+  expect(stopResolved).toBe(true);
 
   expect(monitor.getStatus()).toMatchObject({
     status: "unknown",
@@ -261,10 +267,11 @@ test("waits for an old check before restarting the monitor", async () => {
   });
 
   monitor.start();
-  await monitor.stop();
+  const stopped = monitor.stop();
   monitor.start();
   expect(checkUnit).toHaveBeenCalledTimes(1);
   finishChecks[0]();
+  await stopped;
   for (let attempt = 0; attempt < 6 && checkUnit.mock.calls.length < 2; attempt += 1)
     await Promise.resolve();
   expect(checkUnit).toHaveBeenCalledTimes(2);

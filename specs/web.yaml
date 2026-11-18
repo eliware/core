@@ -6,6 +6,7 @@ directives:
       - Run a separate web application on each managed router.
       - Run the read-only dashboard on `PORT` and the webhook listener on `WEBHOOK_PORT`.
       - Use the loopback interface for the dashboard and webhook listeners.
+      - Route external dashboard and webhook traffic through a proxy to loopback.
       - Set the webhook listener to use the loopback interface.
       - Set a distinct webhook port for each server.
       - Require distinct dashboard and webhook ports.
