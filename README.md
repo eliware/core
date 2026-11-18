@@ -161,7 +161,7 @@ Run `npm test` for aggregate validation. Run `npm run build` separately to build
 ## Deployment
 
 The webhook validates a signed push to `CORE_GITHUB_BRANCH` before deployment.
-It runs `git pull --ff-only --`, `npm ci`, `npm test`, `npm run preflight`, and `npm run reload` in order.
+It runs `git pull --ff-only --`, `npm ci --include=dev`, `npm test`, `npm run preflight`, and `npm run reload` in order.
 If a step fails before reload, the application restores tracked files to the previous commit without reloading applications.
 If reload fails, the application restores the previous commit and attempts to reload its configuration.
 If Git cannot restore the previous commit, the application records the recovery failure and does not reload the current configuration.

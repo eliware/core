@@ -13,7 +13,7 @@ directives:
       - Keep environment files and secret values out of Git.
       - Authenticate each GitHub webhook before processing its deployment.
       - Run `git pull` before deployment validation.
-      - Run `npm ci` after `git pull` succeeds.
+      - Run `npm ci --include=dev` after `git pull` succeeds.
       - Run `npm test` after dependency installation succeeds.
       - Run `npm run preflight` after tests pass.
       - Run `npm run reload` only after all earlier deployment steps pass.

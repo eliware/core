@@ -42,14 +42,14 @@ test("runs the deployment steps in order and records success", async () => {
     ["git", ["status", "--porcelain"]],
     ["git", ["rev-parse", "HEAD"]],
     ["git", ["pull", "--ff-only", "--", "origin", "main"]],
-    ["npm", ["ci"]],
+    ["npm", ["ci", "--include=dev"]],
     ["npm", ["test"]],
     ["npm", ["run", "preflight"]],
     ["npm", ["run", "reload"]],
   ]);
   expect(manager.getStatus().steps.map(({ name }) => name)).toEqual([
     "git pull",
-    "npm ci",
+    "npm ci --include=dev",
     "npm test",
     "npm run preflight",
     "npm run reload",
@@ -138,7 +138,7 @@ test.each([
   });
   manager.start("delivery-recovery-error");
   const status = await waitFor(manager, "failed");
-  expect(status.failedStep).toBe("npm ci");
+  expect(status.failedStep).toBe("npm ci --include=dev");
   expect(status.recovery).toBe(`Recovery failed: ${expected}`);
 });
 
@@ -197,7 +197,11 @@ test("records a failed command that does not provide an error message", async ()
   manager.start("delivery-10");
   const status = await waitFor(manager, "failed");
   expect(status.steps[0]).toEqual({ name: "git pull", status: "passed" });
-  expect(status.steps[1]).toEqual({ name: "npm ci", status: "failed", detail: "null" });
+  expect(status.steps[1]).toEqual({
+    name: "npm ci --include=dev",
+    status: "failed",
+    detail: "null",
+  });
 });
 
 test("rejects concurrent deployments for one repository and records notification failures", async () => {

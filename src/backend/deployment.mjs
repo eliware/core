@@ -47,7 +47,7 @@ export default function createDeploymentManager({
       if (!/^[a-f0-9]{40,64}$/.test(commit)) throw new Error("Git returned an invalid commit ID.");
       previousCommit = commit;
       await step("git pull", "git", ["pull", "--ff-only", "--", "origin", branch]);
-      await step("npm ci", "npm", ["ci"]);
+      await step("npm ci --include=dev", "npm", ["ci", "--include=dev"]);
       await step("npm test", "npm", ["test"]);
       await step("npm run preflight", "npm", ["run", "preflight"]);
       reloadStarted = true;
