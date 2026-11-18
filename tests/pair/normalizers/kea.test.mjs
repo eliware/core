@@ -10,3 +10,7 @@ test("normalizes the local Kea HA server name", () => {
   );
   expect(normalizeKea("other.conf", one)).toBe(one);
 });
+
+test("preserves malformed Kea text for validation reporting", () => {
+  expect(normalizeKea("etc/kea/kea-dhcp4.conf", "not json")).toBe("not json");
+});

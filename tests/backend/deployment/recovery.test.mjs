@@ -8,7 +8,7 @@ test("restores the prior commit without reloading when reload has not started", 
     recoverDeployment({ run, repositoryPath: "/router", previousCommit: "abc", steps }),
   ).resolves.toBeUndefined();
   expect(run).toHaveBeenCalledWith("git", ["reset", "--hard", "abc"], { cwd: "/router" });
-  expect(run).toHaveBeenCalledWith("git", ["clean", "-fd"], { cwd: "/router" });
+  expect(run).not.toHaveBeenCalledWith("git", ["clean", "-fd"], { cwd: "/router" });
   expect(steps).toEqual([{ name: "restore previous commit", status: "passed" }]);
 });
 
@@ -42,11 +42,7 @@ test("reports reset and restored reload failures", async () => {
   const reloadSteps = [];
   await expect(
     recoverDeployment({
-      run: jest
-        .fn()
-        .mockResolvedValueOnce({})
-        .mockResolvedValueOnce({})
-        .mockRejectedValueOnce(new Error("reload denied")),
+      run: jest.fn().mockResolvedValueOnce({}).mockRejectedValueOnce(new Error("reload denied")),
       repositoryPath: "/router",
       previousCommit: "abc",
       reloadStarted: true,
@@ -56,11 +52,8 @@ test("reports reset and restored reload failures", async () => {
   expect(reloadSteps.at(-1)).toMatchObject({ status: "failed", detail: "reload denied" });
 });
 
-test("cleans new untracked files after restoring the prior commit", async () => {
+test("preserves untracked files while restoring the prior commit", async () => {
   const run = jest.fn().mockResolvedValue({});
   await recoverDeployment({ run, repositoryPath: "/router", previousCommit: "abc", steps: [] });
-  expect(run.mock.calls.map(([, args]) => args)).toEqual([
-    ["reset", "--hard", "abc"],
-    ["clean", "-fd"],
-  ]);
+  expect(run.mock.calls.map(([, args]) => args)).toEqual([["reset", "--hard", "abc"]]);
 });

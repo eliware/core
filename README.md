@@ -58,8 +58,9 @@ Read [AGENTS.md](AGENTS.md), the [documentation index](docs/README.md), and the 
 
 ## Testing
 
-Run `npm test` for aggregate validation.
+Run `npm test` for aggregate validation. It runs tests, lint, formatting, dependency, and package checks.
 Run `npm run build` to build the browser assets. This command first runs `npm run prebuild`, which checks the webpack command version.
+
 Run `npm run screenshots` or `npm run lighthouse` after starting the server to check browser behavior. Lighthouse also checks web app install and offline requirements.
 Run `npm run puppeteer` once to install Chrome for browser checks.
 
@@ -83,16 +84,18 @@ Keep `.env` files outside Git and limit dashboard access because the dashboard h
 
 ## Configuration
 
-| Name                    | Required | Default | Purpose                                                                                                                            |
-| ----------------------- | -------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `PORT`                  | No       | `9300`  | Dashboard port.                                                                                                                    |
-| `WEBHOOK_PORT`          | No       | `9301`  | Separate webhook TCP endpoint. Set a distinct value for each server.                                                               |
-| `CORE_REPO_PATH`        | No       | None    | Local configuration repository path. Required to enable deployments.                                                               |
-| `GITHUB_WEBHOOK_SECRET` | No       | None    | Secret for signed GitHub pushes. Required to enable deployments.                                                                   |
-| `CORE_GITHUB_BRANCH`    | No       | `main`  | Branch name that starts with a letter or number, uses letters, numbers, dots, underscores, slashes, or hyphens, and excludes `..`. |
-| `DISCORD_WEBHOOK_URL`   | No       | None    | HTTPS Discord webhook URL for rich embed notifications.                                                                            |
-| `CORE_HEALTH_UNITS`     | No       | None    | Comma-separated systemd unit names ending in `.service`.                                                                           |
-| `LOG_LEVEL`             | No       | `info`  | Log level passed to the application logger.                                                                                        |
+| Name                    | Required | Default                  | Purpose                                                                                                       |
+| ----------------------- | -------- | ------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| `PORT`                  | No       | `9300`                   | Dashboard port.                                                                                               |
+| `WEBHOOK_PORT`          | No       | `9301`                   | Separate webhook TCP endpoint. Set a distinct value for each server.                                          |
+| `CORE_REPO_PATH`        | No       | None                     | Local configuration repository path. Required to enable deployments.                                          |
+| `GITHUB_WEBHOOK_SECRET` | No       | None                     | Secret for signed GitHub pushes. Required to enable deployments.                                              |
+| `CORE_GITHUB_BRANCH`    | No       | `main`                   | Branch name with slash-separated segments that start with a letter, number, or underscore, and excludes `..`. |
+| `DISCORD_WEBHOOK_URL`   | No       | None                     | HTTPS Discord webhook URL for rich embed notifications.                                                       |
+| `CORE_HEALTH_UNITS`     | No       | None                     | Comma-separated systemd unit names ending in `.service`.                                                      |
+| `LOG_LEVEL`             | No       | `info`                   | Log level passed to the application logger.                                                                   |
+| `WEB_URL`               | No       | `http://127.0.0.1:9300/` | Server URL used by the screenshot command.                                                                    |
+| `SCREENSHOT_PATH`       | No       | `artifacts/home.png`     | Output file used by the screenshot command.                                                                   |
 
 The dashboard and webhook TCP endpoint numbers must not be the same. The application reads values from its process environment and `.env` in its working directory.
 
@@ -156,7 +159,7 @@ Run `npm test` for aggregate validation. Run `npm run build` separately to build
 ## Deployment
 
 The webhook validates a signed push to `CORE_GITHUB_BRANCH` before deployment.
-It runs `git pull --ff-only`, `npm ci`, `npm test`, `npm run preflight`, and `npm run reload` in order.
+It runs `git pull --ff-only --`, `npm ci`, `npm test`, `npm run preflight`, and `npm run reload` in order.
 If a step fails before reload, the application restores the previous commit without reloading router applications.
 If reload fails, the application restores the previous commit and attempts to reload its configuration.
 Read the [web application guide](docs/web-application.md) for the full deployment and recovery process.

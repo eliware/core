@@ -8,7 +8,6 @@ export default async function recoverDeployment({
   let recovery;
   try {
     await run("git", ["reset", "--hard", previousCommit], { cwd: repositoryPath });
-    await run("git", ["clean", "-fd"], { cwd: repositoryPath });
     steps.push({ name: "restore previous commit", status: "passed" });
     if (reloadStarted) {
       try {

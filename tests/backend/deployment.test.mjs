@@ -41,7 +41,7 @@ test("runs the deployment steps in order and records success", async () => {
   expect(run.mock.calls.map(([command, args]) => [command, args])).toEqual([
     ["git", ["status", "--porcelain"]],
     ["git", ["rev-parse", "HEAD"]],
-    ["git", ["pull", "--ff-only", "origin", "main"]],
+    ["git", ["pull", "--ff-only", "--", "origin", "main"]],
     ["npm", ["ci"]],
     ["npm", ["test"]],
     ["npm", ["run", "preflight"]],
@@ -65,7 +65,7 @@ test("uses the default command adapter and clock", async () => {
   expect(manager.getStatus().startedAt).toBe("2026-11-18T12:00:00.000Z");
   expect(defaultExecFile).toHaveBeenCalledWith(
     "git",
-    ["pull", "--ff-only", "origin", "main"],
+    ["pull", "--ff-only", "--", "origin", "main"],
     expect.objectContaining({ cwd: "/router/core1", windowsHide: true }),
     expect.any(Function),
   );
@@ -260,6 +260,30 @@ test("records an unexpected deployment setup error", async () => {
   await waitFor(manager, "succeeded");
 });
 
+test("accepts another deployment while setup failure notification is pending", async () => {
+  let calls = 0;
+  let notificationCount = 0;
+  const notify = jest.fn(() => {
+    notificationCount += 1;
+    if (notificationCount === 1) return new Promise(() => {});
+    return Promise.resolve();
+  });
+  const manager = createManager({
+    repositoryPath: "/router/one",
+    now: () => {
+      calls += 1;
+      if (calls === 1) throw new Error("clock failed");
+      return fixedNow();
+    },
+    notify,
+  });
+  manager.start("setup-failure");
+  await Promise.resolve();
+  await Promise.resolve();
+  expect(manager.start("next-deployment")).toMatchObject({ accepted: true });
+  await waitFor(manager, "succeeded");
+});
+
 test("restores the prior commit when a deployment step changes the worktree", async () => {
   const run = successfulRun();
   run.mockImplementation(async (command, args) => {
@@ -272,5 +296,5 @@ test("restores the prior commit when a deployment step changes the worktree", as
   const status = await waitFor(manager, "failed");
   expect(status.recovery).toBeUndefined();
   expect(run).toHaveBeenCalledWith("git", ["reset", "--hard", commit], expect.any(Object));
-  expect(run).toHaveBeenCalledWith("git", ["clean", "-fd"], expect.any(Object));
+  expect(run).not.toHaveBeenCalledWith("git", ["clean", "-fd"], expect.any(Object));
 });

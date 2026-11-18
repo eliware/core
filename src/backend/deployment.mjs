@@ -54,7 +54,7 @@ export default function createDeploymentManager({
       const commit = String(revision.stdout ?? "").trim();
       if (!/^[a-f0-9]{40,64}$/.test(commit)) throw new Error("Git returned an invalid commit ID.");
       previousCommit = commit;
-      await step("git pull", "git", ["pull", "--ff-only", "origin", branch]);
+      await step("git pull", "git", ["pull", "--ff-only", "--", "origin", branch]);
       await step("npm ci", "npm", ["ci"]);
       await step("npm test", "npm", ["test"]);
       await step("npm run preflight", "npm", ["run", "preflight"]);
@@ -117,6 +117,7 @@ export default function createDeploymentManager({
     const runId = randomUUID();
     void execute(event, runId)
       .catch(async (error) => {
+        active = false;
         const failure = String(error?.message ?? error).slice(0, 300);
         status.set({
           runId,

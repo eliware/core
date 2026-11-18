@@ -45,6 +45,7 @@ test.each([
 test.each([
   [{ CORE_GITHUB_BRANCH: "--delete" }, "CORE_GITHUB_BRANCH"],
   [{ CORE_GITHUB_BRANCH: "feature..oops" }, "CORE_GITHUB_BRANCH"],
+  [{ CORE_GITHUB_BRANCH: "feature/--upload-pack=malicious" }, "CORE_GITHUB_BRANCH"],
   [{ DISCORD_WEBHOOK_URL: "http://discord.com/webhook" }, "HTTPS Discord"],
   [{ DISCORD_WEBHOOK_URL: "https://example.com/webhook" }, "HTTPS Discord"],
   [{ DISCORD_WEBHOOK_URL: "invalid" }, "valid Discord"],

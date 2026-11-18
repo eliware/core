@@ -7,5 +7,7 @@ export default function normalizeKeepalived(path, text) {
     /^\s*unicast_src_ip\s+\S+$/gmu,
     "    unicast_src_ip <local-address>",
   );
-  return normalized.replace(/(unicast_peer\s*\{\s*)\S+/gu, "$1<peer-address>");
+  return normalized.replace(/(unicast_peer\s*\{)([^}]*)(\})/gu, (_match, start, peers, end) => {
+    return `${start}${peers.replace(/\S+/gu, "<peer-address>")}${end}`;
+  });
 }
