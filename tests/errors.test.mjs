@@ -1,5 +1,5 @@
 import { expect, jest, test } from "@jest/globals";
-import { reportUnknownArgument } from "../src/errors.mjs";
+import reportUnknownArgument from "../src/errors.mjs";
 
 test("writes the unsupported argument", () => {
   const write = jest.fn();

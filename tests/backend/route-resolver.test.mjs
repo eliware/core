@@ -1,5 +1,5 @@
 import { expect, test } from "@jest/globals";
-import { resolveRoute } from "../../src/backend/route-resolver.mjs";
+import resolveRoute from "../../src/backend/route-resolver.mjs";
 
 test.each([
   ["/", { root: "public", file: "index.html", contentType: "text/html" }],

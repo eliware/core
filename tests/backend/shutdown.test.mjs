@@ -1,5 +1,5 @@
 import { expect, jest, test } from "@jest/globals";
-import { createShutdownHook } from "../../src/backend/shutdown.mjs";
+import createShutdownHook from "../../src/backend/shutdown.mjs";
 
 test("closes the server and logs once when shutdown repeats", async () => {
   const server = { close: jest.fn().mockResolvedValue(undefined) };

@@ -1,4 +1,4 @@
-export async function readAsset(file, read) {
+export default async function readAsset(file, read) {
   try {
     return await read(file);
   } catch (error) {

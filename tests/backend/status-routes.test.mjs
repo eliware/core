@@ -1,6 +1,6 @@
 import Fastify from "fastify";
 import { afterEach, expect, test } from "@jest/globals";
-import { registerStatusRoutes } from "../../src/backend/status-routes.mjs";
+import registerStatusRoutes from "../../src/backend/status-routes.mjs";
 
 let server;
 

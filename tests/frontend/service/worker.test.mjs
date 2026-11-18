@@ -1,5 +1,5 @@
 import { expect, jest, test } from "@jest/globals";
-import { installOfflineShell } from "../../../src/frontend/service/worker.mjs";
+import installOfflineShell from "../../../src/frontend/service/worker.mjs";
 
 function createScope() {
   const listeners = new Map();

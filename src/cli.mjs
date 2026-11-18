@@ -1,8 +1,8 @@
-import { parseArguments } from "./arguments.mjs";
-import { reportUnknownArgument } from "./errors.mjs";
-import { writeHelp } from "./help.mjs";
+import parseArguments from "./arguments.mjs";
+import reportUnknownArgument from "./errors.mjs";
+import writeHelp from "./help.mjs";
 
-export function runCli(args, { version, write = console.log }) {
+export default function runCli(args, { version, write = console.log }) {
   const parsed = parseArguments(args);
   if (parsed.type === "help") {
     writeHelp(write);

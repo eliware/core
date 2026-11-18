@@ -1,5 +1,5 @@
 import { config } from "dotenv";
 
-export function loadEnvironment() {
+export default function loadEnvironment() {
   config({ quiet: true });
 }

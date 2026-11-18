@@ -2,7 +2,7 @@ const cacheName = "core-shell-v1";
 const cachePrefix = "core-shell-";
 const appShell = ["/", "/client.js", "/styles.css", "/manifest.webmanifest", "/icons/template.svg"];
 
-export function installOfflineShell(scope) {
+export default function installOfflineShell(scope) {
   scope.addEventListener("install", (event) => {
     event.waitUntil(
       scope.caches

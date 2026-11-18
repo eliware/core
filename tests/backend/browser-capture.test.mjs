@@ -2,7 +2,7 @@ import { beforeEach, expect, jest, test } from "@jest/globals";
 
 const launch = jest.fn();
 jest.unstable_mockModule("puppeteer", () => ({ default: { launch } }));
-const { capturePageScreenshot } = await import("../../src/backend/browser-capture.mjs");
+const capturePageScreenshot = (await import("../../src/backend/browser-capture.mjs")).default;
 
 beforeEach(() => launch.mockReset());
 

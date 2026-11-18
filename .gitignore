@@ -33,4 +33,5 @@ Thumbs.db
 generated/
 test-results/
 .env*
-!.env*.example
+!.env.example
+!**/.env.example

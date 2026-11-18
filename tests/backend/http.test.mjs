@@ -1,7 +1,7 @@
 import Fastify from "fastify";
 import { resolve } from "node:path";
 import { afterEach, expect, jest, test } from "@jest/globals";
-import { registerWebRoutes } from "../../src/backend/http.mjs";
+import registerWebRoutes from "../../src/backend/http.mjs";
 
 let server;
 

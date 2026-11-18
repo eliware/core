@@ -2,7 +2,7 @@ import { expect, jest, test } from "@jest/globals";
 
 const createServer = jest.fn();
 jest.unstable_mockModule("fastify", () => ({ default: createServer }));
-const { createWebServer } = await import("../../src/backend/server.mjs");
+const createWebServer = (await import("../../src/backend/server.mjs")).default;
 
 test("creates Fastify with the application server options", () => {
   createWebServer();

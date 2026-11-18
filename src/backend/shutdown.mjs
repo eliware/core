@@ -1,4 +1,4 @@
-export function createShutdownHook({ server, log }) {
+export default function createShutdownHook({ server, log }) {
   let stopped = false;
   let shutdownPromise;
 

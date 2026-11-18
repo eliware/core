@@ -1,4 +1,4 @@
-export async function startWebApplication(dependencies) {
+export default async function startWebApplication(dependencies) {
   const { tcpEndpoint, logLevel } = dependencies.loadConfig();
   const log = dependencies.createLogger({ level: logLevel });
   dependencies.registerHandlers({ log });

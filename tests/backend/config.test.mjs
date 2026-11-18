@@ -1,5 +1,5 @@
 import { expect, test } from "@jest/globals";
-import { loadApplicationConfig } from "../../src/backend/config.mjs";
+import loadApplicationConfig from "../../src/backend/config.mjs";
 
 test.each([
   ["configured values", { PORT: "8080", LOG_LEVEL: "debug" }, 8080, "debug"],

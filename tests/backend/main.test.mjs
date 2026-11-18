@@ -1,5 +1,5 @@
 import { expect, jest, test } from "@jest/globals";
-import { startWebApplication } from "../../src/backend/main.mjs";
+import startWebApplication from "../../src/backend/main.mjs";
 
 function dependencies(configuration = { tcpEndpoint: 9300, logLevel: "info" }) {
   const server = {

@@ -1,5 +1,5 @@
 import { expect, test } from "@jest/globals";
-import { resolveScreenshotConfig } from "../../../src/backend/screenshot/config.mjs";
+import resolveScreenshotConfig from "../../../src/backend/screenshot/config.mjs";
 
 test("resolves environment values and built-in defaults", () => {
   expect(

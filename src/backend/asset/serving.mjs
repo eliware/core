@@ -1,8 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { isAbsolute, relative, resolve, sep } from "node:path";
-import { readAsset } from "./reader.mjs";
+import readAsset from "./reader.mjs";
 
-export function readRouteAsset(route, { publicRoot, buildRoot, read = readFile }) {
+export default function readRouteAsset(route, { publicRoot, buildRoot, read = readFile }) {
   if (route === null) return Promise.resolve(null);
 
   const roots = { public: publicRoot, build: buildRoot };

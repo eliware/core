@@ -1,6 +1,6 @@
 import puppeteer from "puppeteer";
 
-export async function capturePageScreenshot({ url, prepareTarget }) {
+export default async function capturePageScreenshot({ url, prepareTarget }) {
   const browser = await puppeteer.launch({ headless: true });
 
   try {

@@ -1,3 +1,3 @@
-import { installOfflineShell } from "./worker.mjs";
+import installOfflineShell from "./worker.mjs";
 
 installOfflineShell(self);

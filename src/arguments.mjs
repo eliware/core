@@ -1,4 +1,4 @@
-export function parseArguments(args) {
+export default function parseArguments(args) {
   if (args.length === 0 || (args.length === 1 && args[0] === "--help")) {
     return { type: "help" };
   }

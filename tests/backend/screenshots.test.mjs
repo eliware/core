@@ -5,15 +5,15 @@ const prepareScreenshotOutput = jest.fn();
 const capturePageScreenshot = jest.fn();
 const resolveScreenshotConfig = jest.fn();
 jest.unstable_mockModule("../../src/backend/screenshot/output.mjs", () => ({
-  prepareScreenshotOutput,
+  default: prepareScreenshotOutput,
 }));
 jest.unstable_mockModule("../../src/backend/browser-capture.mjs", () => ({
-  capturePageScreenshot,
+  default: capturePageScreenshot,
 }));
 jest.unstable_mockModule("../../src/backend/screenshot/config.mjs", () => ({
-  resolveScreenshotConfig,
+  default: resolveScreenshotConfig,
 }));
-const { captureScreenshot } = await import("../../src/backend/screenshots.mjs");
+const captureScreenshot = (await import("../../src/backend/screenshots.mjs")).default;
 
 beforeEach(() => {
   prepareScreenshotOutput.mockReset();

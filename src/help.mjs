@@ -1,4 +1,4 @@
-export function writeHelp(write) {
+export default function writeHelp(write) {
   write("Usage: core-cli [--help] [--version]");
   write("Print command help or the package version.");
   write("--help     Print this help.");

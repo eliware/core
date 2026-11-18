@@ -2,7 +2,7 @@ import { expect, jest, test } from "@jest/globals";
 
 const config = jest.fn();
 jest.unstable_mockModule("dotenv", () => ({ config }));
-const { loadEnvironment } = await import("../../src/backend/environment-loader.mjs");
+const loadEnvironment = (await import("../../src/backend/environment-loader.mjs")).default;
 
 test("loads environment values without dotenv output", () => {
   loadEnvironment();

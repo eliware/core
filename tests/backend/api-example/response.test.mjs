@@ -1,5 +1,5 @@
 import { expect, test } from "@jest/globals";
-import { createApiExampleResponse } from "../../../src/backend/api-example/response.mjs";
+import createApiExampleResponse from "../../../src/backend/api-example/response.mjs";
 
 test("maps validated request fields to the example response", () => {
   expect(

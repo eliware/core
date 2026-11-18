@@ -1,6 +1,6 @@
 import { expect, jest, test } from "@jest/globals";
 import { resolve } from "node:path";
-import { readRouteAsset } from "../../../src/backend/asset/serving.mjs";
+import readRouteAsset from "../../../src/backend/asset/serving.mjs";
 
 test.each([
   ["public", { root: "public", file: "index.html" }, "public", "index.html"],

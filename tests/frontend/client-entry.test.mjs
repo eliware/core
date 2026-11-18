@@ -5,7 +5,7 @@ const serviceWorkerMock = { register: jest.fn().mockResolvedValue(undefined) };
 const renderHome = jest.fn();
 globalThis.document = documentMock;
 globalThis.navigator = { serviceWorker: serviceWorkerMock };
-jest.unstable_mockModule("../../src/frontend/client.mjs", () => ({ renderHome }));
+jest.unstable_mockModule("../../src/frontend/client.mjs", () => ({ default: renderHome }));
 await import("../../src/frontend/client-entry.mjs");
 delete globalThis.document;
 delete globalThis.navigator;

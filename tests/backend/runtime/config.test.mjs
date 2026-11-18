@@ -1,5 +1,5 @@
 import { expect, jest, test } from "@jest/globals";
-import { loadRuntimeConfig } from "../../../src/backend/runtime/config.mjs";
+import loadRuntimeConfig from "../../../src/backend/runtime/config.mjs";
 
 test("loads environment values before assembling application configuration", () => {
   const loadEnvironment = jest.fn();

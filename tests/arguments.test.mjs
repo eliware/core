@@ -1,5 +1,5 @@
 import { expect, test } from "@jest/globals";
-import { parseArguments } from "../src/arguments.mjs";
+import parseArguments from "../src/arguments.mjs";
 
 test.each([
   [[], { type: "help" }],

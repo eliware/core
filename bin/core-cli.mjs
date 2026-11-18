@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import packageJson from "../package.json" with { type: "json" };
-import { runCli } from "../src/cli.mjs";
+import runCli from "../src/cli.mjs";
 
 process.exitCode = runCli(process.argv.slice(2), {
   version: packageJson.version,

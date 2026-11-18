@@ -1,4 +1,4 @@
-export function createApiExampleResponse(request) {
+export default function createApiExampleResponse(request) {
   const response = {
     id: request.params.exampleId,
     name: request.body.name,

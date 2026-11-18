@@ -1,5 +1,5 @@
 import { expect, test, jest } from "@jest/globals";
-import { runCli } from "../src/cli.mjs";
+import runCli from "../src/cli.mjs";
 
 test.each([{ args: [] }, { args: ["--help"] }])("shows usage", ({ args }) => {
   const write = jest.fn();

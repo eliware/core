@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import packageJson from "../package.json" with { type: "json" };
 import { runtimeDependencies } from "../src/backend/runtime/wiring.mjs";
-import { startWebApplication } from "../src/backend/main.mjs";
+import startWebApplication from "../src/backend/main.mjs";
 
 const [argument, ...extraArguments] = process.argv.slice(2);
 

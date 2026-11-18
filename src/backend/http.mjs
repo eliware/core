@@ -1,7 +1,7 @@
-import { createAssetRequestHandler } from "./asset/request-handler.mjs";
-import { createAssetMethodHandler } from "./asset/response.mjs";
+import createAssetRequestHandler from "./asset/request-handler.mjs";
+import createAssetMethodHandler from "./asset/method-handler.mjs";
 
-export function registerWebRoutes(server, options) {
+export default function registerWebRoutes(server, options) {
   const handleAssetRoute = createAssetMethodHandler(createAssetRequestHandler(options));
 
   server.all("/", handleAssetRoute);

@@ -4,7 +4,7 @@ const scope = {};
 const installOfflineShell = jest.fn();
 globalThis.self = scope;
 jest.unstable_mockModule("../../../src/frontend/service/worker.mjs", () => ({
-  installOfflineShell,
+  default: installOfflineShell,
 }));
 await import("../../../src/frontend/service/worker-entry.mjs");
 delete globalThis.self;

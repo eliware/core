@@ -1,4 +1,4 @@
-import { renderHome } from "./client.mjs";
+import renderHome from "./client.mjs";
 
 renderHome(document);
 
