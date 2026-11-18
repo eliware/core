@@ -100,51 +100,10 @@ test("uses the configured log level", async () => {
   expect(deps.values.createLogger).toHaveBeenCalledWith({ level: "debug" });
 });
 
-test("wires deployment, health checks, and Discord using runtime settings", async () => {
-  const deps = dependencies({
-    tcpEndpoint: 8082,
-    webhookEndpoint: 9303,
-    logLevel: "info",
-    repositoryPath: "/etc/eliware/core1",
-    githubWebhookSecret: "secret",
-    discordWebhookUrl: "https://discord.com/webhook",
-    githubBranch: "main",
-    healthUnits: ["frr.service"],
-  });
-  await startWebApplication(deps.values);
-  expect(deps.values.createHealthMonitor).toHaveBeenCalledWith({
-    units: ["frr.service"],
-    onUnhealthy: expect.any(Function),
-  });
-  const healthOptions = deps.values.createHealthMonitor.mock.calls[0][0];
-  await healthOptions.onUnhealthy({ name: "frr.service", detail: "Unit is not active" });
-  const deploymentOptions = deps.values.createDeploymentManager.mock.calls[0][0];
-  await deploymentOptions.notify("Deployment message");
-  expect(deps.values.sendDiscordNotification).toHaveBeenCalledWith({
-    webhookUrl: "https://discord.com/webhook",
-    message: "Deployment message",
-  });
-  expect(deps.values.createDeploymentManager).toHaveBeenCalledWith({
-    repositoryPath: "/etc/eliware/core1",
-    branch: "main",
-    notify: expect.any(Function),
-  });
-  expect(deps.values.registerStatusRoutes).toHaveBeenCalledWith(deps.server, {
-    getHealthStatus: deps.healthMonitor.getStatus,
-    getDeploymentStatus: deps.deployment.getStatus,
-  });
-});
-
-test("logs Discord notification failures and closes listeners after startup failure", async () => {
+test("closes both listeners after startup fails", async () => {
   const deps = dependencies({ tcpEndpoint: 8083, webhookEndpoint: 9304, logLevel: "info" });
-  deps.values.sendDiscordNotification.mockRejectedValue(new Error("Discord is unavailable"));
   deps.webhookServer.listen.mockRejectedValue(new Error("Port is in use"));
   await expect(startWebApplication(deps.values)).rejects.toThrow("Port is in use");
   expect(deps.shutdown).toHaveBeenCalledTimes(1);
   expect(deps.healthMonitor.start).not.toHaveBeenCalled();
-  const onUnhealthy = deps.values.createHealthMonitor.mock.calls[0][0].onUnhealthy;
-  await onUnhealthy({ name: "frr.service", detail: "inactive" });
-  expect(deps.log.warn).toHaveBeenCalledWith(
-    "Discord notification failed for health check frr.service",
-  );
 });

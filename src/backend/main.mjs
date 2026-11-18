@@ -1,3 +1,5 @@
+import createApplicationIntegrations from "./main-integrations.mjs";
+
 export default async function startWebApplication(dependencies) {
   const {
     tcpEndpoint,
@@ -10,23 +12,11 @@ export default async function startWebApplication(dependencies) {
     healthUnits,
   } = dependencies.loadConfig();
   const log = dependencies.createLogger({ level: logLevel });
-  const notify = (message) =>
-    dependencies.sendDiscordNotification({
-      webhookUrl: discordWebhookUrl,
-      message,
-    });
-  const healthMonitor = dependencies.createHealthMonitor({
-    units: healthUnits,
-    onUnhealthy: ({ name, detail }) =>
-      notify(`Core health check failed for ${name}: ${detail}.`).catch(() =>
-        log.warn(`Discord notification failed for health check ${name}`),
-      ),
-  });
-  const deployment = dependencies.createDeploymentManager({
-    repositoryPath,
-    branch: githubBranch,
-    notify,
-  });
+  const { healthMonitor, deployment } = createApplicationIntegrations(
+    { repositoryPath, githubWebhookSecret, discordWebhookUrl, githubBranch, healthUnits },
+    dependencies,
+    log,
+  );
   dependencies.registerHandlers({ log });
   const server = dependencies.createServer();
   const webhookServer = dependencies.createServer();

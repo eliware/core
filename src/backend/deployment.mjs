@@ -3,6 +3,7 @@ import { promisify } from "node:util";
 import { randomUUID } from "node:crypto";
 import runDeploymentStep from "./deployment/step.mjs";
 import recoverDeployment from "./deployment/recovery.mjs";
+import createDeploymentStatus from "./deployment/status.mjs";
 
 const execFile = promisify(nodeExecFile);
 
@@ -14,11 +15,12 @@ export default function createDeploymentManager({
   now = () => new Date(),
 } = {}) {
   let active = false;
-  let latest = { status: "idle", startedAt: null, finishedAt: null, steps: [] };
-
-  function getStatus() {
-    return structuredClone(latest);
-  }
+  const status = createDeploymentStatus({
+    status: "idle",
+    startedAt: null,
+    finishedAt: null,
+    steps: [],
+  });
 
   async function execute(event, runId) {
     const startedAt = now().toISOString();
@@ -35,15 +37,14 @@ export default function createDeploymentManager({
         run,
         steps,
         onStart: (currentStep, priorSteps) => {
-          latest = {
-            ...latest,
+          status.update({
             currentStep,
             steps: structuredClone(priorSteps),
-          };
+          });
         },
       });
 
-    latest = { runId, event, status: "running", startedAt, finishedAt: null, steps };
+    status.set({ runId, event, status: "running", startedAt, finishedAt: null, steps });
     try {
       const dirty = await run("git", ["status", "--porcelain"], { cwd: repositoryPath });
       if (String(dirty.stdout ?? "").trim())
@@ -61,24 +62,24 @@ export default function createDeploymentManager({
       try {
         await notify(`Core deployment ${runId} succeeded on ${branch}.`);
       } catch {
-        latest = { ...latest, notificationError: "Discord notification failed." };
+        status.update({ notificationError: "Discord notification failed." });
       }
-      latest = {
-        ...latest,
+      status.set({
+        ...status.get(),
         runId,
         event,
         status: "succeeded",
         startedAt,
         finishedAt: now().toISOString(),
         steps,
-      };
+      });
       return { accepted: true, runId };
     } catch (error) {
       const failedStep = error.stepName ?? "repository check";
       const recovery = previousCommit
         ? await recoverDeployment({ run, repositoryPath, previousCommit, reloadStarted, steps })
         : undefined;
-      latest = {
+      status.set({
         runId,
         event,
         status: "failed",
@@ -88,13 +89,13 @@ export default function createDeploymentManager({
         startedAt,
         finishedAt: now().toISOString(),
         steps,
-      };
+      });
       try {
         await notify(
           `Core deployment ${runId} failed at ${failedStep}.${recovery ? ` ${recovery}` : ""}`,
         );
       } catch {
-        latest.notificationError = "Discord notification failed.";
+        status.update({ notificationError: "Discord notification failed." });
       }
       return { accepted: true, runId };
     } finally {
@@ -108,19 +109,19 @@ export default function createDeploymentManager({
     active = true;
     const runId = randomUUID();
     void execute(event, runId).catch((error) => {
-      latest = {
+      status.set({
         runId,
         event,
         status: "failed",
         error: String(error?.message ?? error).slice(0, 300),
-        startedAt: latest.startedAt,
+        startedAt: status.get().startedAt,
         finishedAt: now().toISOString(),
-        steps: latest.steps,
-      };
+        steps: status.get().steps,
+      });
       active = false;
     });
     return { accepted: true, runId };
   }
 
-  return { start, getStatus };
+  return { start, getStatus: status.get };
 }
