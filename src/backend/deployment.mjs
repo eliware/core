@@ -1,6 +1,8 @@
 import { execFile as nodeExecFile } from "node:child_process";
 import { promisify } from "node:util";
 import { randomUUID } from "node:crypto";
+import runDeploymentStep from "./deployment/step.mjs";
+import recoverDeployment from "./deployment/recovery.mjs";
 
 const execFile = promisify(nodeExecFile);
 
@@ -24,24 +26,22 @@ export default function createDeploymentManager({
     let previousCommit;
     let reloadStarted = false;
 
-    async function step(name, command, args) {
-      latest = { ...latest, currentStep: name, steps: structuredClone(steps) };
-      try {
-        await run(command, args, {
-          cwd: repositoryPath,
-          timeout: 15 * 60_000,
-          maxBuffer: 1024 * 1024,
-        });
-        steps.push({ name, status: "passed" });
-      } catch (error) {
-        steps.push({
-          name,
-          status: "failed",
-          detail: String(error?.message ?? error).slice(0, 300),
-        });
-        throw Object.assign(new Error(`${name} failed.`), { cause: error, stepName: name });
-      }
-    }
+    const step = (name, command, args) =>
+      runDeploymentStep({
+        name,
+        command,
+        args,
+        repositoryPath,
+        run,
+        steps,
+        onStart: (currentStep, priorSteps) => {
+          latest = {
+            ...latest,
+            currentStep,
+            steps: structuredClone(priorSteps),
+          };
+        },
+      });
 
     latest = { runId, event, status: "running", startedAt, finishedAt: null, steps };
     try {
@@ -75,33 +75,9 @@ export default function createDeploymentManager({
       return { accepted: true, runId };
     } catch (error) {
       const failedStep = error.stepName ?? "repository check";
-      let recovery;
-      if (previousCommit) {
-        try {
-          await run("git", ["reset", "--hard", previousCommit], { cwd: repositoryPath });
-          steps.push({ name: "restore previous commit", status: "passed" });
-          if (reloadStarted) {
-            try {
-              await run("npm", ["run", "reload"], {
-                cwd: repositoryPath,
-                timeout: 15 * 60_000,
-                maxBuffer: 1024 * 1024,
-              });
-              steps.push({ name: "reload previous configuration", status: "passed" });
-            } catch (reloadError) {
-              steps.push({
-                name: "reload previous configuration",
-                status: "failed",
-                detail: String(reloadError?.message ?? reloadError).slice(0, 300),
-              });
-              recovery = "Previous commit restored, but its reload failed.";
-            }
-          }
-        } catch (restoreError) {
-          recovery = `Previous commit restore failed: ${String(restoreError?.message ?? restoreError).slice(0, 200)}`;
-          steps.push({ name: "restore previous commit", status: "failed" });
-        }
-      }
+      const recovery = previousCommit
+        ? await recoverDeployment({ run, repositoryPath, previousCommit, reloadStarted, steps })
+        : undefined;
       latest = {
         runId,
         event,
