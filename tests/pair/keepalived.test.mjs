@@ -82,6 +82,24 @@ test("requires a higher priority on the master", () => {
   ).toContain("MASTER priority must be higher");
 });
 
+test("rejects an invalid virtual address", () => {
+  const invalidFirst = first["etc/keepalived/keepalived.conf"].replace(
+    "192.0.2.169/24",
+    "invalid-address",
+  );
+  const invalid = second["etc/keepalived/keepalived.conf"].replace(
+    "192.0.2.169/24",
+    "invalid-address",
+  );
+
+  expect(
+    validateKeepalived(node1, node2, invalidFirst, second["etc/keepalived/keepalived.conf"]),
+  ).toContain("Keepalived VI_169 has an invalid virtual address.");
+  expect(
+    validateKeepalived(node1, node2, first["etc/keepalived/keepalived.conf"], invalid),
+  ).toContain("Keepalived VI_169 has an invalid virtual address.");
+});
+
 test("uses empty default Keepalived text when configs are omitted", () => {
   expect(validateKeepalived(node1, node2)).toEqual([
     "Both repos need parsable Keepalived VRRP instances.",

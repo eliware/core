@@ -7,6 +7,7 @@ import validateStructured from "./preflight/structured.mjs";
 import validateNetwork from "./preflight/network.mjs";
 import validateText from "./preflight/text.mjs";
 import validateProfile from "./preflight-config/profile.mjs";
+import isRouterFile from "./preflight-config/router-file.mjs";
 
 export default function validateConfigFiles(
   root,
@@ -14,7 +15,8 @@ export default function validateConfigFiles(
   { readFile = readFileSync, repositoryName } = {},
 ) {
   const errors = validateProfile(files, repositoryName);
-  for (const file of files.filter(isRouterFile)) {
+  const routerFiles = files.filter(isRouterFile);
+  for (const file of routerFiles) {
     let text;
     try {
       text = readFile(resolve(root, file), "utf8");
@@ -25,13 +27,9 @@ export default function validateConfigFiles(
     errors.push(...validateFile(file, text, files, readFile, root));
   }
   return {
-    lines: [`PASS Node.js configuration checks (${files.filter(isRouterFile).length} files)`],
+    lines: [`PASS Node.js configuration checks (${routerFiles.length} files)`],
     errors,
   };
-}
-
-function isRouterFile(file) {
-  return /^(etc|var|scripts)\//u.test(file) && !file.endsWith(".mjs");
 }
 
 function validateFile(file, text, files, readFile, root) {

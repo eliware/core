@@ -66,3 +66,24 @@ test("rejects neighbor sets that differ even when weight keys match", () => {
     "FRR neighbor sets must match across both repositories.",
   );
 });
+
+test("rejects route preference maps with different neighbor keys", () => {
+  const [core1, core2] = texts();
+  const altered = core2.replace("neighbor 10.0.0.20 weight 200", "neighbor 10.0.0.21 weight 200");
+
+  expect(validateFrrPair(core1, altered).errors).toContain(
+    "FRR route preference weights must cover the same neighbors on both routers.",
+  );
+});
+
+test("rejects reciprocal peer autonomous system mismatches", () => {
+  const [core1, core2] = texts();
+  const altered = core2.replace(
+    "neighbor 10.0.0.1 remote-as 65001",
+    "neighbor 10.0.0.1 remote-as 65003",
+  );
+
+  expect(validateFrrPair(core1, altered).errors).toContain(
+    "FRR peer AS numbers must point to the partner router AS in both repos.",
+  );
+});

@@ -134,7 +134,7 @@ test("reports unreadable tracked configuration", () => {
   expect(result.errors).toEqual(["FAIL etc/chrony.conf: could not read the file."]);
 });
 
-test("uses the default reader and ignores non-router files", () => {
+test("uses the default reader for a repository without router files", () => {
   const result = validateConfigFiles(process.cwd(), ["README.md", "scripts/entry.mjs"]);
 
   expect(result.lines).toEqual(["PASS Node.js configuration checks (0 files)"]);
