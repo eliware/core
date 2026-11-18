@@ -52,8 +52,8 @@ Copy `.env.example` to `.env`, then set values for each router.
 
 The server rejects invalid ports and rejects equal dashboard and webhook ports.
 The dashboard and webhook TCP endpoint numbers must not be the same.
-The dashboard listens on all network interfaces, and the webhook listener listens on loopback.
-Route inbound GitHub webhook traffic to the loopback address and configured `WEBHOOK_PORT`.
+The dashboard and webhook listener use loopback.
+Configure a proxy to expose the dashboard and route GitHub webhook traffic to `WEBHOOK_PORT`.
 The `LOG_LEVEL` value sets the minimum level for application log messages.
 
 The screenshot and PWA audit commands also read these process environment values:

@@ -45,6 +45,20 @@ test("returns no asset for a missing route", async () => {
   expect(read).not.toHaveBeenCalled();
 });
 
+test.each(["", ".", "nested/.."])(
+  "returns no asset for a route that names its root: %s",
+  async (file) => {
+    const read = jest.fn();
+    await expect(
+      readRouteAsset(
+        { root: "public", file },
+        { publicRoot: "public", buildRoot: "dist", read, resolvePath },
+      ),
+    ).resolves.toBeNull();
+    expect(read).not.toHaveBeenCalled();
+  },
+);
+
 test.each([[{ root: "unknown", file: "asset.txt" }], [{ root: "public" }]])(
   "rejects incomplete asset route metadata: %p",
   async (route) => {

@@ -102,7 +102,7 @@ test.each([
 
 test("rejects duplicate deliveries and busy deployment requests", async () => {
   const body = JSON.stringify({ ref: "refs/heads/main" });
-  const { server } = await setup({
+  const { server, deployment } = await setup({
     deployment: {
       start: jest
         .fn()
@@ -125,13 +125,22 @@ test("rejects duplicate deliveries and busy deployment requests", async () => {
     payload: body,
   });
   expect(duplicate.json().reason).toBe("duplicate delivery");
+  const busyHeaders = signedHeaders(body, { "x-github-delivery": "delivery-2" });
   const second = await server.inject({
     method: "POST",
     url: "/api/github/webhook",
-    headers: signedHeaders(body, { "x-github-delivery": "delivery-2" }),
+    headers: busyHeaders,
     payload: body,
   });
   expect(second.statusCode).toBe(409);
+  const busyDuplicate = await server.inject({
+    method: "POST",
+    url: "/api/github/webhook",
+    headers: busyHeaders,
+    payload: body,
+  });
+  expect(busyDuplicate.json()).toEqual({ accepted: false, reason: "duplicate delivery" });
+  expect(deployment.start).toHaveBeenCalledTimes(2);
   await server.close();
 });
 

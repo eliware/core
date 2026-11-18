@@ -88,7 +88,7 @@ test.each([
     const isListening = deps.values.createShutdownHook.mock.calls[0][0].isListening;
     expect(isListening(deps.server)).toBe(true);
     expect(isListening(deps.webhookServer)).toBe(true);
-    expect(deps.server.listen).toHaveBeenCalledWith({ port: tcpEndpoint, host: "0.0.0.0" });
+    expect(deps.server.listen).toHaveBeenCalledWith({ port: tcpEndpoint, host: "127.0.0.1" });
     expect(deps.webhookServer.listen).toHaveBeenCalledWith({
       port: webhookEndpoint,
       host: "127.0.0.1",
@@ -115,4 +115,16 @@ test("closes both listeners after startup fails", async () => {
   const isListening = deps.values.createShutdownHook.mock.calls[0][0].isListening;
   expect(isListening(deps.webhookServer)).toBe(true);
   expect(deps.healthMonitor.start).not.toHaveBeenCalled();
+});
+
+test("closes a dashboard listener that opens before listen rejects", async () => {
+  const deps = dependencies({ tcpEndpoint: 8084, webhookEndpoint: 9305, logLevel: "info" });
+  const listenError = new Error("dashboard startup failed");
+  deps.server.server = { listening: true };
+  deps.server.listen.mockRejectedValue(listenError);
+  deps.values.createShutdownHook.mockImplementation((options) => createShutdownHook(options));
+
+  await expect(startWebApplication(deps.values)).rejects.toBe(listenError);
+  expect(deps.server.close).toHaveBeenCalledTimes(1);
+  expect(deps.webhookServer.close).not.toHaveBeenCalled();
 });

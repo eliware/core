@@ -21,7 +21,7 @@ export default function createShutdownHook({
             .filter((item) =>
               isListening ? isListening(item) : !item.server || item.server.listening,
             )
-            .map((item) => item.close()),
+            .map((item) => closeServer(item)),
         ),
       )
       .catch((error) => {
@@ -35,4 +35,12 @@ export default function createShutdownHook({
 
     return shutdownPromise;
   };
+}
+
+async function closeServer(server) {
+  try {
+    await server.close();
+  } catch (error) {
+    if (server.server?.listening || !server.server) throw error;
+  }
 }

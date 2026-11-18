@@ -16,6 +16,8 @@ export default function createHealthMonitor({
   let checks = units.map((name) => ({ name, status: "unknown", checkedAt: null }));
   let timer;
   let running;
+  let runningGeneration;
+  let restartScheduled = false;
   let generation = 0;
   let stopped = true;
 
@@ -39,9 +41,15 @@ export default function createHealthMonitor({
         return getStatus();
       })
       .finally(() => {
-        if (running === current) running = undefined;
+        running = undefined;
+        runningGeneration = undefined;
+        if (restartScheduled) {
+          restartScheduled = false;
+          startCheck();
+        }
       });
     running = current;
+    runningGeneration = checkGeneration;
     return current;
   }
 
@@ -64,6 +72,10 @@ export default function createHealthMonitor({
 
   function startCheck() {
     if (stopped) return;
+    if (running && runningGeneration !== generation) {
+      restartScheduled = true;
+      return;
+    }
     const checkGeneration = generation;
     void check().catch(() => recordCheckSetupFailure(checkGeneration));
   }
@@ -99,7 +111,6 @@ export default function createHealthMonitor({
       generation += 1;
       if (timer !== undefined) clearIntervalFn(timer);
       timer = undefined;
-      running = undefined;
     },
   };
 }

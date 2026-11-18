@@ -83,3 +83,18 @@ test("does not close listeners that failed before opening", async () => {
   expect(server.close).not.toHaveBeenCalled();
   expect(webhookServer.close).not.toHaveBeenCalled();
 });
+
+test("ignores close errors after a failed listener has stopped", async () => {
+  const server = {
+    server: { listening: false },
+    close: jest.fn().mockRejectedValue(new Error("server was not running")),
+  };
+  const shutdown = createShutdownHook({
+    server,
+    log: { info: jest.fn() },
+    isListening: () => true,
+  });
+
+  await expect(shutdown()).resolves.toBeUndefined();
+  expect(server.close).toHaveBeenCalledTimes(1);
+});

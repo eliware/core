@@ -16,6 +16,7 @@ export default async function readRouteAsset(
 
   const assetRoot = resolve(root);
   const assetPath = resolve(assetRoot, route.file);
+  if (assetPath === assetRoot) return null;
   assertAssetPathWithinRoot(assetRoot, assetPath);
 
   try {
