@@ -1,6 +1,6 @@
 # Web application guide
 
-This guide explains how to install, configure, run, test, and adapt the Core web application.
+This guide explains how to configure and operate the Core dashboard and webhook listener.
 
 ## Contents
 
@@ -8,6 +8,8 @@ This guide explains how to install, configure, run, test, and adapt the Core web
 - [Configuration](#configuration)
 - [Routes and API example](#routes-and-api-example)
 - [Browser app and offline behavior](#browser-app-and-offline-behavior)
+- [Deployment behavior](#deployment-behavior)
+- [Health monitoring and notifications](#health-monitoring-and-notifications)
 - [Browser validation](#browser-validation)
 - [npm publication](#npm-publication)
 - [Extend the web app](#extend-the-web-app)
@@ -18,7 +20,7 @@ This guide explains how to install, configure, run, test, and adapt the Core web
 
 Install Node.js 26 or later.
 
-Run these commands from the repository root:
+Run these commands from the package repository during development:
 
 ```sh
 npm ci
@@ -26,20 +28,66 @@ npm run build
 node bin/core-web.mjs
 ```
 
-Open `http://localhost:9300/` to view the app. The server listens on port `9300` by default.
+Set the working directory to the router configuration repository before starting the application.
+The application reads `.env` from its working directory.
+Open `http://localhost:9300/` to view the dashboard.
 
 ## Configuration
 
-The server reads optional values from the process environment and the `.env` file.
-Copy `.env.example` to `.env`, then uncomment or edit its values.
+The server reads values from its process environment and the `.env` file in its working directory.
+Copy `.env.example` to `.env`, then set values for each router.
 
-| Name        | Required | Default | Accepted values                                                  |
-| ----------- | -------- | ------- | ---------------------------------------------------------------- |
-| `PORT`      | No       | `9300`  | An integer from `1` through `65535`.                             |
-| `LOG_LEVEL` | No       | `info`  | `error`, `warn`, `info`, `http`, `verbose`, `debug`, or `silly`. |
+| Name                    | Required  | Default | Accepted values                                                  |
+| ----------------------- | --------- | ------- | ---------------------------------------------------------------- |
+| `PORT`                  | No        | `9300`  | Dashboard port from `1` through `65535`.                         |
+| `WEBHOOK_PORT`          | No        | `9301`  | Webhook port from `1` through `65535`, separate from `PORT`.     |
+| `LOG_LEVEL`             | No        | `info`  | `error`, `warn`, `info`, `http`, `verbose`, `debug`, or `silly`. |
+| `CORE_REPO_PATH`        | For hooks | —       | Router configuration repository path.                            |
+| `GITHUB_WEBHOOK_SECRET` | For hooks | —       | Secret used to authenticate GitHub webhook signatures.           |
+| `DISCORD_WEBHOOK_URL`   | No        | —       | Discord webhook URL for rich embed notifications.                |
+| `CORE_GITHUB_BRANCH`    | No        | `main`  | Branch deployed from the configuration repository.               |
+| `CORE_HEALTH_UNITS`     | No        | —       | Comma-separated systemd unit names to monitor.                   |
 
-The server rejects an invalid `PORT` value before it opens a connection.
+The server rejects invalid ports and rejects equal dashboard and webhook ports.
+Both listeners accept connections on all network interfaces.
 The `LOG_LEVEL` value sets the minimum level for application log messages.
+
+Set `PORT` to `9300` for the read-only dashboard. Set `WEBHOOK_PORT` to `9301` on Core1 or `9302` on Core2.
+The application rejects equal dashboard and webhook ports.
+
+Set both `CORE_REPO_PATH` and `GITHUB_WEBHOOK_SECRET` to enable deployment hooks.
+Configure the GitHub webhook to send JSON push events to `http://<router>:<WEBHOOK_PORT>/api/github/webhook`.
+Set the GitHub secret to the same value as `GITHUB_WEBHOOK_SECRET`.
+The listener checks the `x-hub-signature-256` signature against the raw request body.
+It deploys pushes to `CORE_GITHUB_BRANCH`, which defaults to `main`.
+It ignores other event types and branches and rejects a repeated GitHub request ID.
+
+## Deployment behavior
+
+The webhook accepts a valid push asynchronously and returns HTTP 202 while deployment runs.
+It returns HTTP 409 when deployment is in progress.
+It returns HTTP 401 for an invalid signature and HTTP 503 when deployment settings are missing.
+It requires a clean repository before it starts a deployment.
+
+The application runs `git pull --ff-only origin <branch>`, `npm ci`, `npm test`, `npm run preflight`, and `npm run reload` in order.
+It stops the sequence at the first failed command.
+If a command fails before reload, the application resets the repository to the previous commit without reloading router processes.
+If the new reload fails, the application resets the repository and attempts to reload the previous configuration.
+The dashboard shows the latest deployment result until the process restarts.
+
+## Health monitoring and notifications
+
+Set `CORE_HEALTH_UNITS` to a comma-separated list of systemd unit names such as `named.service,kea-dhcp4.service`.
+The application checks each unit at startup and every five minutes.
+An empty list reports the monitored units as unconfigured.
+
+The dashboard refreshes every 30 seconds.
+Set `DISCORD_WEBHOOK_URL` to send deployment and health notifications as Discord rich embeds.
+The application sends a health notification on each failed check interval.
+`/health` reports process liveness and `/ready` reports listener readiness.
+`/api/status` reports monitored unit health and the latest deployment result.
+
+Keep `.env` out of Git. The example file contains placeholders only.
 
 The package version, repository URLs, and release tags are metadata or deployment settings.
 They do not change the runtime server configuration.
@@ -64,10 +112,15 @@ The server serves the app page, built browser files, public assets, API example,
 | `GET`  | `/screenshots/core-mobile.png`     | Serves the mobile preview.                 |
 | `GET`  | `/health`                          | Returns `{"status":"ok"}`.                 |
 | `GET`  | `/ready`                           | Returns `{"status":"ready"}`.              |
+| `GET`  | `/api/status`                      | Returns health and deployment status.      |
 | `POST` | `/api/examples/:exampleId`         | Validates and returns an API example.      |
 
 Unsupported methods on page and asset routes return HTTP 405.
 Unknown paths return HTTP 404.
+
+The webhook listener accepts `POST /api/github/webhook` on `WEBHOOK_PORT`.
+The dashboard cannot edit configuration or launch deployments.
+The dashboard has no user authentication. Limit access with the router network and firewall.
 
 The API example accepts a lowercase letter, digit, or hyphen in `exampleId`.
 The ID must contain between 1 and 40 characters.
@@ -179,7 +232,7 @@ Run `npm run format` to apply the repository formatter.
 
 ## Troubleshooting
 
-If the server rejects `PORT`, set an integer from `1` through `65535`.
+If the server rejects a port, set an integer from `1` through `65535` and use different values for both listeners.
 If the server cannot open its port, stop the process that uses it or set a different port.
 If `/client.js` returns HTTP 404, run `npm run build` and confirm that `dist/client.js` exists.
 

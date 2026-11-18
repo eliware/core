@@ -9,6 +9,15 @@ test("loads environment values before assembling application configuration", () 
       environment: { PORT: "8080", LOG_LEVEL: "debug" },
       loadEnvironment,
     }),
-  ).toEqual({ tcpEndpoint: 8080, logLevel: "debug" });
+  ).toEqual({
+    tcpEndpoint: 8080,
+    webhookEndpoint: 9301,
+    logLevel: "debug",
+    repositoryPath: undefined,
+    githubWebhookSecret: undefined,
+    discordWebhookUrl: undefined,
+    githubBranch: "main",
+    healthUnits: [],
+  });
   expect(loadEnvironment).toHaveBeenCalledTimes(1);
 });

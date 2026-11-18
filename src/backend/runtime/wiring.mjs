@@ -6,6 +6,10 @@ import loadRuntimeConfig from "./config.mjs";
 import createWebServer from "../server.mjs";
 import createShutdownHook from "../shutdown.mjs";
 import registerStatusRoutes from "../status-routes.mjs";
+import createHealthMonitor from "../health-monitor.mjs";
+import createDeploymentManager from "../deployment.mjs";
+import sendDiscordNotification from "../discord-notifier.mjs";
+import registerWebhookRoutes from "../webhook-routes.mjs";
 
 export const runtimeDependencies = {
   loadConfig: loadRuntimeConfig,
@@ -17,5 +21,9 @@ export const runtimeDependencies = {
   registerApiExampleRoutes,
   createShutdownHook,
   registerStatusRoutes,
+  createHealthMonitor,
+  createDeploymentManager,
+  sendDiscordNotification,
+  registerWebhookRoutes,
   resolve,
 };

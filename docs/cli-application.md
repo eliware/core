@@ -1,34 +1,87 @@
 # CLI guide
 
-The `core-cli` command checks router configuration repositories. It does not change router files or reload services.
+This guide explains how to validate one router repository and check the Core1 and Core2 pair.
 
-## Install and run
+## Requirements
 
-Install Node.js 26 or later and npm 12 or later. Run `npm ci` in the repository root.
+Use Node.js 26 or later and install the package in each router configuration repository.
+Install Bash when the repository contains shell scripts. Preflight runs `bash -n` on those scripts.
 
-Run `core-cli --help` to show usage. Run `core-cli --version` to show the package version.
-Run `core-cli preflight` to check the current router repository.
-Run `core-cli compare <partner repo>` to check the Core1 and Core2 pair.
-Run `core-cli` with no arguments to show help.
+## Commands
 
-`preflight` checks required router files and supported JSON, JSONC, YAML, JavaScript, and router settings with Node.js.
-It checks DNS, Kea, WireGuard, firewall, FRR, HAProxy, Keepalived, systemd, Chrony, and shell structure. It uses `bash -n` for shell syntax.
-It returns exit code 1 when a check fails.
+| Command                           | Purpose                                 |
+| --------------------------------- | --------------------------------------- |
+| `core-cli`                        | Print help.                             |
+| `core-cli --help`                 | Print help.                             |
+| `core-cli --version`              | Print the package version.              |
+| `core-cli preflight`              | Validate the current router repository. |
+| `core-cli compare <partner repo>` | Validate the Core1 and Core2 pair.      |
 
-`compare` accepts one partner repository path relative to the current repository. It checks matching config files and reciprocal HA settings.
-It returns exit code 1 when the pair fails validation. Invalid syntax or unsupported arguments return exit code 2.
-Help and version commands return exit code 0.
+Run `core-cli preflight` from the root of a router configuration repository.
+Run `core-cli compare ../core2` from Core1 or `core-cli compare ../core1` from Core2.
+The compare command accepts a filesystem path to the partner repository.
+The commands do not call router-native validators, reload services, or change router configuration.
 
-## Change command behavior
+Use `--help` or `--version` only as the sole argument.
+The compare command requires exactly one non-empty partner path.
 
-The executable is `bin/core-cli.mjs`. The parser and command behavior live in `src/cli.mjs`. Tests live in `tests/cli.test.mjs`.
+## Preflight checks
 
-Add commands only when the application needs them. Document their arguments, defaults, errors, and exit codes. Add controls before a command can delete data or change external state.
+Preflight checks formatting, package metadata, required files, syntax, and supported configuration files.
+It verifies that `package.json` and `package-lock.json` identify the same supported package and version.
+The package name must be `@eliware/core1` or `@eliware/core2`.
+It parses JSON, JSONC, YAML, and Kea configuration files.
+It runs `node --check` on JavaScript module files and `bash -n` on shell scripts.
+It validates supported files under `etc/`, `var/`, and `scripts/` with the bundled Node.js validators.
 
-## Release
+The repository must contain these paths:
 
-The repository includes an npm publication workflow. Match the package version with its `vMAJOR.MINOR.PATCH` Git tag. Follow the approved release process before publication.
+- `etc/chrony.conf`
+- `etc/named.conf`
+- `etc/frr/daemons`
+- `etc/frr/frr.conf`
+- `etc/haproxy/haproxy.cfg`
+- `etc/kea/kea-dhcp4.conf`
+- `etc/kea/kea-dhcp6.conf`
+- `etc/kea/kea-dhcp-ddns.conf`
+- `etc/kea/kea-ctrl-agent.conf`
+- `etc/keepalived/keepalived.conf`
+- `etc/conntrackd/conntrackd.conf`
+- `etc/sysconfig/iptables`
+- `etc/sysconfig/ip6tables`
+- `etc/wireguard/wg0.conf`
 
-## Validate
+Preflight can create ignored test coverage or log files. It does not reload services.
 
-Run `npm test` before handoff. It runs tests, lint, formatting, audit, package checks, and profile checks.
+## Pair validation
+
+Compare checks that one repository is Core1 and the other is Core2.
+It compares the file inventory and contents under `etc/`, `var/`, and `scripts/`.
+It permits only documented HA-specific differences and checks that paired values agree or use reciprocal partner values.
+
+Pair checks include FRR peer addresses, autonomous system numbers, neighbors, and weights.
+They include Kea DHCPv4 HA roles and URLs, Keepalived VRRP IDs and virtual addresses, and reciprocal priorities.
+They also include conntrackd peer identifiers and FRR connected prefix identifiers.
+Other unexpected file or content differences fail the compare command.
+The compare command reads files and does not invoke router-native tools.
+
+## Exit codes
+
+| Code | Meaning                                                       |
+| ---- | ------------------------------------------------------------- |
+| `0`  | The command completed successfully.                           |
+| `1`  | Repository or pair validation failed.                         |
+| `2`  | The command received invalid syntax or an unsupported option. |
+
+## Troubleshooting
+
+If preflight reports a missing required file, add the path to the router repository.
+If shell validation cannot start, install Bash and make `bash` available on `PATH`.
+If preflight reports formatting errors, run `npm run format` and inspect the changes.
+If compare reports a difference, inspect both files and correct the unexpected value.
+If compare reports a peer mismatch, check reciprocal addresses and HA roles in both repositories.
+
+## Related documentation
+
+Read the [web application guide](web-application.md) for webhook deployment and dashboard operations.
+Read the [release notes](../RELEASE_NOTES.md) for version history.

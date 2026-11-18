@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "Web Template Starter",
-  "short_name": "Web Starter",
-  "description": "A practical starting point for your next web application.",
+  "name": "Eliware Core Router Status",
+  "short_name": "Core Status",
+  "description": "Read-only health and deployment status for an Eliware Core router.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -26,14 +26,14 @@
       "sizes": "1440x1000",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "Web Template desktop preview"
+      "label": "Eliware Core desktop status dashboard"
     },
     {
       "src": "/screenshots/core-mobile.png",
       "sizes": "390x844",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Web Template mobile preview"
+      "label": "Eliware Core mobile status dashboard"
     }
   ]
 }

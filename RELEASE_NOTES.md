@@ -8,6 +8,8 @@
 
 ### Added
 
+- Add a read-only router health dashboard with a separate GitHub webhook listener.
+- Add ordered deployments, commit recovery, systemd monitoring, and Discord embed notifications.
 - Add `core-cli preflight` to check router repository formatting and supported file syntax.
 - Validate required router settings with Node.js without calling router tools.
 - Check shell script syntax with `bash -n` during preflight.

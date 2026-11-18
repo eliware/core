@@ -1,4 +1,9 @@
-export default function createShutdownHook({ server, log }) {
+export default function createShutdownHook({
+  server,
+  webhookServer,
+  log,
+  stopHealthMonitor = () => {},
+}) {
   let stopped = false;
   let shutdownPromise;
 
@@ -7,7 +12,15 @@ export default function createShutdownHook({ server, log }) {
     if (shutdownPromise) return shutdownPromise;
 
     shutdownPromise = Promise.resolve()
-      .then(() => server.close())
+      .then(() => stopHealthMonitor())
+      .then(() =>
+        Promise.all(
+          [server, webhookServer]
+            .filter(Boolean)
+            .filter((item) => !item.server || item.server.listening)
+            .map((item) => item.close()),
+        ),
+      )
       .catch((error) => {
         shutdownPromise = undefined;
         throw error;

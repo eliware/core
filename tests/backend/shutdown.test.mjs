@@ -42,10 +42,30 @@ test("shares an in-flight server close", async () => {
   const firstShutdown = shutdown();
   const secondShutdown = shutdown();
   await Promise.resolve();
+  await Promise.resolve();
   expect(server.close).toHaveBeenCalledTimes(1);
 
   finishClose();
   await Promise.all([firstShutdown, secondShutdown]);
 
   expect(log.info).toHaveBeenCalledTimes(1);
+});
+
+test("stops health polling and skips a webhook listener that never opened", async () => {
+  const server = { close: jest.fn().mockResolvedValue(undefined) };
+  const webhookServer = {
+    server: { listening: false },
+    close: jest.fn(),
+  };
+  const stopHealthMonitor = jest.fn();
+  const shutdown = createShutdownHook({
+    server,
+    webhookServer,
+    log: { info: jest.fn() },
+    stopHealthMonitor,
+  });
+  await shutdown();
+  expect(stopHealthMonitor).toHaveBeenCalledTimes(1);
+  expect(server.close).toHaveBeenCalledTimes(1);
+  expect(webhookServer.close).not.toHaveBeenCalled();
 });

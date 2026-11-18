@@ -4,6 +4,9 @@ directives:
   - id: E-9300.2
     dos:
       - Run a separate web application on each Core router.
+      - Run the read-only dashboard on `PORT` and the webhook listener on `WEBHOOK_PORT`.
+      - Set the Core1 webhook port to 9301 and the Core2 webhook port to 9302.
+      - Require distinct dashboard and webhook ports.
       - Read the GitHub webhook secret from the router environment file.
       - Read the repository location from the router environment file.
       - Read the Discord webhook URL from the router environment file.

@@ -4,73 +4,76 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#101b2d" />
-    <meta name="description" content="A practical starting point for your next web application." />
+    <meta
+      name="description"
+      content="Read-only health and deployment status for an Eliware Core router."
+    />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/icons/template.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/icons/template-192.png" />
     <link rel="stylesheet" href="/styles.css" />
-    <title>Web Template | Start with a strong foundation</title>
+    <title>Core Router Status</title>
   </head>
   <body>
-    <main class="shell">
+    <main class="dashboard">
       <header class="topbar">
         <a class="brand" href="/">
           <img src="/icons/template.svg" alt="" width="40" height="40" />
-          <span>WEB<span class="brand-light">/KIT</span></span>
+          <span>ELIWARE <span class="brand-light">/ CORE</span></span>
         </a>
-        <span class="status"><span class="status-dot"></span> Ready to build</span>
+        <span class="refresh-label">Refreshes every 30 seconds</span>
       </header>
-      <section class="hero" aria-labelledby="hero-title">
-        <div class="hero-copy">
-          <p class="eyebrow">YOUR NEXT PROJECT STARTS HERE</p>
-          <h1 id="hero-title">A strong foundation.<br /><span>Your ideas, next.</span></h1>
-          <p class="intro">
-            A clean, capable web app template with the essentials already in place. Make it yours
-            and get moving.
-          </p>
-          <a class="button" href="#starter-kit"
-            >Explore the starter kit <span aria-hidden="true">↘</span></a
-          >
+      <section class="overview" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">ROUTER OPERATIONS</p>
+          <h1 id="page-title">Core status</h1>
+          <p class="intro">Live health and the latest configuration deployment.</p>
         </div>
-        <div class="hero-art" aria-hidden="true">
-          <div class="orbit orbit-one"></div>
-          <div class="orbit orbit-two"></div>
-          <div class="core"><span>W</span><i></i></div>
-          <span class="spark spark-one">✳</span><span class="spark spark-two">✦</span>
+        <div class="overall-state" data-overall-state role="status" aria-live="polite">
+          <span class="state-dot" data-state-dot></span>
+          <span data-health-summary>Loading status</span>
         </div>
       </section>
-      <section class="starter" id="starter-kit" aria-labelledby="starter-title">
-        <div class="section-heading">
+      <section class="panel" aria-labelledby="health-title">
+        <div class="panel-heading">
           <div>
-            <p class="eyebrow">THE STARTER KIT</p>
-            <h2 id="starter-title">Everything in its place.</h2>
+            <p class="eyebrow">SYSTEM HEALTH</p>
+            <h2 id="health-title">Configured applications</h2>
           </div>
-          <p>Focused tools. Clear boundaries.<br />Room for what comes next.</p>
+          <span class="subtle" data-checked-at>Waiting for first check</span>
         </div>
-        <div class="cards">
-          <article class="card">
-            <span class="card-icon">⌘</span>
-            <h3>Built to extend</h3>
-            <p>Fastify on the server, a bundled browser client, and a clear path to grow.</p>
-            <span class="card-index">01 / FOUNDATION</span>
-          </article>
-          <article class="card">
-            <span class="card-icon">◈</span>
-            <h3>Ready to install</h3>
-            <p>Manifest, custom app artwork, and an offline-ready service worker.</p>
-            <span class="card-index">02 / EXPERIENCE</span>
-          </article>
-          <article class="card">
-            <span class="card-icon">↗</span>
-            <h3>Made to ship</h3>
-            <p>CLI access, health checks, and browser tools for network management.</p>
-            <span class="card-index">03 / DELIVERY</span>
-          </article>
+        <p class="empty-state" data-health-empty hidden>
+          No applications are configured for monitoring.
+        </p>
+        <ul class="health-list" data-health-list aria-live="polite"></ul>
+      </section>
+      <section class="panel" aria-labelledby="deployment-title">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">CONFIGURATION DELIVERY</p>
+            <h2 id="deployment-title">Latest deployment</h2>
+          </div>
+          <span class="badge" data-deployment-state>Loading</span>
         </div>
+        <dl class="deployment-details">
+          <div>
+            <dt>Started</dt>
+            <dd data-deployment-start>—</dd>
+          </div>
+          <div>
+            <dt>Current step</dt>
+            <dd data-deployment-step>—</dd>
+          </div>
+          <div>
+            <dt>Result</dt>
+            <dd data-deployment-result>No deployment recorded.</dd>
+          </div>
+        </dl>
+        <ol class="step-list" data-step-list></ol>
       </section>
       <footer>
-        <span>WEB/KIT <span class="footer-muted">— A STARTING POINT BY ELIWARE</span></span
-        ><span data-status>Loading browser assets.</span>
+        <span>ELIWARE CORE</span>
+        <span data-status>Read-only dashboard</span>
       </footer>
     </main>
     <script type="module" src="/client.js"></script>

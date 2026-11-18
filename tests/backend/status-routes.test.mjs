@@ -20,3 +20,27 @@ test.each([
   expect(result.statusCode).toBe(200);
   expect(result.json()).toEqual(expected);
 });
+
+test("returns health and deployment snapshots from the read-only status endpoint", async () => {
+  server = Fastify({ logger: false });
+  registerStatusRoutes(server, {
+    getHealthStatus: () => ({ status: "unhealthy", units: [{ name: "frr.service" }] }),
+    getDeploymentStatus: () => ({ status: "failed", failedStep: "npm test" }),
+  });
+  const result = await server.inject({ method: "GET", url: "/api/status" });
+  expect(result.statusCode).toBe(200);
+  expect(result.json()).toEqual({
+    health: { status: "unhealthy", units: [{ name: "frr.service" }] },
+    deployment: { status: "failed", failedStep: "npm test" },
+  });
+});
+
+test("returns default status when no providers are configured", async () => {
+  server = Fastify({ logger: false });
+  registerStatusRoutes(server);
+  const result = await server.inject({ method: "GET", url: "/api/status" });
+  expect(result.json()).toEqual({
+    health: { status: "unconfigured", checkedAt: null, units: [] },
+    deployment: { status: "idle", steps: [] },
+  });
+});

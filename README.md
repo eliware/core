@@ -29,8 +29,8 @@ Core Networking Manager.
 
 ## Features
 
-Core Networking Manager combines router configuration commands with a Fastify web application.
-The web app serves browser assets, an API example, health checks, and readiness checks.
+Core Networking Manager provides `core-cli` and `core-web` for the Core1 and Core2 router pair.
+The web application provides a read-only dashboard and a signed GitHub deployment listener.
 
 ## Requirements
 
@@ -38,63 +38,69 @@ Use Node.js 26 or later and npm 12 or later.
 
 ## Setup
 
-Run `npm ci` from the repository root.
+Run `npm ci` from this repository root.
+After an approved package release, install `@eliware/core` as a development dependency in each router configuration repository.
+
+```sh
+npm install --save-dev @eliware/core
+```
 
 ## Usage
 
-Run `core-cli --help` for CLI help. Run `core-cli --version` for the package version.
-Run `core-cli preflight` from a router configuration repo to check its files.
-Run `core-cli compare ../core2` to compare the Core1 and Core2 configuration pair.
-Run `npm run build`, then run `core-web` to start the web app on port `9300`.
+Run `core-cli preflight` from a router configuration repository to validate its files.
+Run `core-cli compare ../core2` from Core1 or `core-cli compare ../core1` from Core2.
+Read the [CLI guide](docs/cli-application.md) and [web application guide](docs/web-application.md) for command and deployment details.
 Read [release notes](RELEASE_NOTES.md) for version history.
 
 ## Development
 
 Read [AGENTS.md](AGENTS.md), the [documentation index](docs/README.md), and the [specifications index](specs/README.md) before changing files.
-Read the [CLI guide](docs/cli-application.md) and [web application guide](docs/web-application.md).
 
 ## Testing
 
-Run `npm test` for aggregate validation. Pass test file paths to run focused tests.
-Run `npm run build` to build browser assets.
+Run `npm test` for aggregate validation.
+Run `npm run build` to build the browser assets.
 
 ## Troubleshooting
 
-If the server rejects `PORT`, set an integer from `1` through `65535`.
+If the application rejects a port, set a different integer from `1` through `65535` for each listener.
 If `/client.js` returns HTTP 404, run `npm run build` and confirm that `dist/client.js` exists.
-If a CLI command returns exit code 1, read the failed check and correct the configuration.
-If the CLI returns exit code 2, check the command syntax and arguments.
+If the webhook returns HTTP 503, set `CORE_REPO_PATH` and `GITHUB_WEBHOOK_SECRET` in `.env`.
+If health status says `unconfigured`, set `CORE_HEALTH_UNITS` to one or more systemd unit names.
+Read the [CLI guide](docs/cli-application.md) for CLI exit codes and validation failures.
 
 ## Security
 
 Keep credentials, private data, and runtime state out of Git.
-Store secret values in an approved secret store.
+Keep `.env` files outside Git and limit dashboard access because the dashboard has no user authentication.
 
 ## Configuration
 
-Set `PORT` to set the web server port. It defaults to `9300` and accepts integers from `1` through `65535`.
-Set `LOG_LEVEL` to set the Fastify log level. It defaults to `info`.
+| Name                    | Required | Default | Purpose                                                              |
+| ----------------------- | -------- | ------- | -------------------------------------------------------------------- |
+| `PORT`                  | No       | `9300`  | Dashboard port.                                                      |
+| `WEBHOOK_PORT`          | No       | `9301`  | Separate webhook port. Use `9302` on Core2.                          |
+| `CORE_REPO_PATH`        | No       | None    | Local configuration repository path. Required to enable deployments. |
+| `GITHUB_WEBHOOK_SECRET` | No       | None    | Secret for signed GitHub pushes. Required to enable deployments.     |
+| `CORE_GITHUB_BRANCH`    | No       | `main`  | Branch that triggers deployment.                                     |
+| `DISCORD_WEBHOOK_URL`   | No       | None    | HTTPS Discord webhook URL for rich embed notifications.              |
+| `CORE_HEALTH_UNITS`     | No       | None    | Comma-separated systemd unit names ending in `.service`.             |
+| `LOG_LEVEL`             | No       | `info`  | Log level passed to the application logger.                          |
+
+The dashboard and webhook ports must use different numbers. The application reads values from its process environment and `.env` in its working directory.
 
 ## Operations
 
-Run `core-cli --help` or `core-cli --version` for CLI information.
-Run `core-cli preflight` to check the current repository.
-Run `core-cli compare <partner repo>` to validate the Core1 and Core2 pair.
-Run `npm run build`, then run `core-web` to start the web server.
-Follow the approved release process to publish the npm package.
+On Core1, set `WEBHOOK_PORT=9301`. On Core2, set `WEBHOOK_PORT=9302`.
+Run `npm run build`, then start `core-web` from each router configuration repository.
+Push each router repository separately to control deployment timing.
 
 ## Commands
 
 Run `core-cli --help` to print command usage. Run `core-cli --version` to print the package version.
-Run `core-cli preflight` from a router config repo to check formatting and supported file syntax.
-Preflight checks required router files and validates DNS, Kea, WireGuard, firewall, FRR, HAProxy, Keepalived, systemd, Chrony, and shell structure with Node.js.
-It runs `npm run format:check`, checks JavaScript syntax with Node.js, and checks shell scripts with `bash -n`.
-It does not call router configuration tools.
-
-Run `core-cli compare <partner repo>` to check file inventory, matching config, and reciprocal HA settings.
-Resolve `<partner repo>` from the current repository directory. Use `../core2` from Core1 or `../core1` from Core2.
-Run the command with no arguments to print help.
-The CLI does not change router files or reload services.
+Run `core-cli preflight` from a router configuration repository to validate its files.
+Run `core-cli compare <partner repo>` to compare the Core1 and Core2 configuration pair.
+Run `core-cli` with no arguments to print help. Read the [CLI guide](docs/cli-application.md) for argument rules and validation details.
 
 ## Exit codes
 
@@ -106,20 +112,22 @@ The CLI does not change router files or reload services.
 
 ## Routes
 
-| Method | Path                       | Result                            |
-| ------ | -------------------------- | --------------------------------- |
-| `GET`  | `/`                        | Serves the app page.              |
-| `GET`  | `/client.js`               | Serves the browser bundle.        |
-| `GET`  | `/styles.css`              | Serves the page styles.           |
-| `GET`  | `/manifest.webmanifest`    | Serves app install metadata.      |
-| `GET`  | `/service-worker.js`       | Serves the offline worker.        |
-| `GET`  | `/icons/*`                 | Serves app icons.                 |
-| `GET`  | `/screenshots/*`           | Serves preview images.            |
-| `GET`  | `/health`                  | Returns `{"status":"ok"}`.        |
-| `GET`  | `/ready`                   | Returns `{"status":"ready"}`.     |
-| `POST` | `/api/examples/:exampleId` | Validates an API example request. |
+| Method | Path                       | Result                                          |
+| ------ | -------------------------- | ----------------------------------------------- |
+| `GET`  | `/`                        | Serves the app page.                            |
+| `GET`  | `/client.js`               | Serves the browser bundle.                      |
+| `GET`  | `/styles.css`              | Serves the page styles.                         |
+| `GET`  | `/manifest.webmanifest`    | Serves app install metadata.                    |
+| `GET`  | `/service-worker.js`       | Serves the offline worker.                      |
+| `GET`  | `/icons/*`                 | Serves app icons.                               |
+| `GET`  | `/screenshots/*`           | Serves preview images.                          |
+| `GET`  | `/health`                  | Returns `{"status":"ok"}`.                      |
+| `GET`  | `/ready`                   | Returns `{"status":"ready"}`.                   |
+| `GET`  | `/api/status`              | Returns read-only health and deployment status. |
+| `POST` | `/api/examples/:exampleId` | Validates an API example request.               |
 
 Unsupported methods on page and asset routes return HTTP 405. Unknown paths return HTTP 404.
+The separate webhook listener accepts `POST /api/github/webhook` on `WEBHOOK_PORT`.
 
 ## Assets
 
@@ -128,18 +136,23 @@ The app page, manifest, icons, styles, and preview images come from `public/`.
 
 ## Development server
 
-Run `npm run build`, then run `core-web`. The server listens on port `9300` by default.
+Run `npm run build`, then run `core-web` from the configuration repository working directory.
+The dashboard listens on port `9300` and the webhook listener listens on port `9301` by default.
 Run `npm run puppeteer` to install Chrome before browser checks.
 
 ## Build
 
-Run `npm run build` to bundle the browser client and worker into `dist/`.
-Run `npm test` to validate the repository.
+Run `npm run build` to create `dist/client.js` and `dist/service-worker.js`.
+Run `npm test` for aggregate validation, which includes the browser build.
 
 ## Deployment
 
-Use the npm publication workflow for approved package releases.
-Publication does not deploy or start the web app.
+The webhook validates a signed push to `CORE_GITHUB_BRANCH` before deployment.
+It runs `git pull --ff-only`, `npm ci`, `npm test`, `npm run preflight`, and `npm run reload` in order.
+If a step fails before reload, the application restores the previous commit without reloading router applications.
+If reload fails, the application restores the previous commit and attempts to reload its configuration.
+Read the [web application guide](docs/web-application.md) for the full deployment and recovery process.
+Follow the approved npm publication process to publish package releases.
 
 ## Support
 
