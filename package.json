@@ -1,6 +1,6 @@
 {
   "name": "@eliware/core",
-  "version": "15.1.0",
+  "version": "15.2.0",
   "type": "module",
   "description": "Core Networking Manager.",
   "keywords": [
@@ -55,10 +55,10 @@
     "dotenv": "^18.0.9",
     "fastify": "^5.12.7",
     "lighthouse": "^13.6.0",
-    "puppeteer": "^25.16.0"
+    "puppeteer": "^25.18.1"
   },
   "devDependencies": {
-    "@eliware/test": "^15.1.0",
+    "@eliware/test": "^15.2.0",
     "webpack": "^5.112.2",
     "webpack-cli": "^7.3.1"
   },
