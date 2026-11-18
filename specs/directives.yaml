@@ -1,10 +1,14 @@
-version: "15.1"
-description: Guidance for Core Networking Manager.
+version: "15.2"
+description: Shared directives for Core Networking Manager.
 directives:
   - id: E-9300.0
     dos:
-      - Provide a Node.js CLI with help, version, argument checks, and tests.
-      - Provide a web application with public assets, documented routes, and a browser build.
-      - Use the npm publication workflow for package releases.
+      - Keep maintained code, documentation, and specifications aligned.
+      - Keep component requirements in their focused specification files.
+      - Use native ESM and supported Node.js versions for maintained modules.
+      - Add focused tests for maintained behavior changes.
+      - Run the aggregate validation before handoff or release.
+      - Use the approved npm publication workflow for releases.
     donts:
-      - Do not publish an unfinished package version.
+      - Do not publish unfinished package versions.
+      - Do not commit credentials, private data, or runtime state.

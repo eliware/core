@@ -1,0 +1,32 @@
+version: "15.2"
+description: Requirements for the Core router configuration CLI.
+directives:
+  - id: E-9300.1
+    dos:
+      - Publish `@eliware/core` as an npm package.
+      - Install `@eliware/core` as a development dependency in Core1 and Core2 repositories.
+      - Provide the `core-cli` command for router configuration work.
+      - Keep `--help` and `--version` read-only.
+      - Run `preflight` without accessing a partner repository.
+      - Validate required files, formatting, parsable data, and router settings in `preflight`.
+      - Validate JavaScript syntax with Node.js during `preflight`.
+      - Validate shell syntax with `bash -n` during `preflight`.
+      - Check router settings in Node.js without router configuration tools.
+      - Return exit code 0 when a command succeeds.
+      - Return exit code 1 when configuration validation fails.
+      - Return exit code 2 when command syntax or arguments are invalid.
+      - Provide `core-cli compare <partner repo>` for whole-pair validation.
+      - Compare tracked and untracked configuration files in both repositories.
+      - Require matching configuration except for documented high-availability differences.
+      - Check that high-availability peer addresses and roles are reciprocal.
+      - Keep `compare` read-only and report unexpected configuration differences.
+      - Run `npm run preflight` to call `core-cli preflight` in a router repository.
+      - Run `npm run compare` to call `core-cli compare ../core2` from Core1.
+      - Run `npm run compare` to call `core-cli compare ../core1` from Core2.
+      - Run `npm test` after preflight and pair compare pass.
+      - Commit and push router configuration only after all required checks pass.
+    donts:
+      - Do not change router files or reload applications from CLI validation commands.
+      - Do not use single-repository preflight for whole-pair validation.
+      - Do not require every Core1 and Core2 file to match byte for byte.
+      - Do not accept unlisted high-availability differences.

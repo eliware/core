@@ -1,0 +1,30 @@
+version: "15.2"
+description: Requirements for the Core router web application and deployment webhook.
+directives:
+  - id: E-9300.2
+    dos:
+      - Run a separate web application on each Core router.
+      - Read the GitHub webhook secret from the router environment file.
+      - Read the repository location from the router environment file.
+      - Read the Discord webhook URL from the router environment file.
+      - Keep environment files and secret values out of Git.
+      - Authenticate each GitHub webhook before processing its deployment.
+      - Run `git pull` before deployment validation.
+      - Run `npm ci` after `git pull` succeeds.
+      - Run `npm test` after dependency installation succeeds.
+      - Run `npm run preflight` after tests pass.
+      - Run `npm run reload` only after all earlier deployment steps pass.
+      - Stop the deployment sequence when any step fails.
+      - Restore the previous commit without reloading applications when an earlier step fails.
+      - Restore the previous commit and reload its configuration when `npm run reload` fails.
+      - Send Discord notifications for deployment success and failure.
+      - Check configured essential applications every five minutes.
+      - Send a Discord notification when an essential application is unhealthy.
+      - Provide a graphical, single-page, read-only health dashboard.
+      - Show current health for each configured essential application.
+      - Let administrators deploy to each router independently.
+    donts:
+      - Do not change router configuration through the dashboard.
+      - Do not reload applications after an earlier deployment step fails.
+      - Do not start a deployment with an unauthenticated webhook.
+      - Do not store credentials or webhook secrets in Git.
