@@ -34,30 +34,25 @@ test("reports local peer addresses and missing peer weights", () => {
   expect(errors).toContain("peer addresses must point");
 });
 
-test("rejects invalid and asymmetric route weights", () => {
+test("rejects invalid weights and different weighted neighbor sets", () => {
   const [core1, core2] = texts();
   const invalid = core1.replace("neighbor 10.0.0.10 weight 300", "neighbor 10.0.0.10 weight 70000");
-  const asymmetric = core2.replace(
-    "neighbor 10.0.0.20 weight 200",
-    "neighbor 10.0.0.20 weight 300",
-  );
+  const missingWeight = core2.replace(" neighbor 10.0.0.20 weight 200", "");
 
   expect(validateFrrPair(invalid, core2).errors.join(" ")).toContain(
     "weight outside the valid range",
   );
-  expect(validateFrrPair(core1, asymmetric).errors.join(" ")).toContain(
-    "weights must match per neighbor",
+  expect(validateFrrPair(core1, missingWeight).errors).toContain(
+    "FRR route preference weights must cover the same neighbors on both routers.",
   );
 });
 
-test("rejects preferences swapped between external neighbors", () => {
+test("allows HA-specific preferences across external neighbors", () => {
   const [core1, core2] = texts();
-  const swapped = core2
+  const preferences = core2
     .replace("neighbor 10.0.0.10 weight 300", "neighbor 10.0.0.10 weight 200")
     .replace("neighbor 10.0.0.20 weight 200", "neighbor 10.0.0.20 weight 300");
-  expect(validateFrrPair(core1, swapped).errors).toContain(
-    "FRR route preference weights must match per neighbor across both routers.",
-  );
+  expect(validateFrrPair(core1, preferences).errors).toEqual([]);
 });
 
 test("rejects neighbor sets that differ even when weight keys match", () => {

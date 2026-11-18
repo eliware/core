@@ -5,6 +5,7 @@
 ### Changed
 
 - Update package dependencies to their latest releases.
+- Allow expected FRR route preference variation during pair compare.
 
 ### Added
 
