@@ -18,7 +18,7 @@ This guide explains how to configure and operate the Core dashboard and webhook 
 
 ## Get started
 
-Install Node.js 26 or later.
+Install Node.js 26 or later and use npm to install package dependencies.
 
 Run these commands from the package repository during development:
 
@@ -87,7 +87,8 @@ If a check finds changes, the sequence stops and recovery restores the previous 
 The server rejects JSON request bodies larger than 1 MiB.
 It remembers accepted GitHub request IDs until the application restarts.
 
-The application runs `git pull --ff-only -- origin <branch>`, `npm ci --include=dev`, `npm test`, `npm run preflight`, and `npm run reload` in order.
+The application records the local commit before `git pull` as its recovery target.
+It runs `git pull --ff-only -- origin <branch>`, `npm ci --include=dev`, `npm test`, `npm run preflight`, and `npm run reload` in order.
 It stops the sequence at the first failed command.
 If a command fails before reload, the application resets the repository to the previous commit without reloading router processes.
 If the new reload fails, the application resets the repository and attempts to reload the previous configuration.

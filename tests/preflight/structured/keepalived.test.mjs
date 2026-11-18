@@ -38,3 +38,29 @@ test("checks VRRP fields, priority, and notification script references", () => {
     ),
   ).toEqual([]);
 });
+
+test("validates tracked script declarations and their files", () => {
+  const instance = `vrrp_instance VI { state MASTER
+interface enX0
+virtual_router_id 1
+priority 101
+unicast_src_ip 10.0.0.1
+unicast_peer { 10.0.0.2 }
+virtual_ipaddress { 10.0.0.254/24 }
+track_script { check_dns }
+}`;
+  const declaration = 'vrrp_script check_dns { script "/eliware/router-config/scripts/check.sh" }';
+  const file = "etc/keepalived/keepalived.conf";
+
+  expect(validateKeepalived(file, `${instance}\n${declaration}`, ["scripts/check.sh"])).toEqual([]);
+  expect(validateKeepalived(file, instance, []).join(" ")).toContain(
+    "tracked script check_dns is not defined",
+  );
+  expect(validateKeepalived(file, `${instance}\n${declaration}`, []).join(" ")).toContain(
+    "referenced scripts/check.sh script is missing",
+  );
+  const simpleInstance = instance.replace("\ntrack_script { check_dns }", "");
+  expect(
+    validateKeepalived(file, `${simpleInstance}\nvrrp_script empty { interval 1 }`, []),
+  ).toEqual([]);
+});

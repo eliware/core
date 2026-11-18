@@ -52,6 +52,37 @@ test("serializes processes and releases the lock once", () => {
   releaseAgain();
 });
 
+test.each(["close", "unlink"])(
+  "retries a failed %s operation when releasing a lock",
+  (operation) => {
+    const fileSystem = createFileSystem();
+    const directory = "/tmp/locks";
+    const repositoryPath = "/router/repo";
+    const path = lockPath(directory, repositoryPath);
+    const closeSync = fileSystem.closeSync;
+    const unlinkSync = fileSystem.unlinkSync;
+    let failures = 1;
+    let closeCount = 0;
+    fileSystem.closeSync = (descriptor) => {
+      closeCount += 1;
+      if (operation === "close" && failures-- > 0) throw new Error("close failed");
+      closeSync(descriptor);
+    };
+    fileSystem.unlinkSync = (target) => {
+      if (operation === "unlink" && failures-- > 0) throw new Error("unlink failed");
+      unlinkSync(target);
+    };
+    const release = acquireDeploymentLock(repositoryPath, { directory, fileSystem });
+
+    expect(release).toThrow(`${operation} failed`);
+    expect(fileSystem.files.has(path)).toBe(true);
+    expect(release).not.toThrow();
+    expect(fileSystem.files.has(path)).toBe(false);
+    if (operation === "unlink") expect(closeCount).toBe(1);
+    release();
+  },
+);
+
 test("replaces a stale process lock", () => {
   const fileSystem = createFileSystem();
   const directory = "/tmp/locks";

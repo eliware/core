@@ -34,7 +34,7 @@ The [CLI guide](docs/cli-application.md) and [web application guide](docs/web-ap
 
 ## Requirements
 
-Use Node.js 26 or later and npm 12 or later.
+Use Node.js 26 or later.
 Install Bash when configuration repositories contain shell scripts.
 
 ## Setup

@@ -15,13 +15,18 @@ export default function createHealthMonitor({
   let checks = units.map((name) => ({ name, status: "unknown", checkedAt: null }));
   let timer;
   let running;
+  let generation = 0;
+  let stopped = true;
 
   async function check() {
     if (running) return running;
-    running = Promise.all(units.map((name) => checkHealthUnit(name, checkUnit, now)))
+    const checkGeneration = generation;
+    const current = Promise.all(units.map((name) => checkHealthUnit(name, checkUnit, now)))
       .then(async (results) => {
+        if (checkGeneration !== generation) return getStatus();
         checks = results;
         for (const result of results) {
+          if (checkGeneration !== generation) break;
           if (result.status === "unhealthy") {
             try {
               await onUnhealthy(result);
@@ -33,12 +38,14 @@ export default function createHealthMonitor({
         return getStatus();
       })
       .finally(() => {
-        running = undefined;
+        if (running === current) running = undefined;
       });
-    return running;
+    running = current;
+    return current;
   }
 
-  async function recordCheckSetupFailure() {
+  async function recordCheckSetupFailure(checkGeneration) {
+    if (checkGeneration !== generation) return;
     checks = checks.map((item) => ({
       ...item,
       status: "unhealthy",
@@ -55,7 +62,9 @@ export default function createHealthMonitor({
   }
 
   function startCheck() {
-    void check().catch(() => recordCheckSetupFailure());
+    if (stopped) return;
+    const checkGeneration = generation;
+    void check().catch(() => recordCheckSetupFailure(checkGeneration));
   }
 
   function getStatus() {
@@ -79,13 +88,19 @@ export default function createHealthMonitor({
     getStatus,
     start() {
       if (timer) return;
+      stopped = false;
       startCheck();
       timer = setIntervalFn(startCheck, intervalMs);
       timer.unref?.();
     },
-    stop() {
+    async stop() {
+      stopped = true;
+      generation += 1;
       if (timer) clearInterval(timer);
       timer = undefined;
+      const activeCheck = running;
+      running = undefined;
+      if (activeCheck) await activeCheck;
     },
   };
 }

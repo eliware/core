@@ -74,7 +74,7 @@ test("keeps health checks successful when an unhealthy callback rejects", async 
   await expect(monitor.check()).resolves.toMatchObject({ status: "unhealthy" });
 });
 
-test("reports an unconfigured state and manages one polling timer", () => {
+test("reports an unconfigured state and manages one polling timer", async () => {
   const timer = { unref: jest.fn() };
   const setIntervalFn = jest.fn(() => timer);
   const monitor = createHealthMonitor({ setIntervalFn });
@@ -84,14 +84,14 @@ test("reports an unconfigured state and manages one polling timer", () => {
   expect(setIntervalFn).toHaveBeenCalledTimes(1);
   expect(setIntervalFn).toHaveBeenCalledWith(expect.any(Function), 300_000);
   expect(timer.unref).toHaveBeenCalledTimes(1);
-  monitor.stop();
+  await monitor.stop();
   expect(monitor.getStatus().status).toBe("unconfigured");
 });
 
-test("reports unknown health until configured units pass", () => {
+test("reports unknown health until configured units pass", async () => {
   const monitor = createHealthMonitor({ units: ["frr.service"] });
   expect(monitor.getStatus().status).toBe("unknown");
-  monitor.stop();
+  await monitor.stop();
 });
 
 test("records and reports a health check setup failure", async () => {
@@ -118,7 +118,78 @@ test("records and reports a health check setup failure", async () => {
     units: [{ name: "frr.service", status: "unhealthy", detail: "Health check could not start" }],
   });
   expect(onUnhealthy).toHaveBeenCalledWith(monitor.getStatus().units[0]);
-  monitor.stop();
+  await monitor.stop();
+});
+
+test("ignores setup failures after the monitor stops", async () => {
+  const units = ["frr.service"];
+  let mapCalls = 0;
+  units.map = (callback) => {
+    mapCalls += 1;
+    if (mapCalls > 1) throw new Error("check setup failed");
+    return Array.prototype.map.call(units, callback);
+  };
+  const monitor = createHealthMonitor({ units, setIntervalFn: () => 1 });
+  monitor.start();
+  await monitor.stop();
+  await Promise.resolve();
+  expect(monitor.getStatus().status).toBe("unknown");
+});
+
+test("stops notifying when shutdown begins during an alert", async () => {
+  let monitor;
+  let finishStop;
+  const onUnhealthy = jest.fn(() => {
+    finishStop = monitor.stop();
+  });
+  monitor = createHealthMonitor({
+    units: ["one.service", "two.service"],
+    checkUnit: async () => {
+      throw new Error("inactive");
+    },
+    onUnhealthy,
+  });
+  const result = await monitor.check();
+  await finishStop;
+  expect(result.status).toBe("unhealthy");
+  expect(onUnhealthy).toHaveBeenCalledTimes(1);
+});
+
+test("ignores scheduled callbacks after shutdown", async () => {
+  let scheduledCheck;
+  const setIntervalFn = (callback) => {
+    scheduledCheck = callback;
+    return { unref: jest.fn() };
+  };
+  const checkUnit = jest.fn();
+  const monitor = createHealthMonitor({ units: ["frr.service"], checkUnit, setIntervalFn });
+  monitor.start();
+  await monitor.stop();
+  scheduledCheck();
+  await Promise.resolve();
+  expect(checkUnit).toHaveBeenCalledTimes(1);
+});
+
+test("contains notification failures while reporting setup failures", async () => {
+  const units = ["frr.service"];
+  let mapCalls = 0;
+  units.map = (callback) => {
+    mapCalls += 1;
+    if (mapCalls > 1) throw new Error("check setup failed");
+    return Array.prototype.map.call(units, callback);
+  };
+  const monitor = createHealthMonitor({
+    units,
+    onUnhealthy: async () => {
+      throw new Error("notification failed");
+    },
+    setIntervalFn: () => 1,
+  });
+  monitor.start();
+  await Promise.resolve();
+  await Promise.resolve();
+  await monitor.stop();
+  expect(monitor.getStatus().status).toBe("unhealthy");
 });
 
 test("uses the default systemd command and clock", async () => {
@@ -159,8 +230,33 @@ test("shares an active check and runs the scheduled check callback", async () =>
   await Promise.resolve();
   await Promise.resolve();
   expect(checkUnit).toHaveBeenCalledTimes(2);
-  monitor.stop();
-  monitor.stop();
+  await monitor.stop();
+  await monitor.stop();
+});
+
+test("stops an active check before it updates health or sends an alert", async () => {
+  let finishCheck;
+  const onUnhealthy = jest.fn();
+  const monitor = createHealthMonitor({
+    units: ["frr.service"],
+    checkUnit: () =>
+      new Promise((resolve, reject) => {
+        finishCheck = (error) => (error ? reject(error) : resolve());
+      }),
+    onUnhealthy,
+    setIntervalFn: () => 1,
+  });
+
+  monitor.start();
+  const stopped = monitor.stop();
+  finishCheck(new Error("inactive"));
+  await stopped;
+
+  expect(monitor.getStatus()).toMatchObject({
+    status: "unknown",
+    units: [{ name: "frr.service", status: "unknown" }],
+  });
+  expect(onUnhealthy).not.toHaveBeenCalled();
 });
 
 test("accepts an omitted health monitor configuration", () => {
