@@ -7,6 +7,7 @@ import createDeploymentStatus from "./deployment/status.mjs";
 import acquireDeploymentLock from "./deployment/lock.mjs";
 import reportSetupFailure from "./deployment/setup-failure.mjs";
 import createDeploymentAdmission from "./deployment/admission.mjs";
+import createFailureStatus from "./deployment/failure-status.mjs";
 
 const execFile = promisify(nodeExecFile);
 export default function createDeploymentManager({
@@ -78,7 +79,6 @@ export default function createDeploymentManager({
       }
       return { accepted: true, runId };
     } catch (error) {
-      const failedStep = error.stepName ?? "repository check";
       let recovery;
       if (previousCommit) {
         try {
@@ -88,21 +88,21 @@ export default function createDeploymentManager({
           steps.push({ name: "restore previous commit", status: "failed" });
         }
       }
-      status.set({
-        runId,
-        event,
-        status: "failed",
-        failedStep,
-        error: String(error?.message ?? error).slice(0, 300),
-        recovery,
-        startedAt,
-        finishedAt: now().toISOString(),
-        steps,
-      });
+      status.set(
+        createFailureStatus({
+          error,
+          event,
+          runId,
+          recovery,
+          startedAt,
+          steps,
+          now,
+        }),
+      );
       releaseLock?.();
       try {
         await notify(
-          `Core deployment ${runId} failed at ${failedStep}.${recovery ? ` ${recovery}` : ""}`,
+          `Core deployment ${runId} failed at ${status.get().failedStep}.${recovery ? ` ${recovery}` : ""}`,
         );
       } catch {
         status.update({ notificationError: "Discord notification failed." });

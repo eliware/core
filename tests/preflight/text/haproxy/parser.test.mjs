@@ -1,27 +1,36 @@
 import { expect, test } from "@jest/globals";
 import parseHaproxy from "../../../../src/preflight/text/haproxy/parser.mjs";
 
-test("parses HAProxy sections, directives, and references", () => {
+test("parses HAProxy sections and their directives", () => {
   const parsed = parseHaproxy(
     "haproxy.cfg",
     "global\ndefaults\nfrontend web\n bind 0.0.0.0:443\n default_backend app\nbackend app\n server one 127.0.0.1:8080\n",
   );
+
   expect(parsed.errors).toEqual([]);
-  expect(parsed.sections.get("frontend:web")).toEqual({ bound: true, serverCount: 0 });
-  expect(parsed.sections.get("backend:app")).toEqual({ bound: false, serverCount: 1 });
-  expect(parsed.references).toEqual(["app"]);
+  expect(parsed.sections).toEqual([
+    { kind: "global", name: "", line: 1, directives: [] },
+    { kind: "defaults", name: "", line: 2, directives: [] },
+    {
+      kind: "frontend",
+      name: "web",
+      line: 3,
+      directives: [
+        { value: "bind 0.0.0.0:443", line: 4 },
+        { value: "default_backend app", line: 5 },
+      ],
+    },
+    {
+      kind: "backend",
+      name: "app",
+      line: 6,
+      directives: [{ value: "server one 127.0.0.1:8080", line: 7 }],
+    },
+  ]);
 });
 
-test("reports malformed sections and directives", () => {
-  const parsed = parseHaproxy(
-    "haproxy.cfg",
-    "frontend\nfrontend\nunknown\nglobal\nunknown global\ndefaults\nserver bad bad\n",
-  );
-  expect(parsed.errors.join(" ")).toContain("frontend needs a name");
-  expect(parsed.errors.join(" ")).toContain("duplicate frontend frontend");
-  expect(parseHaproxy("haproxy.cfg", "unknown before section\n").errors.join(" ")).toContain(
-    "setting appears before a section",
-  );
-  expect(parsed.errors.join(" ")).toContain("unknown global directive");
-  expect(parsed.errors.join(" ")).toContain("server needs a valid address and port");
+test("reports directives that appear before a section", () => {
+  expect(parseHaproxy("haproxy.cfg", "unknown before section\n").errors).toEqual([
+    "FAIL haproxy.cfg:1: setting appears before a section.",
+  ]);
 });

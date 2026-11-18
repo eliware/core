@@ -1,5 +1,94 @@
-export default function validateHaproxy(file, { sections, references }) {
+const allowed = {
+  global: new Set([
+    "log",
+    "maxconn",
+    "stats",
+    "user",
+    "group",
+    "daemon",
+    "chroot",
+    "nbproc",
+    "nbthread",
+  ]),
+  defaults: new Set([
+    "log",
+    "mode",
+    "option",
+    "timeout",
+    "retries",
+    "balance",
+    "maxconn",
+    "default-server",
+  ]),
+  frontend: new Set([
+    "bind",
+    "mode",
+    "option",
+    "timeout",
+    "http-request",
+    "http-response",
+    "default_backend",
+    "use_backend",
+    "acl",
+    "redirect",
+    "capture",
+    "compression",
+    "tcp-request",
+  ]),
+  backend: new Set([
+    "mode",
+    "option",
+    "timeout",
+    "balance",
+    "server",
+    "default-server",
+    "stick-table",
+    "stick",
+    "http-request",
+    "http-response",
+    "tcp-check",
+  ]),
+  listen: new Set([
+    "bind",
+    "mode",
+    "option",
+    "timeout",
+    "balance",
+    "server",
+    "default-server",
+    "stats",
+    "acl",
+    "http-request",
+    "http-response",
+  ]),
+};
+
+export default function validateHaproxy(file, { sections: parsedSections }) {
   const errors = [];
+  const sections = new Map();
+  const references = [];
+  for (const section of parsedSections) {
+    const { kind, name, line, directives } = section;
+    const sectionName = name || kind;
+    const key = `${kind}:${sectionName}`;
+    if (["frontend", "backend", "listen"].includes(kind) && !name)
+      errors.push(`FAIL ${file}:${line}: ${kind} needs a name.`);
+    if (sections.has(key)) errors.push(`FAIL ${file}:${line}: duplicate ${kind} ${sectionName}.`);
+    const state = { bound: false, serverCount: 0 };
+    for (const directive of directives) {
+      const { value, line: directiveLine } = directive;
+      const nameOfDirective = value.split(/\s+/u)[0];
+      if (!allowed[kind].has(nameOfDirective))
+        errors.push(`FAIL ${file}:${directiveLine}: unknown ${kind} directive.`);
+      if (/^bind\s+\S+/u.test(value)) state.bound = true;
+      if (/^server\s+\S+\s+\S+/u.test(value)) state.serverCount += 1;
+      const reference = value.match(/^(?:default_backend|use_backend)\s+(\S+)/u);
+      if (reference) references.push(reference[1]);
+      if (/^server\s+/u.test(value) && !/^server\s+\S+\s+(?:\S+:\d+|unix@\S+)/u.test(value))
+        errors.push(`FAIL ${file}:${directiveLine}: server needs a valid address and port.`);
+    }
+    sections.set(key, state);
+  }
   if (!sections.has("global:global") || !sections.has("defaults:defaults"))
     errors.push(`FAIL ${file}: global and defaults sections are required.`);
   for (const [key, state] of sections) {
