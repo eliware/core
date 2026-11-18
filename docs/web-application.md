@@ -76,6 +76,7 @@ The application runs `git pull --ff-only -- origin <branch>`, `npm ci`, `npm tes
 It stops the sequence at the first failed command.
 If a command fails before reload, the application resets the repository to the previous commit without reloading router processes.
 If the new reload fails, the application resets the repository and attempts to reload the previous configuration.
+If Git cannot restore the previous commit, the application records that failure and does not reload the current configuration.
 The dashboard shows the latest deployment result until the process restarts.
 
 ## Health monitoring and notifications

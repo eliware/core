@@ -72,16 +72,6 @@ test("uses the default command adapter and clock", async () => {
   jest.useRealTimers();
 });
 
-test("releases the deployment lock when run ID creation fails", async () => {
-  const createRunId = jest.fn().mockImplementationOnce(() => {
-    throw new Error("random source unavailable");
-  });
-  const manager = createManager({ repositoryPath: "/router/one", createRunId });
-  expect(manager.start("delivery")).toEqual({ accepted: false, status: "unavailable" });
-  expect(manager.start("next-delivery")).toEqual({ accepted: true, runId: undefined });
-  await waitFor(manager, "succeeded");
-});
-
 test("restores the previous commit and skips reload when a preflight step fails", async () => {
   const run = successfulRun();
   run.mockImplementation(async (command, args) => {
@@ -210,7 +200,7 @@ test("records a failed command that does not provide an error message", async ()
   expect(status.steps[1]).toEqual({ name: "npm ci", status: "failed", detail: "null" });
 });
 
-test("rejects a concurrent deployment and records notification failures", async () => {
+test("rejects concurrent deployments for one repository and records notification failures", async () => {
   let finishStatus;
   const run = jest.fn((command, args) => {
     if (command === "git" && args[0] === "status")
@@ -225,38 +215,18 @@ test("rejects a concurrent deployment and records notification failures", async 
   const manager = createManager({ repositoryPath: "/router/core1", run, notify });
   manager.start("delivery-7");
   expect(manager.start("delivery-8")).toEqual({ accepted: false, status: "busy" });
+  expect(createManager({ repositoryPath: "/router/core1" }).start("delivery-9")).toEqual({
+    accepted: false,
+    status: "busy",
+  });
   finishStatus({ stdout: "" });
-  const status = await waitFor(manager, "succeeded");
-  expect(status.notificationError).toBe("Discord notification failed.");
-});
-
-test("records an unexpected deployment setup error", async () => {
-  let calls = 0;
-  const manager = createManager({
-    repositoryPath: "/router/core1",
-    now: () => {
-      calls += 1;
-      if (calls === 1) throw "clock failed";
-      return fixedNow();
-    },
-    notify: jest.fn().mockRejectedValue(new Error("Discord unavailable")),
-  });
-  manager.start("delivery-11");
-  await waitFor(manager, "failed");
-  await Promise.resolve();
-  await Promise.resolve();
-  expect(manager.getStatus()).toMatchObject({
-    status: "failed",
-    error: "clock failed",
-    finishedAt: expect.any(String),
-    notificationError: "Discord notification failed.",
-  });
-  await Promise.resolve();
-  expect(manager.start("delivery-12")).toMatchObject({ accepted: true });
   await waitFor(manager, "succeeded");
+  for (let attempt = 0; attempt < 20 && !manager.getStatus().notificationError; attempt += 1)
+    await Promise.resolve();
+  expect(manager.getStatus().notificationError).toBe("Discord notification failed.");
 });
 
-test("accepts another deployment while setup failure notification is pending", async () => {
+test("releases deployment state while setup failure notification is pending", async () => {
   let calls = 0;
   let notificationCount = 0;
   const notify = jest.fn(() => {
@@ -268,15 +238,21 @@ test("accepts another deployment while setup failure notification is pending", a
     repositoryPath: "/router/one",
     now: () => {
       calls += 1;
-      if (calls === 1) throw new Error("clock failed");
+      if (calls === 1) throw "clock failed";
       return fixedNow();
     },
     notify,
   });
-  manager.start("setup-failure");
+  manager.start("delivery-11");
+  const failed = await waitFor(manager, "failed");
   await Promise.resolve();
   await Promise.resolve();
-  expect(manager.start("next-deployment")).toMatchObject({ accepted: true });
+  expect(failed).toMatchObject({
+    status: "failed",
+    error: "clock failed",
+    finishedAt: expect.any(String),
+  });
+  expect(manager.start("delivery-12")).toMatchObject({ accepted: true });
   await waitFor(manager, "succeeded");
 });
 

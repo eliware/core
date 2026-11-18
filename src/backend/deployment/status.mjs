@@ -1,4 +1,6 @@
-export default function createDeploymentStatus(initial = {}) {
+export default function createDeploymentStatus(
+  initial = { status: "idle", startedAt: null, finishedAt: null, steps: [] },
+) {
   let snapshot = structuredClone(initial);
   return {
     get() {

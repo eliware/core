@@ -108,6 +108,14 @@ test("reports file inventory and unapproved content differences", () => {
   expect(result.lines.some((line) => line.includes("Unexpected configuration difference"))).toBe(
     true,
   );
+
+  const kea = setup();
+  kea.repositories.get(kea.partnerRoot)["etc/kea/kea-dhcp4.conf"] = kea.repositories
+    .get(kea.partnerRoot)
+    ["etc/kea/kea-dhcp4.conf"].replace('"Dhcp4": {', '"Dhcp4": {\n    "valid-lifetime": 3600,');
+  expect(compareRepositories(kea.root, "../core2", kea).lines.join(" ")).toContain(
+    "Unexpected configuration difference: etc/kea/kea-dhcp4.conf.",
+  );
 });
 
 test("accepts generic pair names and reports unreadable config files", () => {

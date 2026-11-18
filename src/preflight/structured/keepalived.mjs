@@ -1,10 +1,14 @@
 import isBalanced from "./balanced.mjs";
+import parseInstances from "../../pair/keepalived/instances.mjs";
 
 export default function validateKeepalived(file, text, files) {
   const errors = [];
   if (!isBalanced(text)) errors.push(`FAIL ${file}: configuration blocks are not balanced.`);
   const blocks = [...text.matchAll(/vrrp_instance\s+(\S+)\s*\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}/gu)];
   if (blocks.length === 0) errors.push(`FAIL ${file}: no VRRP instances are defined.`);
+  for (const [name, instance] of parseInstances(text) ?? [])
+    if (instance.invalidVips.length)
+      errors.push(`FAIL ${file}: ${name} has an invalid virtual address.`);
   for (const [, name, body] of blocks) {
     for (const key of [
       "state",
@@ -26,7 +30,7 @@ export default function validateKeepalived(file, text, files) {
     )) {
       const path = script[1];
       const local =
-        path.match(/^\/eliware\/core[12]\/(.+)$/u)?.[1] ??
+        path.match(/^\/eliware\/[^/]+\/(.+)$/u)?.[1] ??
         (path.startsWith("/etc/keepalived/")
           ? `etc/keepalived/${path.split("/").at(-1)}`
           : undefined);

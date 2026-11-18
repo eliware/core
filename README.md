@@ -98,6 +98,7 @@ Keep `.env` files outside Git and limit dashboard access because the dashboard h
 | `SCREENSHOT_PATH`       | No       | `artifacts/home.png`     | Output file used by the screenshot command.                                                                   |
 
 The dashboard and webhook TCP endpoint numbers must not be the same. The application reads values from its process environment and `.env` in its working directory.
+The screenshot command reads `WEB_URL` and `SCREENSHOT_PATH`. The web server does not read these settings.
 
 ## Operations
 
@@ -160,8 +161,10 @@ Run `npm test` for aggregate validation. Run `npm run build` separately to build
 
 The webhook validates a signed push to `CORE_GITHUB_BRANCH` before deployment.
 It runs `git pull --ff-only --`, `npm ci`, `npm test`, `npm run preflight`, and `npm run reload` in order.
-If a step fails before reload, the application restores the previous commit without reloading router applications.
+If a step fails before reload, the application restores tracked files to the previous commit without reloading applications.
 If reload fails, the application restores the previous commit and attempts to reload its configuration.
+If Git cannot restore the previous commit, the application records the recovery failure and does not reload the current configuration.
+
 Read the [web application guide](docs/web-application.md) for the full deployment and recovery process.
 Follow the approved npm publication process to publish package releases.
 

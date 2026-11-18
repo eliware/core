@@ -47,8 +47,8 @@ export default async function startWebApplication(dependencies) {
   try {
     await server.listen({ port: tcpEndpoint, host: "0.0.0.0" });
     openServers.add(server);
-    await webhookServer.listen({ port: webhookEndpoint, host: "0.0.0.0" });
     openServers.add(webhookServer);
+    await webhookServer.listen({ port: webhookEndpoint, host: "0.0.0.0" });
     healthMonitor.start();
   } catch (error) {
     await shutdownHook();

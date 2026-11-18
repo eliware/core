@@ -1,8 +1,13 @@
 import { expect, test } from "@jest/globals";
 import createDeploymentStatus from "../../../src/backend/deployment/status.mjs";
 
-test("starts with an empty status when no initial value is supplied", () => {
-  expect(createDeploymentStatus().get()).toEqual({});
+test("starts with an idle status when no initial value is supplied", () => {
+  expect(createDeploymentStatus().get()).toEqual({
+    status: "idle",
+    startedAt: null,
+    finishedAt: null,
+    steps: [],
+  });
 });
 
 test("returns independent snapshots and replaces status", () => {

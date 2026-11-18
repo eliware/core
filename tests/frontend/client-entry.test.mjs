@@ -17,3 +17,20 @@ test("passes the page document to the browser client", () => {
 test("registers the app service worker", () => {
   expect(serviceWorkerMock.register).toHaveBeenCalledWith("/service-worker.js");
 });
+
+test("handles rejected and unavailable service worker registration", async () => {
+  jest.resetModules();
+  const register = jest.fn().mockRejectedValue(new Error("registration denied"));
+  globalThis.document = documentMock;
+  globalThis.navigator = { serviceWorker: { register } };
+  await import("../../src/frontend/client-entry.mjs");
+  await Promise.resolve();
+  expect(register).toHaveBeenCalledWith("/service-worker.js");
+
+  jest.resetModules();
+  globalThis.navigator = {};
+  await import("../../src/frontend/client-entry.mjs");
+  expect(renderHome).toHaveBeenLastCalledWith(documentMock);
+  delete globalThis.document;
+  delete globalThis.navigator;
+});

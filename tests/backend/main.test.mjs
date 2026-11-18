@@ -1,5 +1,6 @@
 import { expect, jest, test } from "@jest/globals";
 import startWebApplication from "../../src/backend/main.mjs";
+import createShutdownHook from "../../src/backend/shutdown.mjs";
 
 function dependencies(
   configuration = { tcpEndpoint: 9300, webhookEndpoint: 9301, logLevel: "info" },
@@ -107,7 +108,11 @@ test("uses the configured log level", async () => {
 test("closes both listeners after startup fails", async () => {
   const deps = dependencies({ tcpEndpoint: 8083, webhookEndpoint: 9304, logLevel: "info" });
   deps.webhookServer.listen.mockRejectedValue(new Error("Port is in use"));
+  deps.values.createShutdownHook.mockImplementation((options) => createShutdownHook(options));
   await expect(startWebApplication(deps.values)).rejects.toThrow("Port is in use");
-  expect(deps.shutdown).toHaveBeenCalledTimes(1);
+  expect(deps.server.close).toHaveBeenCalledTimes(1);
+  expect(deps.webhookServer.close).toHaveBeenCalledTimes(1);
+  const isListening = deps.values.createShutdownHook.mock.calls[0][0].isListening;
+  expect(isListening(deps.webhookServer)).toBe(true);
   expect(deps.healthMonitor.start).not.toHaveBeenCalled();
 });

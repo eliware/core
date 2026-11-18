@@ -9,6 +9,13 @@ test("checks VRRP fields, priority, and notification script references", () => {
   expect(
     validateKeepalived(
       "etc/keepalived/keepalived.conf",
+      valid.replace("10.0.0.254/24", "invalid-address"),
+      files,
+    ).join(" "),
+  ).toContain("has an invalid virtual address");
+  expect(
+    validateKeepalived(
+      "etc/keepalived/keepalived.conf",
       "vrrp_instance bad { priority 999 }",
       [],
     ).join(" "),

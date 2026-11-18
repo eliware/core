@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import runDeploymentStep from "./deployment/step.mjs";
 import recoverDeployment from "./deployment/recovery.mjs";
 import createDeploymentStatus from "./deployment/status.mjs";
+import acquireDeploymentLock from "./deployment/lock.mjs";
 
 const execFile = promisify(nodeExecFile);
 
@@ -15,20 +16,15 @@ export default function createDeploymentManager({
   recover = recoverDeployment,
   now = () => new Date(),
   createRunId = randomUUID,
+  acquireLock = acquireDeploymentLock,
 } = {}) {
   let active = false;
-  const status = createDeploymentStatus({
-    status: "idle",
-    startedAt: null,
-    finishedAt: null,
-    steps: [],
-  });
-  async function execute(event, runId) {
-    const startedAt = now().toISOString();
+  const status = createDeploymentStatus();
+  async function execute(event, runId, releaseLock) {
+    let startedAt;
     const steps = [];
     let previousCommit;
     let reloadStarted = false;
-
     const step = (name, command, args) =>
       runDeploymentStep({
         name,
@@ -37,16 +33,12 @@ export default function createDeploymentManager({
         repositoryPath,
         run,
         steps,
-        onStart: (currentStep, priorSteps) => {
-          status.update({
-            currentStep,
-            steps: structuredClone(priorSteps),
-          });
-        },
+        onStart: (currentStep, priorSteps) =>
+          status.update({ currentStep, steps: structuredClone(priorSteps) }),
       });
-
-    status.set({ runId, event, status: "running", startedAt, finishedAt: null, steps });
     try {
+      startedAt = now().toISOString();
+      status.set({ runId, event, status: "running", startedAt, finishedAt: null, steps });
       const dirty = await run("git", ["status", "--porcelain"], { cwd: repositoryPath });
       if (String(dirty.stdout ?? "").trim())
         throw new Error("Configuration repository has uncommitted changes.");
@@ -60,11 +52,6 @@ export default function createDeploymentManager({
       await step("npm run preflight", "npm", ["run", "preflight"]);
       reloadStarted = true;
       await step("npm run reload", "npm", ["run", "reload"]);
-      try {
-        await notify(`Core deployment ${runId} succeeded on ${branch}.`);
-      } catch {
-        status.update({ notificationError: "Discord notification failed." });
-      }
       status.set({
         ...status.get(),
         runId,
@@ -74,6 +61,13 @@ export default function createDeploymentManager({
         finishedAt: now().toISOString(),
         steps,
       });
+      releaseLock?.();
+      active = false;
+      try {
+        await notify(`Core deployment ${runId} succeeded on ${branch}.`);
+      } catch {
+        status.update({ notificationError: "Discord notification failed." });
+      }
       return { accepted: true, runId };
     } catch (error) {
       const failedStep = error.stepName ?? "repository check";
@@ -91,12 +85,14 @@ export default function createDeploymentManager({
         event,
         status: "failed",
         failedStep,
-        error: String(error.message).slice(0, 300),
+        error: String(error?.message ?? error).slice(0, 300),
         recovery,
         startedAt,
         finishedAt: now().toISOString(),
         steps,
       });
+      releaseLock?.();
+      active = false;
       try {
         await notify(
           `Core deployment ${runId} failed at ${failedStep}.${recovery ? ` ${recovery}` : ""}`,
@@ -106,45 +102,48 @@ export default function createDeploymentManager({
       }
       return { accepted: true, runId };
     } finally {
+      releaseLock?.();
       active = false;
     }
   }
-
   function start(event) {
     if (!repositoryPath) return { accepted: false, status: "unconfigured" };
     if (active) return { accepted: false, status: "busy" };
-    active = true;
     let runId;
     try {
       runId = createRunId();
     } catch {
-      active = false;
       return { accepted: false, status: "unavailable" };
     }
-    void execute(event, runId)
-      .catch(async (error) => {
-        active = false;
-        const failure = String(error?.message ?? error).slice(0, 300);
-        status.set({
-          runId,
-          event,
-          status: "failed",
-          error: failure,
-          startedAt: status.get().startedAt,
-          finishedAt: status.timestamp(() => now().toISOString(), status.get().startedAt),
-          steps: status.get().steps,
-        });
-        try {
-          await notify(`Core deployment ${runId} failed at deployment setup. ${failure}`);
-        } catch {
-          status.update({ notificationError: "Discord notification failed." });
-        }
-      })
-      .finally(() => {
-        active = false;
+    let releaseLock;
+    try {
+      releaseLock = acquireLock(repositoryPath);
+    } catch (error) {
+      return {
+        accepted: false,
+        status: error?.message?.includes("deployment process is active") ? "busy" : "unavailable",
+      };
+    }
+    active = true;
+    void execute(event, runId, releaseLock).catch(async (error) => {
+      active = false;
+      const failure = String(error?.message ?? error).slice(0, 300);
+      status.set({
+        runId,
+        event,
+        status: "failed",
+        error: failure,
+        startedAt: status.get().startedAt,
+        finishedAt: status.timestamp(() => now().toISOString(), status.get().startedAt),
+        steps: status.get().steps,
       });
+      try {
+        await notify(`Core deployment ${runId} failed at deployment setup. ${failure}`);
+      } catch {
+        status.update({ notificationError: "Discord notification failed." });
+      }
+    });
     return { accepted: true, runId };
   }
-
   return { start, getStatus: status.get };
 }

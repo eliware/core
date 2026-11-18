@@ -111,3 +111,16 @@ test("rejects missing VRRP instances and invalid priority pairs", () => {
   const errors = validatePair("core1", "core2", core1, core2).errors.join(" ");
   expect(errors).toContain("parsable Keepalived VRRP instances");
 });
+
+test("rejects identical malformed virtual addresses in both repositories", () => {
+  const [left, right] = maps();
+  for (const files of [left, right]) {
+    files.set(
+      "etc/keepalived/keepalived.conf",
+      files.get("etc/keepalived/keepalived.conf").replace("192.0.2.169/24", "invalid-address"),
+    );
+  }
+  expect(validatePair("left", "right", left, right).errors.join(" ")).toContain(
+    "has an invalid virtual address",
+  );
+});

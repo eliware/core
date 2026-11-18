@@ -7,6 +7,7 @@ export default function normalizeKea(path, text) {
     const ha = config.Dhcp4["hooks-libraries"].find(
       (item) => item.parameters?.["high-availability"],
     ).parameters["high-availability"][0];
+    ha.peers = [...ha.peers].sort((left, right) => left.name.localeCompare(right.name));
     ha["this-server-name"] = "<local-server>";
     return JSON.stringify(config, null, 2);
   } catch {
