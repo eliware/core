@@ -38,6 +38,26 @@ export default function createHealthMonitor({
     return running;
   }
 
+  async function recordCheckSetupFailure() {
+    checks = checks.map((item) => ({
+      ...item,
+      status: "unhealthy",
+      checkedAt: null,
+      detail: "Health check could not start",
+    }));
+    for (const result of checks) {
+      try {
+        await onUnhealthy(result);
+      } catch {
+        // Notification failures do not change health results or stop future checks.
+      }
+    }
+  }
+
+  function startCheck() {
+    void check().catch(() => recordCheckSetupFailure());
+  }
+
   function getStatus() {
     const status =
       checks.length === 0
@@ -59,8 +79,8 @@ export default function createHealthMonitor({
     getStatus,
     start() {
       if (timer) return;
-      void check();
-      timer = setIntervalFn(() => void check(), intervalMs);
+      startCheck();
+      timer = setIntervalFn(startCheck, intervalMs);
       timer.unref?.();
     },
     stop() {

@@ -15,10 +15,8 @@ export default async function recoverDeployment({
     recovery = `Previous commit restore failed: ${String(error?.message ?? error).slice(0, 200)}`;
     steps.push({ name: "restore previous commit", status: "failed" });
   }
-  if (reloadStarted) {
-    const reloadName = restored
-      ? "reload previous configuration"
-      : "reload configuration after restore failure";
+  if (reloadStarted && restored) {
+    const reloadName = "reload previous configuration";
     try {
       await run("npm", ["run", "reload"], {
         cwd: repositoryPath,
@@ -32,12 +30,7 @@ export default async function recoverDeployment({
         status: "failed",
         detail: String(error?.message ?? error).slice(0, 300),
       });
-      recovery = [
-        recovery,
-        restored
-          ? "Previous commit restored, but its reload failed."
-          : "Configuration reload also failed.",
-      ]
+      recovery = [recovery, "Previous commit restored, but its reload failed."]
         .filter(Boolean)
         .join(" ");
     }

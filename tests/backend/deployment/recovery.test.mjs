@@ -52,26 +52,8 @@ test("reports reset and restored reload failures", async () => {
   expect(reloadSteps.at(-1)).toMatchObject({ status: "failed", detail: "reload denied" });
 });
 
-test("reports a reload failure after commit restoration fails", async () => {
-  const run = jest
-    .fn()
-    .mockRejectedValueOnce(new Error("reset denied"))
-    .mockRejectedValueOnce(new Error("reload denied"));
-  const steps = [];
-  await expect(
-    recoverDeployment({
-      run,
-      repositoryPath: "/router",
-      previousCommit: "abc",
-      reloadStarted: true,
-      steps,
-    }),
-  ).resolves.toContain("Configuration reload also failed.");
-  expect(steps.at(-1)).toMatchObject({ status: "failed", detail: "reload denied" });
-});
-
-test("attempts configuration reload after a failed commit restore", async () => {
-  const run = jest.fn().mockRejectedValueOnce(new Error("reset denied")).mockResolvedValueOnce({});
+test("does not reload when commit restoration fails after a deployment reload", async () => {
+  const run = jest.fn().mockRejectedValue(new Error("reset denied"));
   const steps = [];
   await expect(
     recoverDeployment({
@@ -82,11 +64,8 @@ test("attempts configuration reload after a failed commit restore", async () => 
       steps,
     }),
   ).resolves.toContain("Previous commit restore failed: reset denied");
-  expect(run).toHaveBeenNthCalledWith(2, "npm", ["run", "reload"], expect.any(Object));
-  expect(steps.at(-1)).toEqual({
-    name: "reload configuration after restore failure",
-    status: "passed",
-  });
+  expect(run).toHaveBeenCalledTimes(1);
+  expect(steps).toEqual([{ name: "restore previous commit", status: "failed" }]);
 });
 
 test("preserves untracked files while restoring the prior commit", async () => {

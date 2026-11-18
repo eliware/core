@@ -94,6 +94,33 @@ test("reports unknown health until configured units pass", () => {
   monitor.stop();
 });
 
+test("records and reports a health check setup failure", async () => {
+  const units = ["frr.service"];
+  let mapCalls = 0;
+  units.map = (callback) => {
+    mapCalls += 1;
+    if (mapCalls > 1) throw new Error("check setup failed");
+    return Array.prototype.map.call(units, callback);
+  };
+  const onUnhealthy = jest.fn();
+  const monitor = createHealthMonitor({
+    units,
+    onUnhealthy,
+    setIntervalFn: () => 1,
+  });
+
+  monitor.start();
+  await Promise.resolve();
+  await Promise.resolve();
+
+  expect(monitor.getStatus()).toMatchObject({
+    status: "unhealthy",
+    units: [{ name: "frr.service", status: "unhealthy", detail: "Health check could not start" }],
+  });
+  expect(onUnhealthy).toHaveBeenCalledWith(monitor.getStatus().units[0]);
+  monitor.stop();
+});
+
 test("uses the default systemd command and clock", async () => {
   jest.useFakeTimers({ now: new Date("2026-11-18T12:00:00.000Z") });
   const monitor = createHealthMonitor({ units: ["frr.service"] });

@@ -5,6 +5,7 @@ directives:
     dos:
       - Run a separate web application on each managed router.
       - Run the read-only dashboard on `PORT` and the webhook listener on `WEBHOOK_PORT`.
+      - Set the webhook listener to use the loopback interface.
       - Set a distinct webhook port for each server.
       - Require distinct dashboard and webhook ports.
       - Read the GitHub webhook secret from the router environment file.
@@ -32,4 +33,5 @@ directives:
       - Do not change router configuration through the dashboard.
       - Do not reload applications after an earlier deployment step fails.
       - Do not start a deployment with an unauthenticated webhook.
+      - Do not expose the webhook listener on all network interfaces.
       - Do not store credentials or webhook secrets in Git.

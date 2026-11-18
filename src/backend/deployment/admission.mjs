@@ -36,6 +36,11 @@ export default function createDeploymentAdmission({
     };
     void execute(event, runId, release).catch(async (error) => {
       active = false;
+      try {
+        release();
+      } catch {
+        // Preserve setup failure reporting when lock cleanup also fails.
+      }
       await reportSetupFailure(error, event, runId);
     });
     return { accepted: true, runId };

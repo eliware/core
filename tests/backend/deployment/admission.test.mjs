@@ -102,4 +102,20 @@ test("reports asynchronous setup failures", async () => {
   await Promise.resolve();
 
   expect(state.reportSetupFailure).toHaveBeenCalledWith(new Error("setup failed"), "push", "run-1");
+  expect(state.acquireLock.mock.results[0].value).toHaveBeenCalledTimes(1);
+});
+
+test("reports setup failure when releasing its lock also fails", async () => {
+  const release = jest.fn(() => {
+    throw new Error("lock cleanup failed");
+  });
+  const state = setup({ acquireLock: () => release });
+  const failure = new Error("execution failed");
+  state.execute.mockRejectedValueOnce(failure);
+
+  state.admit("push", state.execute);
+  await Promise.resolve();
+
+  expect(release).toHaveBeenCalledTimes(1);
+  expect(state.reportSetupFailure).toHaveBeenCalledWith(failure, "push", "run-1");
 });

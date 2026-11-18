@@ -91,7 +91,7 @@ test.each([
     expect(deps.server.listen).toHaveBeenCalledWith({ port: tcpEndpoint, host: "0.0.0.0" });
     expect(deps.webhookServer.listen).toHaveBeenCalledWith({
       port: webhookEndpoint,
-      host: "0.0.0.0",
+      host: "127.0.0.1",
     });
     expect(typeof deps.signals.shutdownHook).toBe("function");
     expect(deps.healthMonitor.start).toHaveBeenCalledTimes(1);
