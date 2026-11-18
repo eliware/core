@@ -62,7 +62,8 @@ test("rejects unmatched weight maps and malformed Kea settings", () => {
     core2
       .get("etc/kea/kea-dhcp4.conf")
       .replace("core2.purinton.us", "wrong.purinton.us")
-      .replace("10.0.0.2:8000", "10.0.0.1:8000"),
+      .replace("10.0.0.2:8000", "10.0.0.1:8000")
+      .replace("http://10.0.0.1:8000/", "http://10.0.0.9:8000/"),
   );
 
   const errors = validatePair("core1", "core2", core1, core2).errors.join(" ");
@@ -70,6 +71,7 @@ test("rejects unmatched weight maps and malformed Kea settings", () => {
   expect(errors).toContain("Kea DHCPv4 HA configuration is missing or invalid");
   expect(errors).toContain("Kea must name its FRR hostname");
   expect(errors).toContain("Kea local HA URL must use its FRR router ID");
+  expect(errors).toContain("Kea partner HA URL must use the partner FRR router ID");
 });
 
 test("rejects incorrect Keepalived, conntrackd, and connected prefix relationships", () => {

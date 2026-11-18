@@ -15,3 +15,11 @@ test.each(["invalid", "http://discord.com/webhook", "https://example.com/webhook
     expect(() => validateDiscordUrl(url)).toThrow("Discord");
   },
 );
+
+test.each([
+  "https://discord.com/",
+  "https://discord.com/channels/123/456",
+  "https://user:pass@discord.com/api/webhooks/123/token",
+])("rejects a Discord URL that is not a webhook endpoint: %s", (url) => {
+  expect(() => validateDiscordUrl(url)).toThrow("Discord");
+});

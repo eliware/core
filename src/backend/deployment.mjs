@@ -14,6 +14,7 @@ export default function createDeploymentManager({
   run = (command, args, options) => execFile(command, args, { ...options, windowsHide: true }),
   recover = recoverDeployment,
   now = () => new Date(),
+  createRunId = randomUUID,
 } = {}) {
   let active = false;
   const status = createDeploymentStatus({
@@ -22,7 +23,6 @@ export default function createDeploymentManager({
     finishedAt: null,
     steps: [],
   });
-
   async function execute(event, runId) {
     const startedAt = now().toISOString();
     const steps = [];
@@ -114,7 +114,13 @@ export default function createDeploymentManager({
     if (!repositoryPath) return { accepted: false, status: "unconfigured" };
     if (active) return { accepted: false, status: "busy" };
     active = true;
-    const runId = randomUUID();
+    let runId;
+    try {
+      runId = createRunId();
+    } catch {
+      active = false;
+      return { accepted: false, status: "unavailable" };
+    }
     void execute(event, runId)
       .catch(async (error) => {
         active = false;

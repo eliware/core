@@ -5,6 +5,7 @@ test("checks shell interpreters, quoted text, and control blocks", () => {
   expect(validateShell("a.sh", "#!/bin/bash\nif true; then echo ok; fi\n")).toEqual([]);
   expect(validateShell("a.sh", "echo 'open\n").join(" ")).toContain("quoted string is not closed");
   expect(validateShell("a.sh", '#!/bin/bash\necho "a\\"b"\n')).toEqual([]);
+  expect(validateShell("a.sh", '#!/bin/bash\necho "first\\\n\\"second"\n')).toEqual([]);
   expect(validateShell("a.sh", "#!/usr/bin/env bash\nif true; then\n").join(" ")).toContain(
     "unmatched if keyword",
   );

@@ -72,6 +72,16 @@ test("uses the default command adapter and clock", async () => {
   jest.useRealTimers();
 });
 
+test("releases the deployment lock when run ID creation fails", async () => {
+  const createRunId = jest.fn().mockImplementationOnce(() => {
+    throw new Error("random source unavailable");
+  });
+  const manager = createManager({ repositoryPath: "/router/one", createRunId });
+  expect(manager.start("delivery")).toEqual({ accepted: false, status: "unavailable" });
+  expect(manager.start("next-delivery")).toEqual({ accepted: true, runId: undefined });
+  await waitFor(manager, "succeeded");
+});
+
 test("restores the previous commit and skips reload when a preflight step fails", async () => {
   const run = successfulRun();
   run.mockImplementation(async (command, args) => {
@@ -121,7 +131,10 @@ test("reports rollback failure after a deployment error", async () => {
   expect(status.steps.at(-1)).toEqual({ name: "restore previous commit", status: "failed" });
 });
 
-test("records deployment failure when recovery unexpectedly rejects", async () => {
+test.each([
+  { recoveryError: new Error("unexpected recovery error"), expected: "unexpected recovery error" },
+  { recoveryError: null, expected: "null" },
+])("records deployment failure when recovery rejects", async ({ recoveryError, expected }) => {
   const run = successfulRun();
   run.mockImplementation(async (command, args) => {
     if (command === "git" && args[0] === "rev-parse") return { stdout: `${commit}\n` };
@@ -131,29 +144,12 @@ test("records deployment failure when recovery unexpectedly rejects", async () =
   const manager = createManager({
     repositoryPath: "/router/core1",
     run,
-    recover: jest.fn().mockRejectedValue(new Error("unexpected recovery error")),
+    recover: jest.fn().mockRejectedValue(recoveryError),
   });
   manager.start("delivery-recovery-error");
   const status = await waitFor(manager, "failed");
   expect(status.failedStep).toBe("npm ci");
-  expect(status.recovery).toBe("Recovery failed: unexpected recovery error");
-});
-
-test("records recovery rejection values without a message", async () => {
-  const run = successfulRun();
-  run.mockImplementation(async (command, args) => {
-    if (command === "git" && args[0] === "rev-parse") return { stdout: `${commit}\n` };
-    if (command === "npm" && args[0] === "ci") throw new Error("install failed");
-    return { stdout: "" };
-  });
-  const manager = createManager({
-    repositoryPath: "/router/core1",
-    run,
-    recover: jest.fn().mockRejectedValue(null),
-  });
-  manager.start("delivery-null-recovery-error");
-  const status = await waitFor(manager, "failed");
-  expect(status.recovery).toBe("Recovery failed: null");
+  expect(status.recovery).toBe(`Recovery failed: ${expected}`);
 });
 
 test("reports a failed reload of the restored configuration", async () => {

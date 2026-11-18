@@ -1,6 +1,6 @@
 import { parse as parseJsonc } from "jsonc-parser";
 
-export default function validateKea(node, text = "") {
+export default function validateKea(node, partnerNode, text = "") {
   try {
     const config = parseJsonc(text);
     const ha = config.Dhcp4["hooks-libraries"].find(
@@ -16,6 +16,9 @@ export default function validateKea(node, text = "") {
       errors.push("Kea HA peers must define one primary and one secondary server.");
     if (peers.get(self)?.url !== `http://${node.routerId}:8000/`) {
       errors.push("Kea local HA URL must use its FRR router ID.");
+    }
+    if (peers.get(partnerNode.hostname)?.url !== `http://${partnerNode.routerId}:8000/`) {
+      errors.push("Kea partner HA URL must use the partner FRR router ID.");
     }
     return errors;
   } catch {

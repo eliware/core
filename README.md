@@ -72,7 +72,7 @@ Run `npm run lint` to run lint checks without the full aggregate validation.
 ## Troubleshooting
 
 If the application rejects a port, set a different integer from `1` through `65535` for each listener.
-If `/client.js` returns HTTP 404, run `npm run build` and confirm that `dist/client.js` exists.
+If a new checkout returns HTTP 404 for `/client.js`, run `npm run build` and confirm that `dist/client.js` exists.
 If the webhook returns HTTP 503, set `CORE_REPO_PATH` and `GITHUB_WEBHOOK_SECRET` in `.env`.
 If health status says `unconfigured`, set `CORE_HEALTH_UNITS` to one or more systemd unit names.
 Read the [CLI guide](docs/cli-application.md) for CLI exit codes and validation failures.
@@ -92,7 +92,7 @@ Keep `.env` files outside Git and limit dashboard access because the dashboard h
 | `GITHUB_WEBHOOK_SECRET` | No       | None                     | Secret for signed GitHub pushes. Required to enable deployments.                                              |
 | `CORE_GITHUB_BRANCH`    | No       | `main`                   | Branch name with slash-separated segments that start with a letter, number, or underscore, and excludes `..`. |
 | `DISCORD_WEBHOOK_URL`   | No       | None                     | HTTPS Discord webhook URL for rich embed notifications.                                                       |
-| `CORE_HEALTH_UNITS`     | No       | None                     | Comma-separated systemd unit names ending in `.service`.                                                      |
+| `CORE_HEALTH_UNITS`     | No       | Empty list               | Comma-separated systemd unit names ending in `.service`.                                                      |
 | `LOG_LEVEL`             | No       | `info`                   | Log level passed to the application logger.                                                                   |
 | `WEB_URL`               | No       | `http://127.0.0.1:9300/` | Server URL used by the screenshot command.                                                                    |
 | `SCREENSHOT_PATH`       | No       | `artifacts/home.png`     | Output file used by the screenshot command.                                                                   |

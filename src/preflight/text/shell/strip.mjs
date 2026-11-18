@@ -1,4 +1,5 @@
 export default function stripShellText(text) {
+  text = text.replace(/\\\r?\n/gu, "");
   let result = "";
   let quote = "";
   let escaped = false;

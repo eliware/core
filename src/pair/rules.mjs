@@ -13,8 +13,8 @@ export default function validatePair(leftName, rightName, leftFiles, rightFiles)
   if (!frr.left || !frr.right) return { errors: frr.errors };
 
   const errors = [...frr.errors];
-  errors.push(...validateKea(frr.left, left.get("etc/kea/kea-dhcp4.conf")));
-  errors.push(...validateKea(frr.right, right.get("etc/kea/kea-dhcp4.conf")));
+  errors.push(...validateKea(frr.left, frr.right, left.get("etc/kea/kea-dhcp4.conf")));
+  errors.push(...validateKea(frr.right, frr.left, right.get("etc/kea/kea-dhcp4.conf")));
   errors.push(
     ...validateKeepalived(
       frr.left,

@@ -4,7 +4,8 @@ export default function validateShell(file, text) {
   const errors = [];
   let quote = "";
   let escaped = false;
-  for (const line of text.split(/\r?\n/u)) {
+  const normalized = text.replace(/\\\r?\n/gu, "");
+  for (const line of normalized.split(/\r?\n/u)) {
     for (const char of line) {
       if (escaped) escaped = false;
       else if (char === "\\" && quote !== "'") escaped = true;
@@ -15,7 +16,7 @@ export default function validateShell(file, text) {
   if (quote) errors.push(`FAIL ${file}: quoted string is not closed.`);
   if (!/^#!(?:\/usr\/bin\/env\s+)?(?:\/bin\/)?(?:ba)?sh\b/mu.test(text))
     errors.push(`FAIL ${file}: a shell interpreter line is required.`);
-  const structural = stripShellText(text);
+  const structural = stripShellText(normalized);
   const stack = [];
   for (const token of structural.match(/\b(?:if|fi|for|while|until|select|done|case|esac)\b/gu) ??
     []) {
