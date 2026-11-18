@@ -69,3 +69,17 @@ test("rejects an invalid partner HA URL", () => {
     ),
   ).toContain("Kea partner HA URL must use the partner FRR router ID.");
 });
+
+test("rejects duplicate HA peer names", () => {
+  const config = JSON.parse(createPairRepo("core1")["etc/kea/kea-dhcp4.conf"]);
+  const peers = config.Dhcp4["hooks-libraries"][0].parameters["high-availability"][0].peers;
+  peers[1].name = peers[0].name;
+
+  expect(
+    validateKea(
+      { routerId: "10.0.0.1", hostname: "core1.purinton.us" },
+      { routerId: "10.0.0.2", hostname: "core2.purinton.us" },
+      JSON.stringify(config),
+    ).join(" "),
+  ).toContain("must name the local and partner servers exactly once");
+});

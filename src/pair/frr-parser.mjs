@@ -1,15 +1,18 @@
-function escapeRegex(value = "") {
+function escapeRegex(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
 }
 
 export default function parseFrr(text = "") {
-  const hostname = text.match(/^hostname\s+(\S+)/mu)?.[1];
-  const asn = Number(text.match(/^router bgp\s+(\d+)/mu)?.[1]);
-  const routerId = text.match(/^\s+bgp router-id\s+(\S+)/mu)?.[1];
-  const peerIp = text.match(/^\s*neighbor\s+(\S+)\s+description core peer\s*$/mu)?.[1];
-  const peerAsn = text.match(
-    new RegExp(`^\\s*neighbor\\s+${escapeRegex(peerIp)}\\s+remote-as\\s+(\\d+)`, "mu"),
-  )?.[1];
+  const hostname = uniqueValue(text, /^hostname\s+(\S+)\s*$/gmu);
+  const asn = Number(uniqueValue(text, /^router bgp\s+(\d+)\s*$/gmu));
+  const routerId = uniqueValue(text, /^\s+bgp router-id\s+(\S+)\s*$/gmu);
+  const peerIp = uniqueValue(text, /^\s*neighbor\s+(\S+)\s+description core peer\s*$/gmu);
+  const peerAsn = peerIp
+    ? uniqueValue(
+        text,
+        new RegExp(`^\\s*neighbor\\s+${escapeRegex(peerIp)}\\s+remote-as\\s+(\\d+)\\s*$`, "gmu"),
+      )
+    : undefined;
   if (!hostname || !Number.isInteger(asn) || !routerId || !peerIp || !peerAsn) return null;
   const weights = new Map(
     [...text.matchAll(/^\s*neighbor\s+(\S+)\s+weight\s+(\d+)\s*$/gmu)].map((item) => [
@@ -28,4 +31,9 @@ export default function parseFrr(text = "") {
     weights,
     neighbors,
   };
+}
+
+function uniqueValue(text, pattern) {
+  const matches = [...text.matchAll(pattern)];
+  return matches.length === 1 ? matches[0][1] : undefined;
 }

@@ -12,7 +12,8 @@ export default function validateDiscordUrl(value) {
   )
     throw new Error("DISCORD_WEBHOOK_URL must use an HTTPS Discord hostname.");
   if (
-    !/^\/api\/webhooks\/\d+\/[^/]+\/?$/u.test(parsedUrl.pathname) ||
+    parsedUrl.port ||
+    !/^\/api\/webhooks\/\d+\/[A-Za-z0-9._-]+\/?$/u.test(parsedUrl.pathname) ||
     parsedUrl.username ||
     parsedUrl.password ||
     parsedUrl.search ||

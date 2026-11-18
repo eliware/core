@@ -1,7 +1,7 @@
-import { resolve } from "node:path";
 import isBalanced from "./balanced.mjs";
+import readRepositoryFile from "../../preflight-config/read-repository-file.mjs";
 
-export default function validateNamed(file, text, files, root, readFile) {
+export default function validateNamed(file, text, files, root, readFile, realPath) {
   const errors = [];
   if (!isBalanced(text.replace(/\/\*[\s\S]*?\*\//gu, "").replace(/\/\/[^\n]*/gu, "")))
     errors.push(`FAIL ${file}: configuration blocks are not balanced.`);
@@ -12,7 +12,7 @@ export default function validateNamed(file, text, files, root, readFile) {
       errors.push(`FAIL ${file}: referenced ${local} file is missing.`);
     else if (local) {
       try {
-        readFile(resolve(root, local), "utf8");
+        readRepositoryFile(root, local, readFile, realPath);
       } catch {
         errors.push(`FAIL ${file}: referenced ${local} file cannot be read.`);
       }

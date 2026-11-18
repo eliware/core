@@ -158,17 +158,28 @@ test("stops notifying when shutdown begins during an alert", async () => {
 
 test("ignores scheduled callbacks after shutdown", async () => {
   let scheduledCheck;
+  const timer = { id: "timer", unref: jest.fn() };
+  const clearIntervalFn = jest.fn();
   const setIntervalFn = (callback) => {
     scheduledCheck = callback;
-    return { unref: jest.fn() };
+    return timer;
   };
   const checkUnit = jest.fn();
-  const monitor = createHealthMonitor({ units: ["frr.service"], checkUnit, setIntervalFn });
+  const monitor = createHealthMonitor({
+    units: ["frr.service"],
+    checkUnit,
+    setIntervalFn,
+    clearIntervalFn,
+  });
   monitor.start();
+  await Promise.resolve();
+  await Promise.resolve();
+  checkUnit.mockClear();
   await monitor.stop();
   scheduledCheck();
   await Promise.resolve();
-  expect(checkUnit).toHaveBeenCalledTimes(1);
+  expect(clearIntervalFn).toHaveBeenCalledWith(timer);
+  expect(checkUnit).not.toHaveBeenCalled();
 });
 
 test("contains notification failures while reporting setup failures", async () => {

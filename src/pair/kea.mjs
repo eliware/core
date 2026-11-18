@@ -14,6 +14,13 @@ export default function validateKea(node, partnerNode, text = "") {
     const roles = ha.peers.map((peer) => peer.role).sort();
     if (ha.peers.length !== 2 || roles[0] !== "primary" || roles[1] !== "secondary")
       errors.push("Kea HA peers must define one primary and one secondary server.");
+    if (
+      peers.size !== 2 ||
+      !peers.has(self) ||
+      !peers.has(partnerNode.hostname) ||
+      self === partnerNode.hostname
+    )
+      errors.push("Kea HA peers must name the local and partner servers exactly once.");
     if (peers.get(self)?.url !== `http://${node.routerId}:8000/`) {
       errors.push("Kea local HA URL must use its FRR router ID.");
     }

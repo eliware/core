@@ -22,6 +22,9 @@ test.each([
   "https://user:pass@discord.com/api/webhooks/123/token",
   "https://discord.com/api/webhooks/123/token?wait=true",
   "https://discord.com/api/webhooks/123/token#fragment",
+  "https://discord.com:8443/api/webhooks/123/token",
+  "https://discord.com/api/webhooks/123/token%2Fprivate",
+  "https://discord.com/api/webhooks/123/%2e%2e",
 ])("rejects a Discord URL that is not a webhook endpoint: %s", (url) => {
   expect(() => validateDiscordUrl(url)).toThrow("Discord");
 });

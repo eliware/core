@@ -11,6 +11,7 @@ export default function createHealthMonitor({
   onUnhealthy = async () => {},
   now = () => new Date(),
   setIntervalFn = setInterval,
+  clearIntervalFn = clearInterval,
 } = {}) {
   let checks = units.map((name) => ({ name, status: "unknown", checkedAt: null }));
   let timer;
@@ -87,7 +88,7 @@ export default function createHealthMonitor({
     check,
     getStatus,
     start() {
-      if (timer) return;
+      if (timer !== undefined) return;
       stopped = false;
       startCheck();
       timer = setIntervalFn(startCheck, intervalMs);
@@ -96,7 +97,7 @@ export default function createHealthMonitor({
     async stop() {
       stopped = true;
       generation += 1;
-      if (timer) clearInterval(timer);
+      if (timer !== undefined) clearIntervalFn(timer);
       timer = undefined;
       running = undefined;
     },

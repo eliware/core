@@ -61,8 +61,14 @@ Use the [documentation index](docs/README.md) and [specifications index](specs/R
 ## Testing
 
 Run `npm test` for the aggregate validation suite.
+Run `npm run lint` to check code style and `npm run audit` to check dependencies.
+Run `npm run format` to format files and `npm run format:check` to check formatting.
+Run `npm run pack` to validate package contents.
+
 Run `npm run build` to build browser assets.
-Read the [web application guide](docs/web-application.md) for browser checks and other development commands.
+Run `npm run puppeteer` to install Chrome for browser checks.
+Run `npm run screenshots` or `npm run lighthouse` while the web application runs.
+Read the [web application guide](docs/web-application.md#browser-validation) for browser check details.
 
 ## Troubleshooting
 

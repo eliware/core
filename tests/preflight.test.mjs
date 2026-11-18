@@ -3,7 +3,10 @@ const defaultCollect = jest.fn();
 const defaultRead = jest.fn();
 const defaultRun = jest.fn();
 jest.unstable_mockModule("../src/repo-files.mjs", () => ({ default: defaultCollect }));
-jest.unstable_mockModule("node:fs", () => ({ readFileSync: defaultRead }));
+jest.unstable_mockModule("node:fs", () => ({
+  readFileSync: defaultRead,
+  realpathSync: (path) => path,
+}));
 jest.unstable_mockModule("node:child_process", () => ({ spawnSync: defaultRun }));
 const { default: preflight } = await import("../src/preflight.mjs");
 
