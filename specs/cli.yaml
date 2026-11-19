@@ -11,6 +11,13 @@ directives:
       - Validate required files, formatting, parsable data, and router settings in `preflight`.
       - Validate `core-catalog.yaml` during `preflight` when that file exists.
       - Provide `core-cli catalog` to list configured router components.
+      - Provide `core-cli status [component] [--repo <path>]` to check catalog health units.
+      - Provide `core-cli reload [component] [--repo <path>]` to run catalog actions.
+      - Use the current directory as the default repository path for status and reload.
+      - Use relative `--repo` paths from the current directory.
+      - Return exit code 0 when all selected status checks or reload actions pass.
+      - Return exit code 1 when the catalog is missing or an operation fails.
+      - Return exit code 2 when a component ID or command argument is invalid.
       - Validate JavaScript syntax with Node.js during `preflight`.
       - Validate shell syntax with `bash -n` during `preflight`.
       - Check router settings in Node.js without router configuration tools.

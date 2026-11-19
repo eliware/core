@@ -9,21 +9,46 @@ Install Bash when the repository contains shell scripts. Preflight runs `bash -n
 
 ## Commands
 
-| Command                           | Purpose                                 |
-| --------------------------------- | --------------------------------------- |
-| `core-cli`                        | Print help.                             |
-| `core-cli --help`                 | Print help.                             |
-| `core-cli --version`              | Print the package version.              |
-| `core-cli preflight`              | Validate the current router repository. |
-| `core-cli catalog`                | List configured router components.      |
-| `core-cli compare <partner repo>` | Validate two partner repositories.      |
+| Command                                       | Purpose                                 |
+| --------------------------------------------- | --------------------------------------- |
+| `core-cli`                                    | Print help.                             |
+| `core-cli --help`                             | Print help.                             |
+| `core-cli --version`                          | Print the package version.              |
+| `core-cli preflight`                          | Validate the current router repository. |
+| `core-cli catalog`                            | List configured router components.      |
+| `core-cli compare <partner repo>`             | Validate two partner repositories.      |
+| `core-cli status [component] [--repo <path>]` | Check catalog health units.             |
+| `core-cli reload [component] [--repo <path>]` | Run catalog reload actions.             |
 
 Run `core-cli preflight` from the root of a router configuration repository.
 Run `core-cli compare ../partner` from each repository.
 The compare command accepts a filesystem path to the partner repository.
-The commands do not call router-native validators, reload services, or change router configuration.
+Preflight and compare do not call router-native validators or change router configuration.
 Preflight validates `core-catalog.yaml` when the repository contains it.
 The catalog command lists each component and its configuration paths.
+
+## Status and reload operations
+
+Run `core-cli status` from a router repository to check every catalog health unit.
+Add a component ID to check only that component.
+Use `--repo <path>` to select a router repository. Relative paths start from the current directory.
+The default repository path is the current directory.
+
+Status runs `systemctl is-active --quiet` for each distinct selected health unit.
+It prints one healthy or unhealthy result for every selected component.
+Status returns code `0` when every selected unit is active.
+Status returns code `1` when the catalog is missing or any unit is not active.
+Status returns code `2` when the command syntax is invalid or the component ID is unknown.
+
+Run `core-cli reload` to run each distinct catalog action.
+Add a component ID to run only that component's action.
+Reload runs the configured `systemd` operation, which must be `reload` or `restart`.
+It stops after the first failed action and reports that action.
+
+Reload returns code `0` when every selected action succeeds.
+Reload returns code `1` when the catalog is missing or an action fails.
+Reload returns code `2` when the command syntax is invalid or the component ID is unknown.
+The reload command changes running services. Check the selected component before you run it.
 
 ## Router component catalog
 

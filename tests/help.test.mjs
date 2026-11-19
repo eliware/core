@@ -10,9 +10,17 @@ test("writes the command usage", () => {
   expect(write).toHaveBeenNthCalledWith(2, "       core-cli preflight");
   expect(write).toHaveBeenNthCalledWith(3, "       core-cli catalog");
   expect(write).toHaveBeenNthCalledWith(4, "       core-cli compare <partner repo>");
-  expect(write).toHaveBeenNthCalledWith(5, "Validate router configuration and compare an HA pair.");
-  expect(write).toHaveBeenNthCalledWith(6, "--help     Print this help.");
-  expect(write).toHaveBeenNthCalledWith(7, "--version  Print the package version.");
-  expect(write).toHaveBeenNthCalledWith(8, "No arguments print this help.");
-  expect(write).toHaveBeenNthCalledWith(14, "Validation failures set exit code 1.");
+  expect(write).toHaveBeenNthCalledWith(5, "       core-cli status [component] [--repo <path>]");
+  expect(write).toHaveBeenNthCalledWith(6, "       core-cli reload [component] [--repo <path>]");
+  expect(write).toHaveBeenNthCalledWith(
+    7,
+    "Validate, inspect, and operate configured router components.",
+  );
+  expect(write).toHaveBeenNthCalledWith(8, "--help     Print this help.");
+  expect(write).toHaveBeenNthCalledWith(9, "--version  Print the package version.");
+  expect(write).toHaveBeenNthCalledWith(10, "No arguments print this help.");
+  expect(write).toHaveBeenNthCalledWith(
+    19,
+    "Validation, status, or reload failures set exit code 1.",
+  );
 });

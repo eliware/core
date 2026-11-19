@@ -1,4 +1,5 @@
 import { expect, test, jest } from "@jest/globals";
+import { resolve } from "node:path";
 import runCli from "../src/cli.mjs";
 
 test.each([{ args: [] }, { args: ["--help"] }])("shows usage", async ({ args }) => {
@@ -93,4 +94,94 @@ test("reports an absent catalog", async () => {
   const write = jest.fn();
   await expect(runCli(["catalog"], { write, catalogCommand: () => null })).resolves.toBe(0);
   expect(write).toHaveBeenCalledWith("No service catalog is configured.");
+});
+
+test("checks component status in a selected repository", async () => {
+  const write = jest.fn();
+  const catalogCommand = jest.fn(() => ({ components: [] }));
+  const statusCommand = jest
+    .fn()
+    .mockResolvedValue({ ok: true, lines: ["Healthy: DNS (named.service)"] });
+  const systemCommand = jest.fn();
+  await expect(
+    runCli(["status", "dns", "--repo", "../router"], {
+      cwd: "router-root",
+      write,
+      catalogCommand,
+      statusCommand,
+      systemCommand,
+    }),
+  ).resolves.toBe(0);
+  expect(catalogCommand).toHaveBeenCalledWith(resolve("router-root", "../router"));
+  expect(statusCommand).toHaveBeenCalledWith({
+    catalog: { components: [] },
+    componentId: "dns",
+    run: systemCommand,
+  });
+  expect(write).toHaveBeenCalledWith("Healthy: DNS (named.service)");
+});
+
+test("runs reload against the current repository by default", async () => {
+  const reloadCommand = jest
+    .fn()
+    .mockResolvedValue({ ok: false, lines: ["Failed: reload named.service"] });
+  await expect(
+    runCli(["reload"], {
+      cwd: "router",
+      write: jest.fn(),
+      catalogCommand: () => ({ components: [] }),
+      reloadCommand,
+    }),
+  ).resolves.toBe(1);
+  expect(reloadCommand).toHaveBeenCalledWith({
+    catalog: { components: [] },
+    componentId: undefined,
+    run: expect.any(Function),
+  });
+});
+
+test("returns the usage code for an unknown component", async () => {
+  await expect(
+    runCli(["status", "dns"], {
+      write: jest.fn(),
+      catalogCommand: () => ({ components: [] }),
+      statusCommand: jest.fn().mockResolvedValue({
+        ok: false,
+        usageError: true,
+        lines: ["Unknown component: dns"],
+      }),
+    }),
+  ).resolves.toBe(2);
+});
+
+test("reports invalid status syntax", async () => {
+  const write = jest.fn();
+  await expect(runCli(["status", "dns", "dhcp"], { write })).resolves.toBe(2);
+  expect(write).toHaveBeenCalledWith("Invalid arguments for status.");
+});
+
+test("reports malformed catalogs as operational failures", async () => {
+  const write = jest.fn();
+  await expect(
+    runCli(["reload"], {
+      write,
+      catalogCommand: () => {
+        throw new Error("Invalid core-catalog.yaml");
+      },
+    }),
+  ).resolves.toBe(1);
+  expect(write).toHaveBeenCalledWith("Catalog error: Invalid core-catalog.yaml");
+});
+
+test("reports a malformed catalog in the catalog command", async () => {
+  const write = jest.fn();
+  await expect(
+    runCli(["catalog"], {
+      write,
+      catalogCommand: () => {
+        throw new Error("Invalid core-catalog.yaml");
+      },
+    }),
+  ).resolves.toBe(1);
+  expect(write).toHaveBeenCalledWith("Catalog error: Invalid core-catalog.yaml");
 });
