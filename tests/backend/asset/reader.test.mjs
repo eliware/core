@@ -111,6 +111,27 @@ test("rejects a file handle that does not match the checked path", async () => {
   expect(handle.close).toHaveBeenCalledTimes(1);
 });
 
+test("rejects a real asset path that changes outside its root after opening", async () => {
+  const handle = createHandle();
+  const aliasPath = resolve(assetRoot, "alias.html");
+  const resolvePath = jest.fn((path) =>
+    Promise.resolve(path === aliasPath ? assetPath : resolve("private", "secret")),
+  );
+
+  await expect(
+    readAsset(
+      { assetRoot, assetPath: aliasPath, realAsset: assetPath },
+      {
+        openFile: jest.fn().mockResolvedValue(handle),
+        resolvePath,
+        statPath: jest.fn().mockResolvedValue({ dev: 1, ino: 2 }),
+      },
+    ),
+  ).rejects.toThrow("asset path must stay within its configured root");
+  expect(handle.readFile).not.toHaveBeenCalled();
+  expect(handle.close).toHaveBeenCalledTimes(1);
+});
+
 test("closes the file handle when reading fails", async () => {
   const error = new Error("read failed");
   const handle = createHandle();

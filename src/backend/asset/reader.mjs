@@ -9,11 +9,13 @@ export default async function readAsset(
   try {
     handle = await openFile(realAsset, "r");
     const openedFile = await handle.stat();
-    const [currentAsset, currentPath] = await Promise.all([
+    const [currentAsset, currentRealAsset, currentPath] = await Promise.all([
       resolvePath(assetPath),
+      resolvePath(realAsset),
       statPath(realAsset),
     ]);
     assertAssetPathWithinRoot(assetRoot, currentAsset);
+    assertAssetPathWithinRoot(assetRoot, currentRealAsset);
     if (openedFile.dev !== currentPath.dev || openedFile.ino !== currentPath.ino)
       throw new Error("asset changed while it was being read");
     return await handle.readFile();
