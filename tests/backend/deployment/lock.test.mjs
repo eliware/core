@@ -6,9 +6,24 @@ import acquireDeploymentLock from "../../../src/backend/deployment/lock.mjs";
 function createFileSystem() {
   const files = new Map();
   const handles = new Map();
+  const directories = new Set();
   let nextHandle = 1;
   return {
     files,
+    directories,
+    mkdirSync(path) {
+      if (directories.has(path)) throw Object.assign(new Error("exists"), { code: "EEXIST" });
+      directories.add(path);
+    },
+    lstatSync(path) {
+      if (!directories.has(path)) throw new Error("missing directory");
+      return {
+        uid: process.getuid?.() ?? 1000,
+        mode: 0o40700,
+        isDirectory: () => true,
+        isSymbolicLink: () => false,
+      };
+    },
     openSync(path, flags) {
       if (flags === "wx" && files.has(path))
         throw Object.assign(new Error("exists"), { code: "EEXIST" });
@@ -50,6 +65,51 @@ test("serializes processes and releases the lock once", () => {
   release();
   const releaseAgain = acquireDeploymentLock(repositoryPath, lockOptions);
   releaseAgain();
+});
+
+test("uses a private directory when no lock directory is supplied", () => {
+  const fileSystem = createFileSystem();
+  const release = acquireDeploymentLock("/router/repo", { fileSystem, userId: 1000 });
+  expect(fileSystem.directories.size).toBe(1);
+  release();
+  const secondRelease = acquireDeploymentLock("/router/repo", { fileSystem, userId: 1000 });
+  secondRelease();
+});
+
+test("rejects a lock directory owned by another user", () => {
+  const fileSystem = createFileSystem();
+  fileSystem.lstatSync = () => ({
+    uid: 2000,
+    mode: 0o40700,
+    isDirectory: () => true,
+    isSymbolicLink: () => false,
+  });
+  expect(() => acquireDeploymentLock("/router/repo", { fileSystem, userId: 1000 })).toThrow(
+    "private to the application user",
+  );
+});
+
+test("rejects a lock path that is not a directory", () => {
+  const fileSystem = createFileSystem();
+  fileSystem.lstatSync = () => ({
+    uid: 1000,
+    mode: 0o100600,
+    isDirectory: () => false,
+    isSymbolicLink: () => false,
+  });
+  expect(() => acquireDeploymentLock("/router/repo", { fileSystem, userId: 1000 })).toThrow(
+    "must be a real directory",
+  );
+});
+
+test("reports lock directory creation errors", () => {
+  const fileSystem = createFileSystem();
+  fileSystem.mkdirSync = () => {
+    throw new Error("directory creation failed");
+  };
+  expect(() => acquireDeploymentLock("/router/repo", { fileSystem, userId: 1000 })).toThrow(
+    "directory creation failed",
+  );
 });
 
 test.each(["close", "unlink"])(

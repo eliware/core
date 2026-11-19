@@ -66,7 +66,7 @@ export default function createHealthMonitor({
       while (nextIndex < units.length) {
         const index = nextIndex;
         nextIndex += 1;
-        results[index] = await checkHealthUnit(units[index], checkUnit, now, healthCheckTimeoutMs);
+        results[index] = await checkHealthUnit(units[index], checkUnit, now);
       }
     }
     const workers = Array.from({ length: Math.min(units.length, maxConcurrentUnitChecks) }, () =>

@@ -2,10 +2,9 @@ import verifyGitHubSignature from "./github-signature.mjs";
 
 export default function registerWebhookRoutes(
   server,
-  { secret, branch = "main", enabled = true, deployment },
+  { secret, branch = "main", enabled = true, deployment, maximumRememberedDeliveries = 1000 },
 ) {
   const deliveries = new Map();
-  const maximumRememberedDeliveries = 1000;
 
   server.post("/api/github/webhook", async (request, reply) => {
     if (!enabled || !secret) return reply.code(503).send({ error: "Webhook is not configured." });
@@ -25,17 +24,29 @@ export default function registerWebhookRoutes(
     if (typeof delivery !== "string" || delivery.length > 100) {
       return reply.code(400).send({ error: "Webhook delivery ID is invalid." });
     }
-    if (deliveries.has(delivery))
+    if (deliveries.has(delivery)) {
+      if (deliveries.get(delivery) === "busy")
+        return reply.code(409).send({ accepted: false, status: "busy" });
       return reply.code(202).send({ accepted: false, reason: "duplicate delivery" });
+    }
     if (request.body?.ref !== `refs/heads/${branch}`) {
       return reply.code(202).send({ accepted: false, reason: "branch ignored" });
     }
 
-    deliveries.set(delivery, true);
+    const result = deployment.start(delivery);
+    if (!result.accepted) {
+      if (result.status === "busy") {
+        deliveries.set(delivery, "busy");
+        if (deliveries.size > maximumRememberedDeliveries)
+          deliveries.delete(deliveries.keys().next().value);
+      }
+      if (result.status === "unavailable" || result.status === "unconfigured")
+        return reply.code(503).send(result);
+      return reply.code(409).send(result);
+    }
+    deliveries.set(delivery, "accepted");
     if (deliveries.size > maximumRememberedDeliveries)
       deliveries.delete(deliveries.keys().next().value);
-    const result = deployment.start(delivery);
-    if (!result.accepted) return reply.code(409).send(result);
     return reply.code(202).send(result);
   });
 }

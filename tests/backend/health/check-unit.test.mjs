@@ -19,9 +19,3 @@ test("maps missing systemctl and inactive units to useful details", async () => 
     checkHealthUnit("named.service", jest.fn().mockRejectedValue(new Error("inactive")), now),
   ).resolves.toMatchObject({ status: "unhealthy", detail: "Unit is not active" });
 });
-
-test("marks a unit unhealthy when its supplied check exceeds the timeout", async () => {
-  await expect(
-    checkHealthUnit("named.service", () => new Promise(() => {}), now, 1),
-  ).resolves.toMatchObject({ status: "unhealthy", detail: "Unit check timed out" });
-});

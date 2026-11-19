@@ -88,7 +88,8 @@ It checks that the repository remains clean after Git pull and each npm validati
 If a check finds changes, the sequence stops and recovery restores the previous commit.
 
 The server rejects JSON request bodies larger than 1 MiB.
-It remembers accepted GitHub request IDs until the application restarts.
+It remembers accepted GitHub request IDs and busy request IDs until the application restarts.
+It returns HTTP 409 again when GitHub retries a request that was busy.
 
 The application records the local commit before `git pull` as its recovery target.
 Check out `CORE_GITHUB_BRANCH` in the configuration repository before starting the application.
@@ -100,8 +101,10 @@ If the new reload fails, the application resets the repository and attempts to r
 If Git cannot restore the previous commit, the application records that failure and does not reload the current configuration.
 
 The application preserves untracked files during recovery.
+Git ignored files such as `.env` and `node_modules` also remain on disk during deployment and recovery.
 Set the systemd unit umask to `0022` so router processes can read files that Git pulls.
 The dashboard shows the latest deployment result until the process restarts.
+
 The application creates decimal deployment IDs with `@eliware/common` snowflakes.
 Set a unique worker and process pair for every active instance. The application exits when one value is missing or invalid.
 

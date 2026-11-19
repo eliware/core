@@ -59,8 +59,8 @@ test("rejects empty record tokens", () => {
   });
 });
 
-test("rejects an empty TXT field", () => {
-  expect(validateDnsRecord("test.zone", ["@", "IN", "TXT", ""], 2).errors).toContain(
+test.each(["", '""'])("rejects an empty TXT field %s", (value) => {
+  expect(validateDnsRecord("test.zone", ["@", "IN", "TXT", value], 2).errors).toContain(
     "FAIL test.zone:2: TXT record contains an empty value.",
   );
 });

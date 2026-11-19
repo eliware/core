@@ -21,12 +21,14 @@ async function setup({
   enabled = true,
   configuredSecret = secret,
   branch,
+  maximumRememberedDeliveries,
   deployment = { start: jest.fn(() => ({ accepted: true, runId: "run-1" })) },
 } = {}) {
   const server = createWebServer();
   registerWebhookRoutes(server, {
     secret: configuredSecret,
     deployment,
+    ...(maximumRememberedDeliveries ? { maximumRememberedDeliveries } : {}),
     ...(branch ? { branch } : {}),
     ...(enabled === false ? { enabled } : {}),
   });
@@ -107,8 +109,7 @@ test("rejects duplicate deliveries and busy deployment requests", async () => {
       start: jest
         .fn()
         .mockReturnValueOnce({ accepted: true, runId: "run-1" })
-        .mockReturnValueOnce({ accepted: false, status: "busy" })
-        .mockReturnValueOnce({ accepted: true, runId: "run-2" }),
+        .mockReturnValueOnce({ accepted: false, status: "busy" }),
     },
   });
   const headers = signedHeaders(body);
@@ -140,16 +141,52 @@ test("rejects duplicate deliveries and busy deployment requests", async () => {
     headers: busyHeaders,
     payload: body,
   });
-  expect(busyDuplicate.statusCode).toBe(202);
-  expect(busyDuplicate.json()).toEqual({ accepted: false, reason: "duplicate delivery" });
-  const acceptedDuplicate = await server.inject({
+  expect(busyDuplicate.statusCode).toBe(409);
+  expect(busyDuplicate.json()).toEqual({ accepted: false, status: "busy" });
+  const busyRetry = await server.inject({
     method: "POST",
     url: "/api/github/webhook",
     headers: busyHeaders,
     payload: body,
   });
-  expect(acceptedDuplicate.json()).toEqual({ accepted: false, reason: "duplicate delivery" });
+  expect(busyRetry.statusCode).toBe(409);
+  expect(busyRetry.json()).toEqual({ accepted: false, status: "busy" });
   expect(deployment.start).toHaveBeenCalledTimes(2);
+  await server.close();
+});
+
+test("bounds remembered busy GitHub request IDs", async () => {
+  const body = JSON.stringify({ ref: "refs/heads/main" });
+  const deployment = { start: jest.fn(() => ({ accepted: false, status: "busy" })) };
+  const { server } = await setup({ deployment, maximumRememberedDeliveries: 1 });
+  for (const id of ["busy-1", "busy-2"])
+    await server.inject({
+      method: "POST",
+      url: "/api/github/webhook",
+      headers: signedHeaders(body, { "x-github-delivery": id }),
+      payload: body,
+    });
+  await server.inject({
+    method: "POST",
+    url: "/api/github/webhook",
+    headers: signedHeaders(body, { "x-github-delivery": "busy-1" }),
+    payload: body,
+  });
+  expect(deployment.start).toHaveBeenCalledTimes(3);
+  await server.close();
+});
+
+test("returns unavailable when deployment admission cannot start", async () => {
+  const body = JSON.stringify({ ref: "refs/heads/main" });
+  const deployment = { start: jest.fn(() => ({ accepted: false, status: "unavailable" })) };
+  const { server } = await setup({ deployment });
+  const response = await server.inject({
+    method: "POST",
+    url: "/api/github/webhook",
+    headers: signedHeaders(body),
+    payload: body,
+  });
+  expect(response.statusCode).toBe(503);
   await server.close();
 });
 
