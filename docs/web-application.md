@@ -135,6 +135,19 @@ The application marks a unit unhealthy when its systemd check runs longer than t
 An empty list reports the monitored units as unconfigured.
 
 The dashboard refreshes every 30 seconds.
+The server refreshes configured health checks and metric sources every five minutes.
+The server keeps the latest metric summary and totals in memory.
+It does not use a database or keep historical metric samples.
+Use component `metrics` entries in `core-catalog.yaml` to configure metric sources.
+The dashboard shows each result timestamp and marks a source unavailable when its local interface fails.
+
+Interface data comes from `ip -j -s link` and includes link state and byte, packet, error, and drop totals.
+HAProxy data comes from the configured local Unix socket using its `show stat` command.
+DHCP lease totals come from a configured ISC DHCP, dnsmasq, or Kea CSV lease file.
+Name-server cache totals come from the configured cache statistics file.
+Chrony synchronization data comes from `chronyc -n tracking`.
+The dashboard reports missing or unreadable files, sockets, and commands as unavailable data.
+
 Set `DISCORD_WEBHOOK_URL` to send deployment and health notifications as Discord rich embeds.
 The application sends a health notification on each failed check interval.
 
@@ -147,7 +160,7 @@ Deployment embeds list the repository, branch, commit links, changed files, elap
 A green check marks a completed deployment. A red cross marks a failed deployment and includes recovery details when available.
 
 `/health` reports process liveness and `/ready` reports listener readiness.
-`/api/status` reports monitored unit health and the latest deployment result.
+`/api/status` reports monitored unit health, the latest metric snapshot, and the latest deployment result.
 
 Keep `.env` out of Git. The example file contains placeholders only.
 

@@ -34,11 +34,13 @@ test("returns health and deployment snapshots from the read-only status endpoint
   registerStatusRoutes(server, {
     getHealthStatus: () => ({ status: "unhealthy", units: [{ name: "frr.service" }] }),
     getDeploymentStatus: () => ({ status: "failed", failedStep: "npm test" }),
+    getMetricsStatus: () => ({ checkedAt: "2026-11-19T12:00:00.000Z", components: [] }),
   });
   const result = await server.inject({ method: "GET", url: "/api/status" });
   expect(result.statusCode).toBe(200);
   expect(result.json()).toEqual({
     health: { status: "unhealthy", units: [{ name: "frr.service" }] },
+    metrics: { checkedAt: "2026-11-19T12:00:00.000Z", components: [] },
     deployment: { status: "failed", failedStep: "npm test" },
   });
 });
@@ -49,6 +51,7 @@ test("returns default status when no providers are configured", async () => {
   const result = await server.inject({ method: "GET", url: "/api/status" });
   expect(result.json()).toEqual({
     health: { status: "unconfigured", checkedAt: null, units: [] },
+    metrics: { checkedAt: null, components: [] },
     deployment: { status: "idle", steps: [] },
   });
 });

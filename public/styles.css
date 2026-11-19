@@ -351,11 +351,39 @@ footer [data-status] {
   color: #d6e0ed;
   font-size: 12px;
 }
+.metric-item {
+  grid-template-columns: 12px minmax(0, 1fr);
+  align-items: start;
+  padding: 12px 0;
+}
+.metric-content {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+.metric-summary {
+  margin: 5px 0 0;
+  color: #d6e2ed;
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.metric-details {
+  display: grid;
+  gap: 5px;
+  margin: 3px 0 0;
+  padding-left: 18px;
+  color: #9baabd;
+  font-size: 11px;
+}
 .health-indicator[data-state="healthy"] {
   background: #48d3a5;
 }
 .health-indicator[data-state="unhealthy"] {
   background: #ff7777;
+}
+.health-indicator[data-state="unavailable"] {
+  background: #f3ca79;
 }
 .health-detail,
 .health-time,

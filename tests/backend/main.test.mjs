@@ -21,6 +21,11 @@ function dependencies(
     stop: jest.fn(),
     getStatus: jest.fn(() => ({ status: "healthy", units: [] })),
   };
+  const metricsMonitor = {
+    start: jest.fn(),
+    stop: jest.fn(),
+    getStatus: jest.fn(() => ({ checkedAt: null, components: [] })),
+  };
   const deployment = {
     start: jest.fn(),
     getStatus: jest.fn(() => ({ status: "idle", steps: [] })),
@@ -32,6 +37,7 @@ function dependencies(
     signals,
     shutdown,
     healthMonitor,
+    metricsMonitor,
     deployment,
     values: {
       loadConfig: jest.fn(() => configuration),
@@ -43,6 +49,7 @@ function dependencies(
       registerStatusRoutes: jest.fn(),
       createShutdownHook: jest.fn(() => shutdown),
       createHealthMonitor: jest.fn(() => healthMonitor),
+      createMetricsMonitor: jest.fn(() => metricsMonitor),
       createDeploymentManager: jest.fn(() => deployment),
       sendDiscordNotification: jest.fn().mockResolvedValue(true),
       registerWebhookRoutes: jest.fn(),
@@ -68,6 +75,7 @@ test.each([
     });
     expect(deps.values.registerStatusRoutes).toHaveBeenCalledWith(deps.server, {
       getHealthStatus: deps.healthMonitor.getStatus,
+      getMetricsStatus: deps.metricsMonitor.getStatus,
       getDeploymentStatus: deps.deployment.getStatus,
       isReady: expect.any(Function),
     });
@@ -82,6 +90,7 @@ test.each([
       webhookServer: deps.webhookServer,
       log: deps.log,
       stopHealthMonitor: deps.healthMonitor.stop,
+      stopMetricsMonitor: deps.metricsMonitor.stop,
       isListening: expect.any(Function),
     });
     const isListening = deps.values.createShutdownHook.mock.calls[0][0].isListening;
@@ -94,6 +103,7 @@ test.each([
     });
     expect(typeof deps.signals.shutdownHook).toBe("function");
     expect(deps.healthMonitor.start).toHaveBeenCalledTimes(1);
+    expect(deps.metricsMonitor.start).toHaveBeenCalledTimes(1);
     const isReady = deps.values.registerStatusRoutes.mock.calls[0][1].isReady;
     expect(isReady()).toBe(true);
     await deps.signals.shutdownHook();

@@ -63,6 +63,7 @@ Set the health unit to a systemd unit.
 Set the action operation to `reload` or `restart` and name its unit.
 Keep paths relative to the repository.
 Keep secrets and host network settings out of the catalog.
+Add `metrics` entries to components when the web dashboard reports their runtime totals.
 
 ```yaml
 version: 1
@@ -79,7 +80,20 @@ components:
       type: systemd
       operation: reload
       unit: named.service
+    metrics:
+      - type: dns-cache
+        path: /var/cache/bind/named.stats
 ```
+
+Use `interfaces` to read link state and traffic counters with `ip -j -s link`.
+Use `haproxy` with a local Unix socket path to read `show stat` counters.
+Use `dhcp-leases` with `format` set to `isc`, `dnsmasq`, or `kea-csv` and an absolute lease file path.
+Use `dns-cache` with the path to a name-server statistics dump.
+Use `ntp` to read chrony tracking data with `chronyc -n tracking`.
+
+The dashboard marks an unavailable source and shows its check time and error.
+The application keeps the latest metric snapshot in memory and refreshes it every five minutes.
+It does not store metrics in a database or keep historical samples.
 
 The web application reads health units from the catalog when it exists.
 During deployment, Core applies systemd actions to components with changed configuration paths.

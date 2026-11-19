@@ -7,6 +7,7 @@ import createWebServer from "../../../src/backend/server.mjs";
 import createShutdownHook from "../../../src/backend/shutdown.mjs";
 import registerStatusRoutes from "../../../src/backend/status-routes.mjs";
 import createHealthMonitor from "../../../src/backend/health-monitor.mjs";
+import createMetricsMonitor from "../../../src/backend/metrics-monitor.mjs";
 import createDeploymentManager from "../../../src/backend/deployment.mjs";
 import sendDiscordNotification from "../../../src/backend/discord-notifier.mjs";
 import registerWebhookRoutes from "../../../src/backend/webhook-routes.mjs";
@@ -22,6 +23,7 @@ test("assembles the production application dependencies", () => {
     createShutdownHook,
     registerStatusRoutes,
     createHealthMonitor,
+    createMetricsMonitor,
     createDeploymentManager,
     sendDiscordNotification,
     registerWebhookRoutes,

@@ -14,6 +14,7 @@ export default function createApplicationIntegrations(configuration, dependencie
         log.warn(`Discord notification failed for health check ${name}`),
       ),
   });
+  const metricsMonitor = dependencies.createMetricsMonitor({ catalog: configuration.catalog });
   const deployment = dependencies.createDeploymentManager({
     repositoryPath: configuration.repositoryPath,
     branch: configuration.githubBranch,
@@ -21,5 +22,5 @@ export default function createApplicationIntegrations(configuration, dependencie
     dashboardPort: configuration.tcpEndpoint,
     notify,
   });
-  return { healthMonitor, deployment };
+  return { healthMonitor, metricsMonitor, deployment };
 }

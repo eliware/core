@@ -10,6 +10,11 @@ function setup() {
         stop: jest.fn(),
         getStatus: jest.fn(),
       })),
+      createMetricsMonitor: jest.fn(() => ({
+        start: jest.fn(),
+        stop: jest.fn(),
+        getStatus: jest.fn(),
+      })),
       createDeploymentManager: jest.fn(() => ({ start: jest.fn(), getStatus: jest.fn() })),
     },
     log: { warn: jest.fn() },

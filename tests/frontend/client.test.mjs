@@ -19,6 +19,9 @@ function dashboardDocument() {
     "[data-status]",
     "[data-health-list]",
     "[data-health-empty]",
+    "[data-metrics-list]",
+    "[data-metrics-empty]",
+    "[data-metrics-checked-at]",
     "[data-health-summary]",
     "[data-state-dot]",
     "[data-checked-at]",
@@ -30,6 +33,7 @@ function dashboardDocument() {
   ];
   const elements = Object.fromEntries(selectors.map((selector) => [selector, element()]));
   elements["[data-health-empty]"].hidden = true;
+  elements["[data-metrics-empty]"].hidden = false;
   return {
     elements,
     querySelector: (selector) => elements[selector] ?? null,

@@ -2,6 +2,7 @@ export default function registerStatusRoutes(
   server,
   {
     getHealthStatus = () => ({ status: "unconfigured", checkedAt: null, units: [] }),
+    getMetricsStatus = () => ({ checkedAt: null, components: [] }),
     getDeploymentStatus = () => ({ status: "idle", steps: [] }),
     isReady = () => true,
   } = {},
@@ -13,6 +14,7 @@ export default function registerStatusRoutes(
   server.get("/api/status", async (_request, reply) =>
     reply.send({
       health: getHealthStatus(),
+      metrics: getMetricsStatus(),
       deployment: getDeploymentStatus(),
     }),
   );

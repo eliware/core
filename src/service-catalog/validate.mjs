@@ -21,6 +21,35 @@ function validConfigPath(path) {
   );
 }
 
+function validMetric(metric) {
+  if (!metric || typeof metric !== "object" || Array.isArray(metric)) return false;
+  if (metric.type === "interfaces" || metric.type === "ntp")
+    return Object.keys(metric).length === 1;
+  if (metric.type === "haproxy")
+    return (
+      Object.keys(metric).every((key) => ["type", "socketPath"].includes(key)) &&
+      typeof metric.socketPath === "string" &&
+      metric.socketPath.startsWith("/") &&
+      !/[\r\n]/u.test(metric.socketPath)
+    );
+  if (metric.type === "dhcp-leases")
+    return (
+      Object.keys(metric).every((key) => ["type", "format", "path"].includes(key)) &&
+      ["isc", "dnsmasq", "kea-csv"].includes(metric.format) &&
+      typeof metric.path === "string" &&
+      metric.path.startsWith("/") &&
+      !/[\r\n]/u.test(metric.path)
+    );
+  if (metric.type === "dns-cache")
+    return (
+      Object.keys(metric).every((key) => ["type", "path"].includes(key)) &&
+      typeof metric.path === "string" &&
+      metric.path.startsWith("/") &&
+      !/[\r\n]/u.test(metric.path)
+    );
+  return false;
+}
+
 export default function validateServiceCatalog(value) {
   const errors = [];
   if (!hasKeys(value, ["version", "components"]))
@@ -33,7 +62,7 @@ export default function validateServiceCatalog(value) {
   const ids = new Set();
   value.components.forEach((component, index) => {
     const prefix = `components[${index}]`;
-    if (!hasKeys(component, ["id", "name", "configPaths", "health", "action"])) {
+    if (!hasKeys(component, ["id", "name", "configPaths", "health", "action", "metrics"])) {
       errors.push(`${prefix} contains unsupported fields or is not an object`);
       return;
     }
@@ -71,6 +100,12 @@ export default function validateServiceCatalog(value) {
       )
         errors.push(`${prefix}.action.unit must be a systemd service unit`);
     }
+    if (
+      component.metrics !== undefined &&
+      (!Array.isArray(component.metrics) ||
+        component.metrics.some((metric) => !validMetric(metric)))
+    )
+      errors.push(`${prefix}.metrics must contain supported metric definitions`);
   });
   return errors;
 }

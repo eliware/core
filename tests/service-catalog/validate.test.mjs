@@ -13,6 +13,21 @@ test("accepts a valid service catalog", () => {
   expect(validateServiceCatalog({ version: 1, components: [component] })).toEqual([]);
 });
 
+test("accepts each supported local metric source", () => {
+  const metrics = [
+    { type: "interfaces" },
+    { type: "haproxy", socketPath: "/run/haproxy/admin.sock" },
+    { type: "dhcp-leases", format: "isc", path: "/var/lib/dhcp/dhcpd.leases" },
+    { type: "dhcp-leases", format: "dnsmasq", path: "/var/lib/misc/dnsmasq.leases" },
+    { type: "dhcp-leases", format: "kea-csv", path: "/var/lib/kea/leases.csv" },
+    { type: "dns-cache", path: "/var/cache/named.stats" },
+    { type: "ntp" },
+  ];
+  expect(validateServiceCatalog({ version: 1, components: [{ ...component, metrics }] })).toEqual(
+    [],
+  );
+});
+
 test.each([
   [null, "only version and components"],
   [{ version: 2, components: [component] }, "version must be 1"],
@@ -20,6 +35,36 @@ test.each([
   [{ version: 1, components: [{ unsupported: true }] }, "unsupported fields"],
   [{ version: 1, components: [{ ...component, id: "Bad" }] }, "id must use"],
   [{ version: 1, components: [component, component] }, "id must be unique"],
+  [
+    { version: 1, components: [{ ...component, metrics: [{ type: "exec", command: "rm" }] }] },
+    "metrics must contain",
+  ],
+  [
+    {
+      version: 1,
+      components: [{ ...component, metrics: [{ type: "haproxy", socketPath: "relative.sock" }] }],
+    },
+    "metrics must contain",
+  ],
+  ...[
+    null,
+    "interfaces",
+    [],
+    { type: "interfaces", extra: true },
+    { type: "ntp", extra: true },
+    { type: "haproxy" },
+    { type: "haproxy", socketPath: "/run/a", extra: true },
+    { type: "haproxy", socketPath: 2 },
+    { type: "haproxy", socketPath: "/run/a\n" },
+    { type: "dhcp-leases", format: "bad", path: "/var/lease" },
+    { type: "dhcp-leases", format: "isc", path: "relative" },
+    { type: "dhcp-leases", format: "isc", path: "/var/a\n" },
+    { type: "dns-cache", path: "relative" },
+    { type: "dns-cache", path: "/var/a\n" },
+  ].map((metric) => [
+    { version: 1, components: [{ ...component, metrics: [metric] }] },
+    "metrics must contain",
+  ]),
   [{ version: 1, components: [{ ...component, name: " " }] }, "name must be"],
   [{ version: 1, components: [{ ...component, configPaths: ["../secret"] }] }, "configPaths"],
   [{ version: 1, components: [{ ...component, configPaths: ["C:\\router"] }] }, "configPaths"],

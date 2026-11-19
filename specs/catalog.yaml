@@ -6,6 +6,8 @@ directives:
       - Define router components in `core-catalog.yaml` in each router repository.
       - Keep the catalog versioned with the configuration repository.
       - List component IDs, names, configuration paths, health checks, and actions.
+      - Allow supported local metric sources in component `metrics` entries.
+      - Validate metric source types and fields during `core-cli preflight`.
       - Map every maintained file under `etc/`, `var/`, and `scripts/` to a component.
       - Use relative repository paths for component configuration paths.
       - Allow exact paths and directory patterns that end in `/**`.
@@ -19,8 +21,10 @@ directives:
       - Run all component actions when the catalog file changes.
       - Use `npm run reload` when a router repository has no catalog.
       - Use catalog paths and units to guide router bootstrap.
+      - Keep DHCP lease identities out of metric snapshots.
+      - Keep only aggregate lease counts in the dashboard.
       - Keep secrets and host network settings outside the catalog.
     donts:
-      - Do not allow absolute paths or parent directory traversal in catalog paths.
+      - Do not allow absolute paths or parent directory traversal in component configuration paths.
       - Do not allow unsupported catalog fields or systemd operations.
       - Do not install operating system packages or change host network settings from the catalog.

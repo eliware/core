@@ -1,3 +1,5 @@
+import renderMetrics from "./render-metrics.mjs";
+
 function formatTime(value) {
   if (!value) return "—";
   const date = new Date(value);
@@ -103,6 +105,7 @@ export default function renderHome(
       if (!response.ok) throw new Error("Status request failed.");
       const data = await response.json();
       renderHealth(document, data);
+      renderMetrics(document, data?.metrics);
       renderDeployment(document, data?.deployment);
       if (status) status.textContent = `Updated ${formatTime(now())}`;
     } catch {

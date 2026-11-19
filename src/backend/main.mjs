@@ -14,7 +14,7 @@ export default async function startWebApplication(dependencies) {
     snowflake,
   } = dependencies.loadConfig();
   const log = dependencies.createLogger({ level: logLevel });
-  const { healthMonitor, deployment } = createApplicationIntegrations(
+  const { healthMonitor, metricsMonitor, deployment } = createApplicationIntegrations(
     {
       repositoryPath,
       githubWebhookSecret,
@@ -44,6 +44,7 @@ export default async function startWebApplication(dependencies) {
   });
   dependencies.registerStatusRoutes(server, {
     getHealthStatus: healthMonitor.getStatus,
+    getMetricsStatus: metricsMonitor.getStatus,
     getDeploymentStatus: deployment.getStatus,
     isReady: () => ready,
   });
@@ -52,6 +53,7 @@ export default async function startWebApplication(dependencies) {
     webhookServer,
     log,
     stopHealthMonitor: healthMonitor.stop,
+    stopMetricsMonitor: metricsMonitor.stop,
     isListening: (item) => openServers.has(item),
   });
   const stopApplication = async () => {
@@ -65,6 +67,7 @@ export default async function startWebApplication(dependencies) {
     openServers.add(webhookServer);
     await webhookServer.listen({ port: webhookEndpoint, host: "127.0.0.1" });
     healthMonitor.start();
+    metricsMonitor.start();
     ready = true;
   } catch (error) {
     await shutdownHook();

@@ -41,8 +41,8 @@ test("shares an in-flight server close", async () => {
 
   const firstShutdown = shutdown();
   const secondShutdown = shutdown();
-  await Promise.resolve();
-  await Promise.resolve();
+  for (let attempt = 0; attempt < 5 && !server.close.mock.calls.length; attempt += 1)
+    await Promise.resolve();
   expect(server.close).toHaveBeenCalledTimes(1);
 
   finishClose();

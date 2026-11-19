@@ -47,6 +47,17 @@
         </p>
         <ul class="health-list" data-health-list aria-live="polite"></ul>
       </section>
+      <section class="panel" aria-labelledby="metrics-title">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">LIVE COMPONENT DATA</p>
+            <h2 id="metrics-title">Router metrics</h2>
+          </div>
+          <span class="subtle" data-metrics-checked-at>Waiting for first check</span>
+        </div>
+        <p class="empty-state" data-metrics-empty>No metric sources are configured.</p>
+        <ul class="health-list metrics-list" data-metrics-list aria-live="polite"></ul>
+      </section>
       <section class="panel" aria-labelledby="deployment-title">
         <div class="panel-heading">
           <div>

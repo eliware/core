@@ -36,6 +36,15 @@ directives:
       - Send a Discord notification when an essential application is unhealthy.
       - Provide a graphical, single-page, read-only health dashboard.
       - Show current health for each configured essential application.
+      - Show interface link states and traffic totals from the local `ip` interface.
+      - Show HAProxy backend states and counters from a configured local statistics socket.
+      - Show active DHCP lease totals from a configured local lease file.
+      - Show DNS cache totals from a configured name-server statistics file.
+      - Show NTP synchronization state from the local chrony interface.
+      - Show check timestamps and unavailable states for metric sources.
+      - Keep only the latest metric summary and totals in memory.
+      - Refresh health and metrics every five minutes.
+      - Do not store metrics in a database or keep historical samples.
       - Let administrators deploy to each server independently.
     donts:
       - Do not change router configuration through the dashboard.

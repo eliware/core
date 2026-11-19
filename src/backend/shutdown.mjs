@@ -3,6 +3,7 @@ export default function createShutdownHook({
   webhookServer,
   log,
   stopHealthMonitor = () => {},
+  stopMetricsMonitor = () => {},
   isListening,
 }) {
   let stopped = false;
@@ -13,7 +14,7 @@ export default function createShutdownHook({
     if (shutdownPromise) return shutdownPromise;
 
     shutdownPromise = Promise.resolve()
-      .then(() => stopHealthMonitor())
+      .then(() => Promise.all([stopHealthMonitor(), stopMetricsMonitor()]))
       .then(() =>
         Promise.all(
           [server, webhookServer]

@@ -10,6 +10,7 @@
 - Stop and start Core after a deployment changes its installed package version. Restore the prior version when health checks fail.
 - Add catalog-driven CLI commands for component status checks and reload actions.
 - Include both paths of moved files when selecting deployment actions.
+- Show current router metrics and keep only the latest in-memory summary.
 
 ## 15.2.2 — 2026-11-18
 
