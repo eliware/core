@@ -15,6 +15,7 @@ directives:
       - List configured components with `core-cli catalog`.
       - Monitor catalog health units on the dashboard when a catalog exists.
       - Reload only catalog components with changed configuration paths during deployment.
+      - Include both paths when mapping committed file moves to catalog components.
       - Run all component actions when the catalog file changes.
       - Use `npm run reload` when a router repository has no catalog.
       - Use catalog paths and units to guide router bootstrap.

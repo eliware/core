@@ -79,7 +79,7 @@ test("runs the deployment steps in order and records success", async () => {
 test("reports recovery errors when a managed component reload fails", async () => {
   const run = successfulRun().mockImplementation(async (command, args) =>
     command === "git" && args[0] === "diff"
-      ? { stdout: "etc/named.conf\n" }
+      ? { stdout: "etc/named.conf\0" }
       : command === "git" && args[0] === "rev-parse"
         ? { stdout: `${commit}\n` }
         : command === "systemctl"

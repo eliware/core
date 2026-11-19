@@ -100,7 +100,9 @@ The application records the local commit before `git pull` as its recovery targe
 Check out `CORE_GITHUB_BRANCH` in the configuration repository before starting the application.
 
 It runs `git pull --ff-only -- origin <branch>`, `npm ci --include=dev`, `npm test`, and `npm run preflight` in order.
-When the catalog exists, it applies actions only to components with changed paths.
+When the catalog exists, it compares the commit before pull with the commit after pull.
+It applies actions only to components that own changed paths.
+For file moves, Git reports both paths for component matching.
 If the catalog file changes, it runs every component action.
 If no catalog exists, it runs `npm run reload` after the validation steps pass.
 

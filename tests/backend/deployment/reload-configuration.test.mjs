@@ -15,7 +15,7 @@ function setup(overrides = {}) {
     loadCatalog: () => catalog,
     previousCommit: "abc",
     repositoryPath: "/router",
-    run: jest.fn().mockResolvedValue({ stdout: "etc/named.conf\n" }),
+    run: jest.fn().mockResolvedValue({ stdout: "etc/named.conf\0" }),
     runStep: jest.fn(),
     steps: [],
     onStart: jest.fn(),
@@ -49,9 +49,35 @@ test("runs targeted actions from the catalog", async () => {
   expect(state.onReloadStart).toHaveBeenCalledTimes(1);
 });
 
+test("skips catalog components with unchanged paths", async () => {
+  const selectedCatalog = {
+    components: [
+      ...catalog.components,
+      {
+        id: "proxy",
+        name: "Proxy",
+        configPaths: ["etc/haproxy/haproxy.cfg"],
+        action: { operation: "restart", unit: "haproxy.service" },
+      },
+    ],
+  };
+  const state = setup({
+    loadCatalog: () => selectedCatalog,
+    run: jest.fn().mockResolvedValue({ stdout: "etc/named.conf\0" }),
+  });
+  await reloadConfiguration(state);
+  expect(state.run).toHaveBeenCalledTimes(2);
+  expect(state.run).toHaveBeenLastCalledWith(
+    "systemctl",
+    ["reload", "named.service"],
+    expect.objectContaining({ cwd: "/router" }),
+  );
+  expect(state.steps).toEqual([{ name: "reload named.service", status: "passed" }]);
+});
+
 test("captures planned actions before attempting a reload", async () => {
   const run = jest.fn(async (command, args) => {
-    if (command === "git" && args[0] === "diff") return { stdout: "etc/named.conf\n" };
+    if (command === "git" && args[0] === "diff") return { stdout: "etc/named.conf\0" };
     if (command === "systemctl") throw new Error("systemctl failed");
     return {};
   });
@@ -65,7 +91,7 @@ test("captures planned actions before attempting a reload", async () => {
 });
 
 test("records when no catalog component changed", async () => {
-  const state = setup({ run: jest.fn().mockResolvedValue({ stdout: "README.md\n" }) });
+  const state = setup({ run: jest.fn().mockResolvedValue({ stdout: "README.md\0" }) });
 
   await expect(reloadConfiguration(state)).resolves.toEqual({ actions: [], started: false });
   expect(state.steps).toEqual([{ name: "No catalog components changed", status: "passed" }]);
