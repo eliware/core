@@ -230,9 +230,14 @@ test("rejects a lock whose directory is missing", () => {
   fileSystem.openSync = () => {
     throw new Error("lock storage unavailable");
   };
-  expect(() => acquireDeploymentLock("/router", { fileSystem, userId: null })).toThrow(
-    "lock storage unavailable",
-  );
+  expect(() =>
+    acquireDeploymentLock("/router", {
+      fileSystem,
+      userId: null,
+      homeDirectory: "/router/home",
+      tempDirectory: "/router/home/temp",
+    }),
+  ).toThrow("lock storage unavailable");
 });
 
 test("removes a new lock when writing its owner fails", () => {
