@@ -34,6 +34,8 @@ It parses JSON, JSONC, YAML, and Kea configuration files.
 It runs `node --check` on JavaScript module files and `bash -n` on shell scripts.
 It validates supported files under `etc/`, `var/`, and `scripts/` with the bundled Node.js validators.
 
+It accepts the system-managed includes `/etc/crypto-policies/back-ends/bind.config` and `/etc/named.root.key` without repository copies.
+
 The repository must contain these paths:
 
 - `etc/chrony.conf`
@@ -60,7 +62,9 @@ It compares the file inventory and contents under `etc/`, `var/`, and `scripts/`
 It permits only documented HA-specific differences and checks that paired values agree or use reciprocal partner values.
 
 Pair checks include FRR peer addresses, autonomous system numbers, and neighbor sets.
-Each router may use different FRR weights when the neighbor rankings are reciprocal.
+Compare checks reciprocal rankings for external neighbors with changed weights.
+Neighbors with equal weights in both repositories do not change the ranking check.
+
 They include Kea DHCPv4 HA roles and URLs, Keepalived VRRP IDs and virtual addresses, and reciprocal priorities.
 They also include conntrackd peer identifiers and FRR connected prefix identifiers.
 Other unexpected file or content differences fail the compare command.
@@ -81,6 +85,7 @@ If shell validation cannot start, install Bash and make `bash` available on `PAT
 If preflight reports formatting errors, run `npm run format` and inspect the changes.
 If compare reports a difference, inspect both files and correct the unexpected value.
 If compare reports a peer mismatch, check reciprocal addresses and HA roles in both repositories.
+If compare reports an FRR ranking mismatch, inspect changed neighbor rankings on both routers.
 
 ## Related documentation
 

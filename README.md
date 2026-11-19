@@ -29,28 +29,24 @@ Core Networking Manager.
 
 ## Features
 
-Core provides `core-cli` for configuration validation and `core-web` for status and deployment hooks.
-The [CLI guide](docs/cli-application.md) and [web application guide](docs/web-application.md) describe user workflows.
+Core provides `core-cli` for router configuration validation and `core-web` for status and deployment hooks.
 
 ## Requirements
 
-Use Node.js 26 or later.
-Install Bash when configuration repositories contain shell scripts.
+Use Node.js 26 or later. Install Bash when router repositories contain shell scripts.
 
 ## Setup
 
-Run `npm ci` from this repository root.
-Install `@eliware/core` as a development dependency in each configuration repository after an approved package release.
+Run `npm ci` from this repository root. Install `@eliware/core` as a development dependency in each router repository.
 
 ```sh
-npm install --save-dev @eliware/core
+npm install --save-dev @eliware/core@latest
 ```
 
 ## Usage
 
-Run `core-cli preflight` to validate the current configuration repository.
-Run `core-cli compare <partner-repo>` to validate a pair of repositories.
-Read the [CLI guide](docs/cli-application.md) and [web application guide](docs/web-application.md) for complete usage.
+Run `core-cli preflight` for one repository and `core-cli compare <partner-repo>` for a pair.
+Read the [CLI guide](docs/cli-application.md) and [web application guide](docs/web-application.md) for workflows.
 Read [release notes](RELEASE_NOTES.md) for version history.
 
 ## Development
@@ -60,44 +56,34 @@ Use the [documentation index](docs/README.md) and [specifications index](specs/R
 
 ## Testing
 
-Run `npm test` for the aggregate repository validation checks.
-The browser build and browser audit commands run as separate scripts.
-Run `npm run lint` to check code style and `npm run audit` to check dependencies.
-Run `npm run format` to format files and `npm run format:check` to check formatting.
-Run `npm run pack` to validate package contents.
-
-Run `npm run build` to build browser assets.
-Run `npm run puppeteer` to install Chrome for browser checks.
-Run `npm run screenshots` or `npm run lighthouse` while the web application runs.
-Read the [web application guide](docs/web-application.md#browser-validation) for browser check details.
+Run `npm test` for aggregate repository validation.
+Browser builds and browser checks run separately from `npm test`.
 
 ## Troubleshooting
 
-Read the [CLI guide](docs/cli-application.md) for configuration validation errors.
-Read the [web application guide](docs/web-application.md) for server, webhook, and browser issues.
+Read the [CLI guide](docs/cli-application.md) for validation errors.
+Read the [web application guide](docs/web-application.md) for server and webhook issues.
 
 ## Security
 
 Keep credentials, private data, and runtime state out of Git.
-Allow proxy and firewall access from approved clients only because the application has no authentication.
+Allow proxy and firewall access from approved clients because the application has no authentication.
 
 ## Configuration
 
 The web application reads environment values and `.env` from its working directory.
-Read the [web application guide](docs/web-application.md#configuration) for each value, default, and requirement.
+Read the [configuration guide](docs/web-application.md#configuration) for defaults and requirements.
 
 ## Operations
 
-Configure the web application and webhook listener with the values in the [web application guide](docs/web-application.md).
-Push configuration repositories separately when deployments require different timing.
+Configure the dashboard and webhook listener using the [web application guide](docs/web-application.md).
+Push router repositories separately when deployments require different timing.
 
 ## Commands
 
-Run `core-cli --help` or `core-web --help` to print command help.
-Run `core-cli --version` or `core-web --version` to print the package version.
-Run `core-cli preflight` or `core-cli compare <partner-repo>` for repository validation.
-Run `core-web` to start the web application from its configured working directory.
-Read the [CLI guide](docs/cli-application.md) for command arguments and validation behavior.
+Run `core-cli --help` or `core-web --help` for command help.
+Run `core-cli --version` or `core-web --version` for the package version.
+Run `core-web` from a router repository to start the web application.
 
 ## Exit codes
 
@@ -109,30 +95,28 @@ Read the [CLI guide](docs/cli-application.md) for command arguments and validati
 
 ## Routes
 
-The dashboard serves page, asset, health, readiness, and status routes.
-The separate webhook listener accepts `POST /api/github/webhook`.
-Read the [web application guide](docs/web-application.md#routes) for route details and responses.
+The dashboard serves its page, assets, health, readiness, and status routes.
+The webhook listener accepts `POST /api/github/webhook` on its configured port.
+Read the [route guide](docs/web-application.md#routes) for paths and results.
 
 ## Assets
 
-Keep browser source assets in `public/`.
-The build creates `dist/client.js` and `dist/service-worker.js`.
+Keep browser source assets in `public/`. The build creates `dist/client.js` and `dist/service-worker.js`.
 
 ## Development server
 
-Run `npm run build`, then run `core-web` from the configuration repository working directory.
-The dashboard defaults to port `9300`, and the webhook listener defaults to port `9301`.
+Run `core-web` from a router repository. The dashboard defaults to port `9300`, and the webhook listener defaults to port `9301`.
 
 ## Build
 
 Run `npm run build` to create browser bundles in `dist/`.
-Read the [web application guide](docs/web-application.md#browser-validation) for browser validation commands.
+Read the [browser validation guide](docs/web-application.md#browser-validation) for screenshot and audit commands.
 
 ## Deployment
 
-The webhook validates signed pushes and runs the configured deployment steps in order.
-Read the [web application guide](docs/web-application.md#deployment-behavior) for deployment and recovery details.
-Use `.github/workflows/npm.yaml` and the approved release process for package publication.
+The webhook checks signed pushes and runs deployment steps in order.
+Read the [deployment guide](docs/web-application.md#deployment-behavior) for validation and recovery details.
+Use `.github/workflows/npm.yaml` and the approved release process to publish the package.
 
 ## Support
 
