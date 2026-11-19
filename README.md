@@ -29,6 +29,8 @@ Core Networking Manager.
 
 ## Features
 
+Eliware maintains `@eliware/core`. The package validates and compares router configurations and provides a read-only status dashboard.
+
 Core provides `core-cli` for router configuration validation and `core-web` for status and deployment hooks.
 
 ## Requirements
