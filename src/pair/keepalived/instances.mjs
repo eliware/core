@@ -5,6 +5,7 @@ export default function parseInstances(text) {
   const instances = new Map();
   const headers = [...source.matchAll(/vrrp_instance\s+(\S+)\s*\{/gu)];
   for (const header of headers) {
+    if (instances.has(header[1])) return null;
     let depth = 1;
     let end = header.index + header[0].length;
     while (depth > 0 && end < source.length) {

@@ -32,10 +32,10 @@ export default function registerWebhookRoutes(
     }
 
     const result = deployment.start(delivery);
+    if (!result.accepted) return reply.code(409).send(result);
     deliveries.set(delivery, true);
     if (deliveries.size > maximumRememberedDeliveries)
       deliveries.delete(deliveries.keys().next().value);
-    if (!result.accepted) return reply.code(409).send(result);
     return reply.code(202).send(result);
   });
 }

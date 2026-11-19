@@ -44,7 +44,17 @@ export default function acquireDeploymentLock(repositoryPath, options = {}) {
     }
     descriptor = fileSystem.openSync(lockPath, "wx", 0o600);
   }
-  fileSystem.writeFileSync(descriptor, String(processId));
+  try {
+    fileSystem.writeFileSync(descriptor, String(processId));
+  } catch (error) {
+    try {
+      fileSystem.closeSync(descriptor);
+    } catch {}
+    try {
+      fileSystem.unlinkSync(lockPath);
+    } catch {}
+    throw error;
+  }
   let descriptorClosed = false;
   let lockRemoved = false;
   return () => {

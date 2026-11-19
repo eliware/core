@@ -20,6 +20,12 @@ test("rejects empty and incomplete instances", () => {
   expect(parseInstances("vrrp_instance VI { state MASTER }").get("VI")).toMatchObject({ vips: [] });
 });
 
+test("rejects duplicate VRRP instance names", () => {
+  const source = createPairRepo("core1")["etc/keepalived/keepalived.conf"];
+  const duplicate = `${source}\\n${source}`;
+  expect(parseInstances(duplicate)).toBeNull();
+});
+
 test("ignores braces inside comments and quoted values", () => {
   const source = createPairRepo("core1")["etc/keepalived/keepalived.conf"];
   const text = `# } vrrp_instance ignored {\n${source.replace(

@@ -107,7 +107,8 @@ test("rejects duplicate deliveries and busy deployment requests", async () => {
       start: jest
         .fn()
         .mockReturnValueOnce({ accepted: true, runId: "run-1" })
-        .mockReturnValueOnce({ accepted: false, status: "busy" }),
+        .mockReturnValueOnce({ accepted: false, status: "busy" })
+        .mockReturnValueOnce({ accepted: true, runId: "run-2" }),
     },
   });
   const headers = signedHeaders(body);
@@ -139,8 +140,16 @@ test("rejects duplicate deliveries and busy deployment requests", async () => {
     headers: busyHeaders,
     payload: body,
   });
-  expect(busyDuplicate.json()).toEqual({ accepted: false, reason: "duplicate delivery" });
-  expect(deployment.start).toHaveBeenCalledTimes(2);
+  expect(busyDuplicate.statusCode).toBe(202);
+  expect(busyDuplicate.json()).toEqual({ accepted: true, runId: "run-2" });
+  const acceptedDuplicate = await server.inject({
+    method: "POST",
+    url: "/api/github/webhook",
+    headers: busyHeaders,
+    payload: body,
+  });
+  expect(acceptedDuplicate.json()).toEqual({ accepted: false, reason: "duplicate delivery" });
+  expect(deployment.start).toHaveBeenCalledTimes(3);
   await server.close();
 });
 

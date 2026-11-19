@@ -185,3 +185,20 @@ test("rejects a lock whose directory is missing", () => {
     "lock storage unavailable",
   );
 });
+
+test("removes a new lock when writing its owner fails", () => {
+  const fileSystem = createFileSystem();
+  const directory = "/tmp/locks";
+  const repositoryPath = "/router/repo";
+  const path = lockPath(directory, repositoryPath);
+  const closeSync = jest.spyOn(fileSystem, "closeSync");
+  fileSystem.writeFileSync = () => {
+    throw new Error("write failed");
+  };
+
+  expect(() => acquireDeploymentLock(repositoryPath, { directory, fileSystem })).toThrow(
+    "write failed",
+  );
+  expect(closeSync).toHaveBeenCalledTimes(1);
+  expect(fileSystem.files.has(path)).toBe(false);
+});
