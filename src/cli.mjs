@@ -8,6 +8,7 @@ import { resolve } from "node:path";
 import checkCatalogStatus from "./cli/status.mjs";
 import reloadCatalogComponents from "./cli/reload.mjs";
 import runSystemCommand from "./cli/system-command.mjs";
+import formatCatalogComponent from "./cli/catalog-output.mjs";
 
 export default async function runCli(
   args,
@@ -51,10 +52,7 @@ export default async function runCli(
       write("No service catalog is configured.");
       return 0;
     }
-    for (const component of catalog.components)
-      write(
-        `${component.id} — ${component.name} | paths: ${component.configPaths.join(", ")} | health: ${component.health.unit} | action: ${component.action.operation} ${component.action.unit}`,
-      );
+    for (const component of catalog.components) write(formatCatalogComponent(component));
     return 0;
   }
 

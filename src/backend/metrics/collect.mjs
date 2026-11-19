@@ -1,10 +1,9 @@
 import collectRouterMetric from "./collect/router.mjs";
 import collectServiceMetric from "./collect/services.mjs";
-
-const serviceMetricTypes = new Set(["haproxy", "dhcp-leases", "dns-cache", "ntp"]);
+import classifyMetricType from "../../metrics/metric-types.mjs";
 
 export default function collectMetric(metric, options = {}) {
-  return serviceMetricTypes.has(metric.type)
+  return classifyMetricType(metric.type) === "service"
     ? collectServiceMetric(metric, options)
     : collectRouterMetric(metric, options);
 }

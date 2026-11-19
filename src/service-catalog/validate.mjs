@@ -1,3 +1,5 @@
+import classifyMetricType from "../metrics/metric-types.mjs";
+
 const serviceUnitPattern = /^[a-zA-Z0-9_.@-]+\.service$/u;
 const idPattern = /^[a-z][a-z0-9-]*$/u;
 
@@ -23,8 +25,8 @@ function validConfigPath(path) {
 
 function validMetric(metric) {
   if (!metric || typeof metric !== "object" || Array.isArray(metric)) return false;
-  if (["interfaces", "ntp", "routes", "arp", "frr"].includes(metric.type))
-    return Object.keys(metric).length === 1;
+  const metricCategory = classifyMetricType(metric.type);
+  if (!metricCategory) return false;
   if (metric.type === "vrrp")
     return (
       Object.keys(metric).every((key) => ["type", "path", "pidPath"].includes(key)) &&
@@ -34,6 +36,7 @@ function validMetric(metric) {
           (typeof path === "string" && path.startsWith("/") && !/[\r\n]/u.test(path)),
       )
     );
+  if (metricCategory === "router" || metric.type === "ntp") return Object.keys(metric).length === 1;
   if (metric.type === "haproxy")
     return (
       Object.keys(metric).every((key) => ["type", "socketPath"].includes(key)) &&
@@ -49,14 +52,13 @@ function validMetric(metric) {
       metric.path.startsWith("/") &&
       !/[\r\n]/u.test(metric.path)
     );
-  if (metric.type === "dns-cache")
-    return (
-      Object.keys(metric).every((key) => ["type", "path"].includes(key)) &&
-      typeof metric.path === "string" &&
-      metric.path.startsWith("/") &&
-      !/[\r\n]/u.test(metric.path)
-    );
-  return false;
+  return (
+    metric.type === "dns-cache" &&
+    Object.keys(metric).every((key) => ["type", "path"].includes(key)) &&
+    typeof metric.path === "string" &&
+    metric.path.startsWith("/") &&
+    !/[\r\n]/u.test(metric.path)
+  );
 }
 
 export default function validateServiceCatalog(value) {
