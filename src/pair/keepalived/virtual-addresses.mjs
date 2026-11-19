@@ -6,7 +6,7 @@ export default function parseVirtualAddresses(body) {
   const valid = [];
   const invalid = [];
   for (const line of block[1].split(/\r?\n/u)) {
-    const tokens = line.split("#")[0].trim().split(/\s+/u).filter(Boolean);
+    const tokens = stripComment(line).trim().split(/\s+/u).filter(Boolean);
     if (!tokens.length) continue;
     const [address, prefix] = tokens[0].split("/");
     const bits = Number(prefix);
@@ -30,6 +30,20 @@ export default function parseVirtualAddresses(body) {
   }
   if (valid.length === 0) invalid.push("missing");
   return { valid: valid.sort(), invalid };
+}
+
+function stripComment(line) {
+  let quote;
+  let escaped = false;
+  for (let index = 0; index < line.length; index += 1) {
+    const character = line[index];
+    if (escaped) escaped = false;
+    else if (quote && character === "\\") escaped = true;
+    else if (quote && character === quote) quote = undefined;
+    else if (!quote && (character === '"' || character === "'")) quote = character;
+    else if (!quote && character === "#") return line.slice(0, index);
+  }
+  return line;
 }
 
 function isUsableHostAddress(address, prefix) {

@@ -48,3 +48,13 @@ test("accepts supported address options and rejects unknown or incomplete option
     "missing",
   ]);
 });
+
+test("preserves a hash inside a quoted address option", () => {
+  const text = `virtual_ipaddress {\n 192.0.2.1/24 label "vip#0"\n}`;
+  expect(parseVirtualAddresses(text).invalid).toEqual([]);
+});
+
+test("preserves an escaped hash inside a quoted address option", () => {
+  const text = `virtual_ipaddress {\n 192.0.2.1/24 label "vip\\#0"\n}`;
+  expect(parseVirtualAddresses(text).invalid).toEqual([]);
+});

@@ -14,6 +14,7 @@ test.each([
   [["_service", "IN", "SRV", "1", "2", "443", "server.test."], "SRV"],
   [["@", "IN", "CAA", "0", "issue", '"ca.test"'], "CAA"],
   [["@", "IN", "TXT", '"some value"'], "TXT"],
+  [["@", "IN", "TXT", '""', '"v=spf1 -all"'], "TXT"],
 ])("validates DNS record tokens for %s", (tokens, type) => {
   expect(validateDnsRecord("test.zone", tokens, 1)).toMatchObject({ errors: [], type });
 });
@@ -59,7 +60,8 @@ test("rejects empty record tokens", () => {
   });
 });
 
-test.each(["", '""'])("rejects an empty TXT field %s", (value) => {
+test("rejects an empty TXT token", () => {
+  const value = "";
   expect(validateDnsRecord("test.zone", ["@", "IN", "TXT", value], 2).errors).toContain(
     "FAIL test.zone:2: TXT record contains an empty value.",
   );
