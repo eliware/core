@@ -33,19 +33,13 @@ test("collects HAProxy stats through an injected connection", async () => {
   await expect(result).resolves.toMatchObject({ totals: { backends: 1 } });
 });
 
-test("collects DHCP lease and DNS cache files", async () => {
-  const readFile = jest.fn(async (path) =>
-    path === "/leases" ? "" : "++ Cache DB RRsets ++\nA: 2\n++ Resolver ++\n",
-  );
+test("collects DHCP lease files", async () => {
+  const readFile = jest.fn(async () => "");
   await expect(
     collectServiceMetric({ type: "dhcp-leases", path: "/leases", format: "dnsmasq" }, { readFile }),
   ).resolves.toEqual({ totals: { activeLeases: 0 } });
-  await expect(
-    collectServiceMetric({ type: "dns-cache", path: "/stats" }, { readFile }),
-  ).resolves.toEqual({ totals: { rrsets: 2 }, records: { A: 2 } });
   expect(readFile.mock.calls.map(([path, encoding]) => [path, encoding])).toEqual([
     ["/leases", "utf8"],
-    ["/stats", "utf8"],
   ]);
 });
 

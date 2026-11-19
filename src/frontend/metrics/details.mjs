@@ -7,13 +7,7 @@ function addTextElement(document, parent, tag, className, value) {
 }
 
 export default function renderMetricDetails(document, content, values) {
-  const summary = Object.entries(values.totals ?? values).filter(
-    ([, value]) => value === null || ["string", "number", "boolean"].includes(typeof value),
-  );
-  if (summary.length) {
-    const row = addTextElement(document, content, "p", "metric-summary", "");
-    row.textContent = summary.map(([key, value]) => `${key}: ${value ?? "—"}`).join(" · ");
-  }
+  renderMetricSummary(document, content, values);
   const groups = Object.entries(values).filter(([, value]) => Array.isArray(value));
   for (const [name, rows] of groups) {
     if (!rows.length) continue;
@@ -39,3 +33,4 @@ export default function renderMetricDetails(document, content, values) {
     content.append(group);
   }
 }
+import renderMetricSummary from "./summary.mjs";

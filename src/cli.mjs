@@ -4,11 +4,13 @@ import writeHelp from "./help.mjs";
 import preflight from "./preflight.mjs";
 import compare from "./compare.mjs";
 import loadServiceCatalog from "./service-catalog/load.mjs";
-import { resolve } from "node:path";
 import checkCatalogStatus from "./cli/status.mjs";
 import reloadCatalogComponents from "./cli/reload.mjs";
 import runSystemCommand from "./cli/system-command.mjs";
-import formatCatalogComponent from "./cli/catalog-output.mjs";
+import runCatalogCommand from "./cli/commands/catalog.mjs";
+import runStatusCommand from "./cli/commands/status.mjs";
+import runReloadCommand from "./cli/commands/reload.mjs";
+import runCompareCommand from "./cli/commands/compare.mjs";
 
 export default async function runCli(
   args,
@@ -41,38 +43,21 @@ export default async function runCli(
   }
 
   if (parsed.type === "catalog") {
-    let catalog;
-    try {
-      catalog = catalogCommand(cwd);
-    } catch (error) {
-      write(formatCliError("catalog", error));
-      return 1;
-    }
-    if (!catalog) {
-      write("No service catalog is configured.");
-      return 0;
-    }
-    for (const component of catalog.components) write(formatCatalogComponent(component));
-    return 0;
+    const result = runCatalogCommand(cwd, catalogCommand);
+    for (const line of result.lines) write(line);
+    return result.ok ? 0 : 1;
   }
 
-  if (parsed.type === "status" || parsed.type === "reload") {
-    const repositoryPath = parsed.repositoryPath ? resolve(cwd, parsed.repositoryPath) : cwd;
-    let catalog;
-    try {
-      catalog = catalogCommand(repositoryPath);
-    } catch (error) {
-      write(formatCliError("catalog", error));
-      return 1;
-    }
-    const command = parsed.type === "status" ? statusCommand : reloadCommand;
-    const result = await command({ catalog, componentId: parsed.componentId, run: systemCommand });
+  if (["status", "reload"].includes(parsed.type)) {
+    const command = parsed.type === "status" ? runStatusCommand : runReloadCommand;
+    const operation = parsed.type === "status" ? { statusCommand } : { reloadCommand };
+    const result = await command(parsed, { cwd, catalogCommand, systemCommand, ...operation });
     for (const line of result.lines) write(line);
     return result.usageError ? 2 : result.ok ? 0 : 1;
   }
 
   if (parsed.type === "compare") {
-    const result = await compareCommand(cwd, parsed.partnerRepo);
+    const result = await runCompareCommand(parsed, { cwd, compareCommand });
     for (const line of result.lines) write(line);
     return result.ok ? 0 : 1;
   }
