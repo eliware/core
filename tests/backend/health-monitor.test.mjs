@@ -11,7 +11,7 @@ test("checks configured units and reports unhealthy results", async () => {
   const checkUnit = jest.fn(async (unit) => {
     if (unit === "frr.service") throw new Error("inactive");
   });
-  const onUnhealthy = jest.fn();
+  const onUnhealthy = jest.fn().mockRejectedValue(new Error("notification failed"));
   let timestamp = 0;
   const monitor = createHealthMonitor({
     units: ["sshd.service", "frr.service"],
@@ -91,23 +91,11 @@ test("updates unit health when the clock fails", async () => {
     units: [{ name: "frr.service", status: "healthy", checkedAt: null }],
   });
 });
-test("keeps health checks successful when an unhealthy callback rejects", async () => {
-  const monitor = createHealthMonitor({
-    units: ["frr.service"],
-    checkUnit: async () => {
-      throw new Error("inactive");
-    },
-    onUnhealthy: async () => {
-      throw new Error("notification failed");
-    },
-  });
-  await expect(monitor.check()).resolves.toMatchObject({ status: "unhealthy" });
-});
 test("records and reports a health check setup failure", async () => {
   let reads = 0;
   const units = new Proxy(["frr.service"], {
     get(target, property, receiver) {
-      if (property === "length" && reads++ > 0) throw new Error("check setup failed");
+      if (property === "0" && reads++ > 0) throw new Error("unit lookup failed");
       return Reflect.get(target, property, receiver);
     },
   });
@@ -124,6 +112,18 @@ test("records and reports a health check setup failure", async () => {
   await monitor.stop();
 });
 test("ignores a setup failure after shutdown starts", async () => {
+  let setupReads = 0;
+  const setupUnits = new Proxy(["frr.service"], {
+    get: (target, property, receiver) => {
+      if (property === "length" && setupReads++ > 0) throw new Error("setup failed");
+      return Reflect.get(target, property, receiver);
+    },
+  });
+  const setupMonitor = createHealthMonitor({ units: setupUnits, setIntervalFn: () => 1 });
+  setupMonitor.start();
+  for (let attempt = 0; attempt < 6; attempt += 1) await Promise.resolve();
+  expect(setupMonitor.getStatus().units[0].detail).toBe("Health check could not start");
+  await setupMonitor.stop();
   let reads = 0;
   const units = new Proxy(["frr.service"], {
     get(target, property, receiver) {

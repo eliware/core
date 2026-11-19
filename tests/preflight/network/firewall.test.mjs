@@ -10,6 +10,7 @@ test("accepts a committed filter table with a valid rule", () => {
 test.each([
   "-A INPUT --bogus value -j ACCEPT",
   "-A INPUT ! --bogus -j ACCEPT",
+  "-A INPUT ! -s -j ACCEPT",
   "-A INPUT -i -j ACCEPT",
   "-A INPUT -i lo -j ACCEPT --bogus value",
   "-A INPUT -i lo -j ACCEPT -j DROP",

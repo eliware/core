@@ -1,5 +1,6 @@
 import { expect, test } from "@jest/globals";
 import validateDnsRecord from "../../../../src/preflight/network/dns/records.mjs";
+import tokenizeDnsRecord from "../../../../src/preflight/network/dns/tokenize.mjs";
 
 test.each([
   [["A", "IN", "NS", "ns.test."], "NS"],
@@ -65,6 +66,11 @@ test("rejects an empty TXT token", () => {
   expect(validateDnsRecord("test.zone", ["@", "IN", "TXT", value], 2).errors).toContain(
     "FAIL test.zone:2: TXT record contains an empty value.",
   );
+});
+
+test("accepts a TXT record with multiple quoted character strings", () => {
+  const tokens = tokenizeDnsRecord('@ IN TXT "first part" "second part"');
+  expect(validateDnsRecord("test.zone", tokens, 2)).toMatchObject({ errors: [], type: "TXT" });
 });
 
 test.each([["not-a-string"], ['"quoted"', "not-a-string"], ['"unterminated']])(

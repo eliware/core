@@ -225,9 +225,10 @@ Run the aggregate checks before you commit:
 npm test
 ```
 
-`npm test` runs tests, lint, formatting, dependency checks, and package rules.
-It checks the committed browser bundles but does not assemble them from frontend source.
-Run `npm run build` separately before you validate frontend changes.
+`npm test` runs the configured `eliware-test` checks for this repository.
+The checks include tests, lint, formatting, dependency audits, and package rules.
+The command does not build browser assets.
+Run `npm run build` after you change frontend source files.
 Run focused tests by passing one or more test file paths:
 
 ```sh

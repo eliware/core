@@ -66,7 +66,17 @@ export default function createHealthMonitor({
       while (nextIndex < units.length) {
         const index = nextIndex;
         nextIndex += 1;
-        results[index] = await checkHealthUnit(units[index], checkUnit, now);
+        const name = checks[index].name;
+        try {
+          results[index] = await checkHealthUnit(units[index], checkUnit, now);
+        } catch {
+          results[index] = {
+            name,
+            status: "unknown",
+            checkedAt: null,
+            detail: "Health check could not start",
+          };
+        }
       }
     }
     const workers = Array.from({ length: Math.min(units.length, maxConcurrentUnitChecks) }, () =>

@@ -57,9 +57,8 @@ Use the [documentation index](docs/README.md) and [specifications index](specs/R
 ## Testing
 
 Run `npm test` for aggregate repository validation.
-`npm test` checks the committed browser bundles but does not assemble them from source.
-Run `npm run build` separately after changing frontend source files.
-Browser checks also run separately from `npm test`.
+`npm test` runs the configured `eliware-test` checks. It does not build browser assets.
+Run `npm run build` after changing frontend source files. Run browser checks separately.
 
 ## Troubleshooting
 
