@@ -78,7 +78,9 @@ It returns HTTP 415 for non-JSON content types and HTTP 400 for JSON values that
 Set the GitHub secret to the same value as `GITHUB_WEBHOOK_SECRET`.
 The listener checks the `x-hub-signature-256` signature against the raw request body.
 It deploys pushes to `CORE_GITHUB_BRANCH`, which defaults to `main`.
-It ignores other event types and branches and rejects a repeated GitHub request ID.
+It ignores other event types and branches.
+It returns HTTP 202 for a request ID the server accepted.
+It retries admission for a request ID that received HTTP 409 earlier.
 
 ## Deployment behavior
 
