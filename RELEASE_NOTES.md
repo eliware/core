@@ -11,6 +11,7 @@
 - Add catalog-driven CLI commands for component status checks and reload actions.
 - Include both paths of moved files when selecting deployment actions.
 - Show current router metrics and keep only the latest in-memory summary.
+- Follow systemd unit events for prompt health updates and single Discord notifications.
 
 ## 15.2.2 — 2026-11-18
 

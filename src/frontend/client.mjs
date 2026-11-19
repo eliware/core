@@ -49,7 +49,7 @@ function renderHealth(document, data) {
       item,
       "span",
       "health-detail",
-      unit.detail ?? unit.status ?? "unknown",
+      unit.detail ?? unit.state ?? unit.status ?? "unknown",
     );
     addTextElement(document, item, "time", "health-time", formatTime(unit.checkedAt));
     list.append(item);

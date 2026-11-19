@@ -26,6 +26,7 @@ function dependencies(
     stop: jest.fn(),
     getStatus: jest.fn(() => ({ checkedAt: null, components: [] })),
   };
+  const systemdEventMonitor = { start: jest.fn(), stop: jest.fn() };
   const deployment = {
     start: jest.fn(),
     getStatus: jest.fn(() => ({ status: "idle", steps: [] })),
@@ -38,6 +39,7 @@ function dependencies(
     shutdown,
     healthMonitor,
     metricsMonitor,
+    systemdEventMonitor,
     deployment,
     values: {
       loadConfig: jest.fn(() => configuration),
@@ -50,6 +52,8 @@ function dependencies(
       createShutdownHook: jest.fn(() => shutdown),
       createHealthMonitor: jest.fn(() => healthMonitor),
       createMetricsMonitor: jest.fn(() => metricsMonitor),
+      createSystemdEventMonitor: jest.fn(() => systemdEventMonitor),
+      readSystemdUnitState: jest.fn(),
       createDeploymentManager: jest.fn(() => deployment),
       sendDiscordNotification: jest.fn().mockResolvedValue(true),
       registerWebhookRoutes: jest.fn(),
@@ -91,6 +95,7 @@ test.each([
       log: deps.log,
       stopHealthMonitor: deps.healthMonitor.stop,
       stopMetricsMonitor: deps.metricsMonitor.stop,
+      stopSystemdEventMonitor: deps.systemdEventMonitor.stop,
       isListening: expect.any(Function),
     });
     const isListening = deps.values.createShutdownHook.mock.calls[0][0].isListening;
@@ -104,6 +109,7 @@ test.each([
     expect(typeof deps.signals.shutdownHook).toBe("function");
     expect(deps.healthMonitor.start).toHaveBeenCalledTimes(1);
     expect(deps.metricsMonitor.start).toHaveBeenCalledTimes(1);
+    expect(deps.systemdEventMonitor.start).toHaveBeenCalledTimes(1);
     const isReady = deps.values.registerStatusRoutes.mock.calls[0][1].isReady;
     expect(isReady()).toBe(true);
     await deps.signals.shutdownHook();

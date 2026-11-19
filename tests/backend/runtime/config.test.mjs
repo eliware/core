@@ -16,6 +16,7 @@ test("loads environment values before assembling application configuration", () 
     }),
   ).toEqual({
     tcpEndpoint: 8080,
+    dashboardUrl: "http://127.0.0.1:8080/",
     webhookEndpoint: 9301,
     logLevel: "debug",
     repositoryPath: undefined,

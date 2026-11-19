@@ -7,6 +7,7 @@ test("assembles and validates parsed application configuration", () => {
     loadApplicationConfig({
       environment: {
         PORT: "8080",
+        CORE_DASHBOARD_URL: "https://router.example/",
         WEBHOOK_PORT: "8081",
         LOG_LEVEL: "debug",
         CORE_GITHUB_BRANCH: "production",
@@ -17,6 +18,7 @@ test("assembles and validates parsed application configuration", () => {
     }),
   ).toMatchObject({
     tcpEndpoint: 8080,
+    dashboardUrl: "https://router.example/",
     webhookEndpoint: 8081,
     logLevel: "debug",
     githubBranch: "production",

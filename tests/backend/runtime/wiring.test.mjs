@@ -8,6 +8,8 @@ import createShutdownHook from "../../../src/backend/shutdown.mjs";
 import registerStatusRoutes from "../../../src/backend/status-routes.mjs";
 import createHealthMonitor from "../../../src/backend/health-monitor.mjs";
 import createMetricsMonitor from "../../../src/backend/metrics-monitor.mjs";
+import createSystemdEventMonitor from "../../../src/backend/systemd-event-monitor.mjs";
+import readSystemdUnitState from "../../../src/backend/systemd/read-unit-state.mjs";
 import createDeploymentManager from "../../../src/backend/deployment.mjs";
 import sendDiscordNotification from "../../../src/backend/discord-notifier.mjs";
 import registerWebhookRoutes from "../../../src/backend/webhook-routes.mjs";
@@ -24,6 +26,8 @@ test("assembles the production application dependencies", () => {
     registerStatusRoutes,
     createHealthMonitor,
     createMetricsMonitor,
+    createSystemdEventMonitor,
+    readSystemdUnitState,
     createDeploymentManager,
     sendDiscordNotification,
     registerWebhookRoutes,
@@ -52,6 +56,7 @@ test("loads application configuration through the production dependency", () => 
       githubBranch: "main",
       healthUnits: [],
       catalog: null,
+      dashboardUrl: "http://127.0.0.1:8080/",
       snowflake: { workerId: 1, processId: 2 },
     });
   } finally {

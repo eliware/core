@@ -7,6 +7,8 @@ import createShutdownHook from "../shutdown.mjs";
 import registerStatusRoutes from "../status-routes.mjs";
 import createHealthMonitor from "../health-monitor.mjs";
 import createMetricsMonitor from "../metrics-monitor.mjs";
+import createSystemdEventMonitor from "../systemd-event-monitor.mjs";
+import readSystemdUnitState from "../systemd/read-unit-state.mjs";
 import createDeploymentManager from "../deployment.mjs";
 import sendDiscordNotification from "../discord-notifier.mjs";
 import registerWebhookRoutes from "../webhook-routes.mjs";
@@ -22,6 +24,8 @@ export const runtimeDependencies = {
   registerStatusRoutes,
   createHealthMonitor,
   createMetricsMonitor,
+  createSystemdEventMonitor,
+  readSystemdUnitState,
   createDeploymentManager,
   sendDiscordNotification,
   registerWebhookRoutes,

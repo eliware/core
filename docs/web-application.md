@@ -37,22 +37,26 @@ Open `http://localhost:9300/` to view the dashboard.
 The server reads values from its process environment and the `.env` file in its working directory.
 Copy `.env.example` to `.env`, then set values for each router.
 
-| Name                    | Required | Default    | Accepted values                                                                  |
-| ----------------------- | -------- | ---------- | -------------------------------------------------------------------------------- |
-| `PORT`                  | No       | `9300`     | Dashboard port from `1` through `65535`.                                         |
-| `WEBHOOK_PORT`          | No       | `9301`     | Webhook port from `1` through `65535`, separate from `PORT`.                     |
-| `LOG_LEVEL`             | No       | `info`     | `error`, `warn`, `info`, `http`, `verbose`, `debug`, or `silly`.                 |
-| `CORE_REPO_PATH`        | No       | None       | Repository path. Set this value to enable deployment hooks.                      |
-| `GITHUB_WEBHOOK_SECRET` | No       | None       | Secret used to authenticate GitHub webhook signatures.                           |
-| `DISCORD_WEBHOOK_URL`   | No       | —          | Discord webhook URL for rich embed notifications.                                |
-| `CORE_GITHUB_BRANCH`    | No       | `main`     | Branch deployed from the configuration repository.                               |
-| `CORE_HEALTH_UNITS`     | No       | Empty list | Unit names to monitor. An empty list disables health monitoring.                 |
-| `SNOWFLAKE_WORKER_ID`   | Yes      | None       | Unique worker value from `0` through `31` for this active application instance.  |
-| `SNOWFLAKE_PROCESS_ID`  | Yes      | None       | Unique process value from `0` through `31` for this active application instance. |
+| Name                    | Required | Default      | Accepted values                                                                  |
+| ----------------------- | -------- | ------------ | -------------------------------------------------------------------------------- |
+| `PORT`                  | No       | `9300`       | Dashboard port from `1` through `65535`.                                         |
+| `CORE_DASHBOARD_URL`    | No       | Loopback URL | Public dashboard URL used in systemd event notifications.                        |
+| `WEBHOOK_PORT`          | No       | `9301`       | Webhook port from `1` through `65535`, separate from `PORT`.                     |
+| `LOG_LEVEL`             | No       | `info`       | `error`, `warn`, `info`, `http`, `verbose`, `debug`, or `silly`.                 |
+| `CORE_REPO_PATH`        | No       | None         | Repository path. Set this value to enable deployment hooks.                      |
+| `GITHUB_WEBHOOK_SECRET` | No       | None         | Secret used to authenticate GitHub webhook signatures.                           |
+| `DISCORD_WEBHOOK_URL`   | No       | —            | Discord webhook URL for rich embed notifications.                                |
+| `CORE_GITHUB_BRANCH`    | No       | `main`       | Branch deployed from the configuration repository.                               |
+| `CORE_HEALTH_UNITS`     | No       | Empty list   | Unit names to monitor. An empty list disables health monitoring.                 |
+| `SNOWFLAKE_WORKER_ID`   | Yes      | None         | Unique worker value from `0` through `31` for this active application instance.  |
+| `SNOWFLAKE_PROCESS_ID`  | Yes      | None         | Unique process value from `0` through `31` for this active application instance. |
 
 The server rejects invalid ports and rejects equal dashboard and webhook ports.
 The dashboard and webhook TCP endpoint numbers must not be the same.
 The dashboard and webhook listener use loopback.
+Set `CORE_DASHBOARD_URL` to the dashboard address that Discord recipients can open.
+The event notification links to the loopback dashboard URL when this value is unset.
+
 Configure a proxy or network port forward to route external requests to the configured loopback ports.
 The `LOG_LEVEL` value sets the minimum level for application log messages.
 
@@ -149,7 +153,14 @@ Chrony synchronization data comes from `chronyc -n tracking`.
 The dashboard reports missing or unreadable files, sockets, and commands as unavailable data.
 
 Set `DISCORD_WEBHOOK_URL` to send deployment and health notifications as Discord rich embeds.
-The application sends a health notification on each failed check interval.
+The application sends one health notification when a unit first becomes unhealthy.
+
+The application also follows systemd journal events for configured health units.
+It updates dashboard health after a unit stops, fails, or restarts.
+It reports the component, event time, systemd state, and dashboard link in a Discord embed.
+It sends one failure notification until the unit recovers and fails again.
+Give the Core process permission to read the system journal.
+If the event stream is unavailable, the five-minute health checks continue.
 
 The deployment uses catalog path mappings to select changed components.
 It runs each selected component's systemd `reload` or `restart` action.

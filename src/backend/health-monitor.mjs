@@ -1,12 +1,12 @@
 import { execFile as nodeExecFile } from "node:child_process";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { promisify } from "node:util";
-import checkHealthUnit from "./health/check-unit.mjs";
+import checkHealthUnits from "./health/check/units.mjs";
+import createUnitEventUpdate from "./health/record-event.mjs";
 import createHealthStatus from "./health/status.mjs";
 
 const execFile = promisify(nodeExecFile);
 const notificationContext = new AsyncLocalStorage();
-const maxConcurrentUnitChecks = 4;
 
 export default function createHealthMonitor({
   units = [],
@@ -15,6 +15,7 @@ export default function createHealthMonitor({
   checkUnit = (unit) =>
     execFile("systemctl", ["is-active", "--quiet", unit], { timeout: healthCheckTimeoutMs }),
   onUnhealthy = async () => {},
+  onSystemdEvent = async () => {},
   now = () => new Date(),
   setIntervalFn = setInterval,
   clearIntervalFn = clearInterval,
@@ -30,13 +31,14 @@ export default function createHealthMonitor({
   async function check() {
     if (running) return running;
     const checkGeneration = generation;
-    const current = runUnitChecks()
+    const current = checkHealthUnits({ units, checks, checkUnit, now })
       .then(async (results) => {
         if (checkGeneration !== generation) return getStatus();
+        const previous = new Map(checks.map((item) => [item.name, item]));
         checks = results;
         for (const result of results) {
           if (checkGeneration !== generation) break;
-          if (result.status === "unhealthy") {
+          if (result.status === "unhealthy" && previous.get(result.name)?.status !== "unhealthy") {
             try {
               await notificationContext.run(current, () => onUnhealthy(result));
             } catch {
@@ -57,33 +59,6 @@ export default function createHealthMonitor({
     running = current;
     runningGeneration = checkGeneration;
     return current;
-  }
-
-  async function runUnitChecks() {
-    const results = Array.from({ length: units.length });
-    let nextIndex = 0;
-    async function runNext() {
-      while (nextIndex < units.length) {
-        const index = nextIndex;
-        nextIndex += 1;
-        const name = checks[index].name;
-        try {
-          results[index] = await checkHealthUnit(units[index], checkUnit, now);
-        } catch {
-          results[index] = {
-            name,
-            status: "unknown",
-            checkedAt: null,
-            detail: "Health check could not start",
-          };
-        }
-      }
-    }
-    const workers = Array.from({ length: Math.min(units.length, maxConcurrentUnitChecks) }, () =>
-      runNext(),
-    );
-    await Promise.all(workers);
-    return results;
   }
 
   async function recordCheckSetupFailure(checkGeneration) {
@@ -110,9 +85,25 @@ export default function createHealthMonitor({
     return createHealthStatus(checks);
   }
 
+  async function recordEvent(event) {
+    if (running) await running;
+    const update = createUnitEventUpdate(checks, event);
+    if (!update) return undefined;
+    checks = update.checks;
+    if (update.shouldNotify && !stopped) {
+      try {
+        await onSystemdEvent({ ...event, result: update.result });
+      } catch {
+        // Notification failures do not change health results or stop future checks.
+      }
+    }
+    return update.result;
+  }
+
   return {
     check,
     getStatus,
+    recordEvent,
     start() {
       if (timer !== undefined) return;
       const nextTimer = setIntervalFn(startCheck, intervalMs);

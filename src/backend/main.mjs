@@ -3,6 +3,7 @@ import createApplicationIntegrations from "./main-integrations.mjs";
 export default async function startWebApplication(dependencies) {
   const {
     tcpEndpoint,
+    dashboardUrl,
     webhookEndpoint,
     logLevel,
     repositoryPath,
@@ -14,19 +15,22 @@ export default async function startWebApplication(dependencies) {
     snowflake,
   } = dependencies.loadConfig();
   const log = dependencies.createLogger({ level: logLevel });
-  const { healthMonitor, metricsMonitor, deployment } = createApplicationIntegrations(
-    {
-      repositoryPath,
-      githubWebhookSecret,
-      discordWebhookUrl,
-      githubBranch,
-      healthUnits,
-      catalog,
-      snowflake,
-    },
-    dependencies,
-    log,
-  );
+  const { healthMonitor, metricsMonitor, systemdEventMonitor, deployment } =
+    createApplicationIntegrations(
+      {
+        repositoryPath,
+        tcpEndpoint,
+        dashboardUrl,
+        githubWebhookSecret,
+        discordWebhookUrl,
+        githubBranch,
+        healthUnits,
+        catalog,
+        snowflake,
+      },
+      dependencies,
+      log,
+    );
   let ready = false;
   dependencies.registerHandlers({ log });
   const server = dependencies.createServer();
@@ -54,6 +58,7 @@ export default async function startWebApplication(dependencies) {
     log,
     stopHealthMonitor: healthMonitor.stop,
     stopMetricsMonitor: metricsMonitor.stop,
+    stopSystemdEventMonitor: systemdEventMonitor.stop,
     isListening: (item) => openServers.has(item),
   });
   const stopApplication = async () => {
@@ -68,6 +73,7 @@ export default async function startWebApplication(dependencies) {
     await webhookServer.listen({ port: webhookEndpoint, host: "127.0.0.1" });
     healthMonitor.start();
     metricsMonitor.start();
+    systemdEventMonitor.start();
     ready = true;
   } catch (error) {
     await shutdownHook();

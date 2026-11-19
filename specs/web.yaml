@@ -33,6 +33,10 @@ directives:
       - Use decimal deployment identifiers from `@eliware/common` snowflakes.
       - Use a unique snowflake worker and process pair for each active application instance.
       - Check configured essential applications every five minutes.
+      - Follow systemd journal events for configured essential applications.
+      - Update dashboard health after a configured unit stops, fails, or restarts.
+      - Include the component, event time, state, and dashboard link in notifications.
+      - Send one failure notification during each continuous failure period.
       - Send a Discord notification when an essential application is unhealthy.
       - Provide a graphical, single-page, read-only health dashboard.
       - Show current health for each configured essential application.

@@ -1,6 +1,7 @@
 export default function loadApplicationValues(environment) {
   return {
     port: environment.PORT,
+    dashboardUrl: environment.CORE_DASHBOARD_URL,
     webhookPort: environment.WEBHOOK_PORT ?? "9301",
     logLevel: environment.LOG_LEVEL ?? "info",
     repositoryPath: environment.CORE_REPO_PATH,

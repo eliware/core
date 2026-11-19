@@ -1,5 +1,5 @@
 import { expect, jest, test } from "@jest/globals";
-import checkHealthUnit from "../../../src/backend/health/check-unit.mjs";
+import checkHealthUnit from "../../../../src/backend/health/check/unit.mjs";
 
 const now = () => new Date("2026-11-18T12:00:00.000Z");
 
