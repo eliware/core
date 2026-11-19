@@ -93,7 +93,10 @@ export default function renderHome(
     return undefined;
   }
 
+  let refreshing = false;
   async function refresh() {
+    if (refreshing) return;
+    refreshing = true;
     try {
       const response = await fetcher("/api/status", { cache: "no-store" });
       if (!response.ok) throw new Error("Status request failed.");
@@ -103,6 +106,8 @@ export default function renderHome(
       if (status) status.textContent = `Updated ${formatTime(now())}`;
     } catch {
       if (status) status.textContent = "Status is unavailable. Retrying shortly.";
+    } finally {
+      refreshing = false;
     }
   }
 

@@ -15,6 +15,12 @@ export default function validateDns(file, text) {
     const line = source.trim();
     if (!line) continue;
     parentheses += (line.match(/\(/gu) ?? []).length - (line.match(/\)/gu) ?? []).length;
+    if (parentheses < 0) {
+      errors.push(`FAIL ${file}:${index + 1}: record parentheses are not balanced.`);
+      parentheses = 0;
+      pending = "";
+      continue;
+    }
     pending += `${pending ? " " : ""}${line}`;
     if (parentheses > 0) continue;
     const tokens = tokenizeDnsRecord(pending);

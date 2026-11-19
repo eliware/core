@@ -16,10 +16,16 @@ test("checks SOA timers, DNS targets, and IP record values", () => {
 
 test("requires complete DNS zone records and balanced parentheses", () => {
   expect(validateDns("test.zone", "@").join(" ")).toContain("invalid DNS record");
-  expect(validateDns("test.zone", ")").join(" ")).toContain("invalid DNS record");
+  expect(validateDns("test.zone", ")").join(" ")).toContain("record parentheses are not balanced");
   expect(
     validateDns("test.zone", "$TTL 3600\n@ IN SOA ns.test. host.test. (1\n").join(" "),
   ).toContain("parentheses are not balanced");
+});
+
+test("rejects a closing parenthesis without an open record group", () => {
+  const zone = "@ IN SOA ns.test. host.test. (1 3600 600 86400 300)\n@ IN NS ns.test.\n)\n";
+
+  expect(validateDns("test.zone", zone).join(" ")).toContain("record parentheses are not balanced");
 });
 
 test("accepts standard zone directives and reports malformed directives", () => {

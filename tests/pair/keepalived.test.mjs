@@ -18,6 +18,17 @@ test("checks matching VRIDs, virtual addresses, peer addresses, and roles", () =
   ).toEqual([]);
 });
 
+test("ignores braces in comments and quoted instance values", () => {
+  const left = `# } vrrp_instance ignored {\n${first["etc/keepalived/keepalived.conf"].replace(
+    "state MASTER",
+    'state MASTER\n  notify_master "/usr/bin/echo { ignored }" # }',
+  )}`;
+
+  expect(validateKeepalived(node1, node2, left, second["etc/keepalived/keepalived.conf"])).toEqual(
+    [],
+  );
+});
+
 test("reports unparseable, missing, mismatched, and nonreciprocal instances", () => {
   const invalidFirst = "vrrp_instance BROKEN {";
   const missing = "vrrp_instance OTHER { state MASTER }";

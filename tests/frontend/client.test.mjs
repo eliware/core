@@ -121,6 +121,32 @@ test("shows retry text when the status endpoint fails", async () => {
   expect(document.elements["[data-status]"].textContent).toContain("unavailable");
 });
 
+test("does not start a status poll while another request is pending", async () => {
+  const document = dashboardDocument();
+  const results = [];
+  const fetcher = jest.fn(
+    () =>
+      new Promise((resolve) => {
+        results.push(resolve);
+      }),
+  );
+  let poll;
+  renderHome(document, { fetcher, setIntervalFn: (callback) => (poll = callback) });
+
+  poll();
+  expect(fetcher).toHaveBeenCalledTimes(1);
+  results[0]({ ok: true, json: async () => ({ health: { status: "healthy", units: [] } }) });
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+  poll();
+  expect(fetcher).toHaveBeenCalledTimes(2);
+  results[1]({ ok: true, json: async () => ({ health: { status: "healthy", units: [] } }) });
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+});
+
 test("supports a non-dashboard document with or without a status label", () => {
   const status = {};
   renderHome({ querySelector: (selector) => (selector === "[data-status]" ? status : null) });

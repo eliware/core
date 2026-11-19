@@ -4,13 +4,13 @@ import parseInstances from "../../pair/keepalived/instances.mjs";
 export default function validateKeepalived(file, text, files) {
   const errors = [];
   if (!isBalanced(text)) errors.push(`FAIL ${file}: configuration blocks are not balanced.`);
-  const blocks = [...text.matchAll(/vrrp_instance\s+(\S+)\s*\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}/gu)];
-  if (blocks.length === 0) errors.push(`FAIL ${file}: no VRRP instances are defined.`);
-  for (const [name, instance] of parseInstances(text) ?? [])
+  const instances = parseInstances(text);
+  if (!instances) errors.push(`FAIL ${file}: no VRRP instances are defined.`);
+  validateDeclaredScriptPaths(file, text, files, errors);
+  for (const [name, instance] of instances ?? []) {
     if (instance.invalidVips.length)
       errors.push(`FAIL ${file}: ${name} has an invalid virtual address.`);
-  validateDeclaredScriptPaths(file, text, files, errors);
-  for (const [, name, body] of blocks) {
+    const body = instance.validationBody;
     for (const key of [
       "state",
       "interface",

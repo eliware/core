@@ -60,7 +60,8 @@ Use the [documentation index](docs/README.md) and [specifications index](specs/R
 
 ## Testing
 
-Run `npm test` for the aggregate validation suite.
+Run `npm test` for the aggregate repository validation checks.
+The browser build and browser audit commands run as separate scripts.
 Run `npm run lint` to check code style and `npm run audit` to check dependencies.
 Run `npm run format` to format files and `npm run format:check` to check formatting.
 Run `npm run pack` to validate package contents.

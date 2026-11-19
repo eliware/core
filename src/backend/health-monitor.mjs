@@ -9,7 +9,9 @@ const notificationContext = new AsyncLocalStorage();
 export default function createHealthMonitor({
   units = [],
   intervalMs = 300_000,
-  checkUnit = (unit) => execFile("systemctl", ["is-active", "--quiet", unit]),
+  healthCheckTimeoutMs = 10_000,
+  checkUnit = (unit) =>
+    execFile("systemctl", ["is-active", "--quiet", unit], { timeout: healthCheckTimeoutMs }),
   onUnhealthy = async () => {},
   now = () => new Date(),
   setIntervalFn = setInterval,
@@ -93,7 +95,11 @@ export default function createHealthMonitor({
             : "unknown";
     return {
       status,
-      checkedAt: checks.reduce((latest, item) => item.checkedAt ?? latest, null),
+      checkedAt: checks.reduce(
+        (latest, item) =>
+          item.checkedAt && (!latest || item.checkedAt > latest) ? item.checkedAt : latest,
+        null,
+      ),
       units: checks,
     };
   }

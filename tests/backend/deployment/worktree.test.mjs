@@ -80,6 +80,7 @@ test("records status commands that reject without an error object", async () => 
 test("stops after dependency scripts change the worktree and restores the prior commit", async () => {
   let statusChecks = 0;
   const run = jest.fn(async (command, args) => {
+    if (command === "git" && args[0] === "branch") return { stdout: "main\n" };
     if (command === "git" && args[0] === "rev-parse") return { stdout: `${commit}\n` };
     if (command === "git" && args[0] === "status") {
       statusChecks += 1;

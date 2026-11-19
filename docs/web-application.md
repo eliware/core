@@ -70,6 +70,8 @@ The application rejects equal dashboard and webhook ports.
 
 Set both `CORE_REPO_PATH` and `GITHUB_WEBHOOK_SECRET` to enable deployment hooks.
 Configure the GitHub webhook to send JSON push events to `http://<router>:<WEBHOOK_PORT>/api/github/webhook`.
+Forward that external address and port to `127.0.0.1` on `WEBHOOK_PORT`.
+
 Set the GitHub secret to the same value as `GITHUB_WEBHOOK_SECRET`.
 The listener checks the `x-hub-signature-256` signature against the raw request body.
 It deploys pushes to `CORE_GITHUB_BRANCH`, which defaults to `main`.
@@ -88,6 +90,8 @@ The server rejects JSON request bodies larger than 1 MiB.
 It remembers accepted GitHub request IDs until the application restarts.
 
 The application records the local commit before `git pull` as its recovery target.
+Check out `CORE_GITHUB_BRANCH` in the configuration repository before starting the application.
+
 It runs `git pull --ff-only -- origin <branch>`, `npm ci --include=dev`, `npm test`, `npm run preflight`, and `npm run reload` in order.
 It stops the sequence at the first failed command.
 If a command fails before reload, the application resets the repository to the previous commit without reloading router processes.
@@ -104,6 +108,7 @@ Set a unique worker and process pair for every active instance.
 
 Set `CORE_HEALTH_UNITS` to a comma-separated list of systemd unit names such as `named.service,kea-dhcp4.service`.
 The application checks each unit at startup and every five minutes.
+The application marks a unit unhealthy when its systemd check runs longer than ten seconds.
 An empty list reports the monitored units as unconfigured.
 
 The dashboard refreshes every 30 seconds.

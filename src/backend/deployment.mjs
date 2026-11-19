@@ -69,6 +69,11 @@ export default function createDeploymentManager({
       const dirty = await run("git", ["status", "--porcelain"], { cwd: repositoryPath });
       if (String(dirty.stdout ?? "").trim())
         throw new Error("Configuration repository has uncommitted changes.");
+      const currentBranch = await run("git", ["branch", "--show-current"], {
+        cwd: repositoryPath,
+      });
+      if (String(currentBranch.stdout ?? "").trim() !== branch)
+        throw new Error(`Configuration repository must be on branch ${branch}.`);
       const revision = await run("git", ["rev-parse", "HEAD"], { cwd: repositoryPath });
       const commit = String(revision.stdout ?? "").trim();
       if (!/^[a-f0-9]{40,64}$/.test(commit)) throw new Error("Git returned an invalid commit ID.");

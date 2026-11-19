@@ -11,4 +11,6 @@ test("checks nested delimiters while ignoring quoted delimiters", () => {
   expect(isBalanced("{ [ ] }")).toBe(true);
   expect(isBalanced("'unterminated")).toBe(false);
   expect(isBalanced("(value)", "()")).toBe(true);
+  expect(isBalanced("{ value # }\n}")).toBe(true);
+  expect(isBalanced('{ value: "# }" }')).toBe(true);
 });

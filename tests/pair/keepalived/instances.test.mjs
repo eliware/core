@@ -20,6 +20,16 @@ test("rejects empty and incomplete instances", () => {
   expect(parseInstances("vrrp_instance VI { state MASTER }").get("VI")).toMatchObject({ vips: [] });
 });
 
+test("ignores braces inside comments and quoted values", () => {
+  const source = createPairRepo("core1")["etc/keepalived/keepalived.conf"];
+  const text = `# } vrrp_instance ignored {\n${source.replace(
+    "state MASTER",
+    'state MASTER\n notify_master "/usr/bin/echo \\" {\n }" # }',
+  )}`;
+
+  expect(parseInstances(text).size).toBe(2);
+});
+
 test("retains invalid virtual address entries for pair rejection", () => {
   const text = createPairRepo("core1")["etc/keepalived/keepalived.conf"].replace(
     "192.0.2.169/24",
@@ -36,6 +46,6 @@ test("accepts supported virtual address options and rejects unknown options", ()
   expect(parseInstances(invalid).get("VI_169").invalidVips).toEqual(["192.0.2.169/24"]);
   const missingOption = source.replace("192.0.2.169/24", "192.0.2.169/24 dev");
   expect(parseInstances(missingOption).get("VI_169").invalidVips).toEqual(["192.0.2.169/24"]);
-  const empty = source.replace("192.0.2.169/24", "# no address");
+  const empty = source.replace("192.0.2.169/24", "\n # no address\n ");
   expect(parseInstances(empty).get("VI_169").invalidVips).toEqual(["missing"]);
 });

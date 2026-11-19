@@ -12,21 +12,22 @@ test("checks configured units and reports unhealthy results", async () => {
     if (unit === "frr.service") throw new Error("inactive");
   });
   const onUnhealthy = jest.fn();
+  let timestamp = 0;
   const monitor = createHealthMonitor({
     units: ["sshd.service", "frr.service"],
     checkUnit,
     onUnhealthy,
-    now: () => new Date("2026-11-18T12:00:00.000Z"),
+    now: () => new Date(Date.parse("2026-11-18T12:00:00.000Z") + timestamp++ * 1000),
   });
   await expect(monitor.check()).resolves.toEqual({
     status: "unhealthy",
-    checkedAt: "2026-11-18T12:00:00.000Z",
+    checkedAt: "2026-11-18T12:00:01.000Z",
     units: [
       { name: "sshd.service", status: "healthy", checkedAt: "2026-11-18T12:00:00.000Z" },
       {
         name: "frr.service",
         status: "unhealthy",
-        checkedAt: "2026-11-18T12:00:00.000Z",
+        checkedAt: "2026-11-18T12:00:01.000Z",
         detail: "Unit is not active",
       },
     ],
@@ -179,6 +180,7 @@ test("uses the default systemd command and clock", async () => {
   expect(defaultExecFile).toHaveBeenCalledWith(
     "systemctl",
     ["is-active", "--quiet", "frr.service"],
+    { timeout: 10_000 },
     expect.any(Function),
   );
   expect(monitor.getStatus()).toMatchObject({
