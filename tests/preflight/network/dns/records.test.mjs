@@ -2,6 +2,8 @@ import { expect, test } from "@jest/globals";
 import validateDnsRecord from "../../../../src/preflight/network/dns/records.mjs";
 
 test.each([
+  [["A", "IN", "NS", "ns.test."], "NS"],
+  [["A", "3600", "IN", "NS", "ns.test."], "NS"],
   [["@", "IN", "SOA", "ns.test.", "host.test.", "1", "3600", "600", "86400", "300"], "SOA"],
   [["@", "IN", "NS", "ns.test."], "NS"],
   [["@", "IN", "A", "192.0.2.1"], "A"],

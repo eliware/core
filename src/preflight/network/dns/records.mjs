@@ -8,7 +8,10 @@ export default function validateDnsRecord(file, tokens, line) {
   if (tokens[0]?.startsWith("$")) {
     return { errors: validateDnsDirective(file, tokens, line), type: null };
   }
-  const typeIndex = tokens.findIndex((token) => recordTypes.has(token.toUpperCase()));
+  let typeIndex = 1;
+  if (/^\d+$/u.test(tokens[typeIndex] ?? "")) typeIndex += 1;
+  if (["IN", "CH", "HS"].includes(tokens[typeIndex]?.toUpperCase())) typeIndex += 1;
+  if (!recordTypes.has(tokens[typeIndex]?.toUpperCase())) typeIndex = -1;
   const type = tokens[typeIndex]?.toUpperCase();
   if (typeIndex < 0 || tokens.length <= typeIndex + 1) {
     errors.push(`FAIL ${file}:${line}: invalid DNS record.`);

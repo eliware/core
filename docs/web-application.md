@@ -37,18 +37,18 @@ Open `http://localhost:9300/` to view the dashboard.
 The server reads values from its process environment and the `.env` file in its working directory.
 Copy `.env.example` to `.env`, then set values for each router.
 
-| Name                    | Required  | Default            | Accepted values                                                  |
-| ----------------------- | --------- | ------------------ | ---------------------------------------------------------------- |
-| `PORT`                  | No        | `9300`             | Dashboard port from `1` through `65535`.                         |
-| `WEBHOOK_PORT`          | No        | `9301`             | Webhook port from `1` through `65535`, separate from `PORT`.     |
-| `LOG_LEVEL`             | No        | `info`             | `error`, `warn`, `info`, `http`, `verbose`, `debug`, or `silly`. |
-| `CORE_REPO_PATH`        | For hooks | None               | Repository path. Required to enable deployment hooks.            |
-| `GITHUB_WEBHOOK_SECRET` | For hooks | —                  | Secret used to authenticate GitHub webhook signatures.           |
-| `DISCORD_WEBHOOK_URL`   | No        | —                  | Discord webhook URL for rich embed notifications.                |
-| `CORE_GITHUB_BRANCH`    | No        | `main`             | Branch deployed from the configuration repository.               |
-| `CORE_HEALTH_UNITS`     | No        | Empty list         | Unit names to monitor. An empty list disables health monitoring. |
-| `SNOWFLAKE_WORKER_ID`   | No        | `0`                | Snowflake worker value from `0` through `31`.                    |
-| `SNOWFLAKE_PROCESS_ID`  | No        | `process.pid % 32` | Optional process value from `0` through `31`.                    |
+| Name                    | Required | Default         | Accepted values                                                                                                             |
+| ----------------------- | -------- | --------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`                  | No       | `9300`          | Dashboard port from `1` through `65535`.                                                                                    |
+| `WEBHOOK_PORT`          | No       | `9301`          | Webhook port from `1` through `65535`, separate from `PORT`.                                                                |
+| `LOG_LEVEL`             | No       | `info`          | `error`, `warn`, `info`, `http`, `verbose`, `debug`, or `silly`.                                                            |
+| `CORE_REPO_PATH`        | No       | None            | Repository path. Set this value to enable deployment hooks.                                                                 |
+| `GITHUB_WEBHOOK_SECRET` | No       | None            | Secret used to authenticate GitHub webhook signatures.                                                                      |
+| `DISCORD_WEBHOOK_URL`   | No       | —               | Discord webhook URL for rich embed notifications.                                                                           |
+| `CORE_GITHUB_BRANCH`    | No       | `main`          | Branch deployed from the configuration repository.                                                                          |
+| `CORE_HEALTH_UNITS`     | No       | Empty list      | Unit names to monitor. An empty list disables health monitoring.                                                            |
+| `SNOWFLAKE_WORKER_ID`   | No       | `0`             | Snowflake worker value from `0` through `31`.                                                                               |
+| `SNOWFLAKE_PROCESS_ID`  | No       | Package default | Optional process value from `0` through `31`. The snowflake package uses `process.pid % 32` when you do not set this value. |
 
 The server rejects invalid ports and rejects equal dashboard and webhook ports.
 The dashboard and webhook TCP endpoint numbers must not be the same.

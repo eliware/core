@@ -18,7 +18,7 @@ export default function readRepositoryFile(
     return readFile(filePath, "utf8");
   }
   const parts = relative(rootPath, filePath).split(sep).filter(Boolean);
-  let candidate = rootPath;
+  let candidate = resolvedRoot;
   try {
     for (const part of parts) {
       candidate = join(candidate, part);

@@ -11,6 +11,21 @@ test("reads a repository file after checking its real path", () => {
   expect(readFile).toHaveBeenCalledWith(file, "utf8");
 });
 
+test("resolves files relative to a symlinked repository root", () => {
+  const root = resolve("C:/router-link");
+  const resolvedRoot = resolve("C:/repositories/router");
+  const file = resolve(root, "etc/named.conf");
+  const readFile = jest.fn(() => "config");
+  const realPath = (path) => {
+    if (path === root) return resolvedRoot;
+    if (path.startsWith(resolve(resolvedRoot, "etc"))) return path;
+    return resolve(resolvedRoot, path.slice(root.length + 1));
+  };
+
+  expect(readRepositoryFile(root, "etc/named.conf", readFile, realPath)).toBe("config");
+  expect(readFile).toHaveBeenCalledWith(file, "utf8");
+});
+
 test("uses the real filesystem reader by default", () => {
   expect(readRepositoryFile(process.cwd(), "README.md")).toContain("@eliware/core");
 });

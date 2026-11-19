@@ -6,6 +6,7 @@ import createHealthStatus from "./health/status.mjs";
 
 const execFile = promisify(nodeExecFile);
 const notificationContext = new AsyncLocalStorage();
+const maxConcurrentUnitChecks = 4;
 
 export default function createHealthMonitor({
   units = [],
@@ -29,7 +30,7 @@ export default function createHealthMonitor({
   async function check() {
     if (running) return running;
     const checkGeneration = generation;
-    const current = Promise.all(units.map((name) => checkHealthUnit(name, checkUnit, now)))
+    const current = runUnitChecks()
       .then(async (results) => {
         if (checkGeneration !== generation) return getStatus();
         checks = results;
@@ -56,6 +57,23 @@ export default function createHealthMonitor({
     running = current;
     runningGeneration = checkGeneration;
     return current;
+  }
+
+  async function runUnitChecks() {
+    const results = Array.from({ length: units.length });
+    let nextIndex = 0;
+    async function runNext() {
+      while (nextIndex < units.length) {
+        const index = nextIndex;
+        nextIndex += 1;
+        results[index] = await checkHealthUnit(units[index], checkUnit, now);
+      }
+    }
+    const workers = Array.from({ length: Math.min(units.length, maxConcurrentUnitChecks) }, () =>
+      runNext(),
+    );
+    await Promise.all(workers);
+    return results;
   }
 
   async function recordCheckSetupFailure(checkGeneration) {
@@ -94,10 +112,11 @@ export default function createHealthMonitor({
     getStatus,
     start() {
       if (timer !== undefined) return;
+      const nextTimer = setIntervalFn(startCheck, intervalMs);
+      timer = nextTimer;
       stopped = false;
-      startCheck();
-      timer = setIntervalFn(startCheck, intervalMs);
       timer.unref?.();
+      startCheck();
     },
     async stop() {
       stopped = true;
