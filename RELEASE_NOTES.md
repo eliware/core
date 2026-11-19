@@ -2,19 +2,11 @@
 
 ## 15.2.0 — 2026-11-18
 
-### Changed
-
-- Use decimal Snowflake IDs for deployment runs.
-- Update package dependencies to their latest releases.
-- Allow expected FRR route preference variation during pair compare.
-- Include development dependencies during router deployment checks.
-- Set the systemd umask to keep pulled configuration files readable.
-
 ### Added
 
-- Add a read-only router health dashboard with a separate GitHub webhook listener.
-- Add ordered deployments, commit recovery, systemd monitoring, and Discord embed notifications.
-- Add `core-cli preflight` to check router repository formatting and supported file syntax.
-- Validate required router settings with Node.js without calling router tools.
-- Check shell script syntax with `bash -n` during preflight.
-- Add `core-cli compare <partner repo>` to validate matching configuration and reciprocal HA settings.
+- Provide `core-cli preflight` to validate router configuration repositories with Node.js.
+- Check supported configuration syntax, required settings, formatting, and shell scripts during preflight.
+- Provide `core-cli compare <partner repo>` to check configuration consistency and reciprocal HA settings.
+- Provide `core-web` with a read-only health dashboard and a separate GitHub webhook listener.
+- Validate webhook deployments before reloading services and restore the previous commit when a deployment step fails.
+- Monitor configured systemd units and send Discord rich embed notifications for health and deployment events.
