@@ -123,6 +123,10 @@ An empty list reports the monitored units as unconfigured.
 The dashboard refreshes every 30 seconds.
 Set `DISCORD_WEBHOOK_URL` to send deployment and health notifications as Discord rich embeds.
 The application sends a health notification on each failed check interval.
+
+Deployment embeds list the repository, branch, commit links, changed files, elapsed time, and deployment steps.
+A green check marks a completed deployment. A red cross marks a failed deployment and includes recovery details when available.
+
 `/health` reports process liveness and `/ready` reports listener readiness.
 `/api/status` reports monitored unit health and the latest deployment result.
 

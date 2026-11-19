@@ -37,3 +37,28 @@ test("uses the current time when the caller omits a clock", () => {
     expect.any(String),
   );
 });
+
+test("adds links and metadata only when the caller provides them", () => {
+  const payload = createDiscordPayload({
+    message: "Deployment complete",
+    url: "https://github.com/eliware/core/compare/old...new",
+    author: { name: "eliware/core", url: "https://github.com/eliware/core" },
+    footer: { text: "Deployment ID 123" },
+    timestamp: "2026-11-19T12:00:00.000Z",
+  });
+  expect(payload).toEqual({
+    embeds: [
+      {
+        title: "Core router update",
+        description: "Deployment complete",
+        color: 0x2563eb,
+        timestamp: "2026-11-19T12:00:00.000Z",
+        fields: [],
+        url: "https://github.com/eliware/core/compare/old...new",
+        author: { name: "eliware/core", url: "https://github.com/eliware/core" },
+        footer: { text: "Deployment ID 123" },
+      },
+    ],
+    allowed_mentions: { parse: [] },
+  });
+});

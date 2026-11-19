@@ -6,7 +6,7 @@ export default function createDeploymentAdmission({
 }) {
   let active = false;
   let pendingRelease;
-  return function admit(event, execute) {
+  return function admit(event, execute, githubPayload) {
     if (!repositoryPath) return { accepted: false, status: "unconfigured" };
     if (active) return { accepted: false, status: "busy" };
     if (pendingRelease) {
@@ -46,14 +46,14 @@ export default function createDeploymentAdmission({
         throw error;
       }
     };
-    void execute(event, runId, release)
+    void execute(event, runId, release, githubPayload)
       .catch(async (error) => {
         try {
           release();
         } catch {
           // Preserve setup failure reporting when lock cleanup also fails.
         }
-        await reportSetupFailure(error, event, runId);
+        await reportSetupFailure(error, event, runId, githubPayload);
       })
       .catch(() => {});
     return { accepted: true, runId };

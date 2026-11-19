@@ -25,12 +25,22 @@ test("records setup failure and sends a notification", async () => {
     event: "push",
     status: "failed",
     error: "setup failed",
+    failedStep: "deployment setup",
     startedAt: "2026-11-18T12:00:00.000Z",
     finishedAt: "2026-11-18T12:01:00.000Z",
     steps: [],
   });
   expect(state.notify).toHaveBeenCalledWith(
-    "Core deployment 123456 failed at deployment setup. setup failed",
+    expect.objectContaining({
+      title: "❌ Core deployment failed",
+      color: 0xff0000,
+      fields: expect.arrayContaining([
+        expect.objectContaining({
+          name: "Failure",
+          value: "Failed at deployment setup.\nsetup failed",
+        }),
+      ]),
+    }),
   );
 });
 

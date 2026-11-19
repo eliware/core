@@ -20,7 +20,7 @@ test("admits work, acquires its lock, and runs its lifecycle", () => {
 
   expect(state.admit("push", state.execute)).toEqual({ accepted: true, runId: "run-1" });
   expect(state.acquireLock).toHaveBeenCalledWith("/router/config");
-  expect(state.execute).toHaveBeenCalledWith("push", "run-1", expect.any(Function));
+  expect(state.execute).toHaveBeenCalledWith("push", "run-1", expect.any(Function), undefined);
 });
 
 test.each([
@@ -94,6 +94,19 @@ test("supports a lock adapter without a release callback", () => {
   expect(release).toHaveBeenCalledTimes(1);
 });
 
+test("ignores repeated release calls after lock cleanup succeeds", () => {
+  const releaseLock = jest.fn();
+  const state = setup({ acquireLock: () => releaseLock });
+  state.execute.mockImplementationOnce(async (_event, _runId, release) => {
+    release();
+    release();
+  });
+
+  state.admit("push", state.execute);
+
+  expect(releaseLock).toHaveBeenCalledTimes(1);
+});
+
 test("reports asynchronous setup failures", async () => {
   const state = setup();
   state.execute.mockRejectedValueOnce(new Error("setup failed"));
@@ -101,7 +114,12 @@ test("reports asynchronous setup failures", async () => {
   state.admit("push", state.execute);
   await Promise.resolve();
 
-  expect(state.reportSetupFailure).toHaveBeenCalledWith(new Error("setup failed"), "push", "run-1");
+  expect(state.reportSetupFailure).toHaveBeenCalledWith(
+    new Error("setup failed"),
+    "push",
+    "run-1",
+    undefined,
+  );
   expect(state.acquireLock.mock.results[0].value).toHaveBeenCalledTimes(1);
 });
 
@@ -117,7 +135,7 @@ test("keeps admission busy when setup failure lock cleanup fails", async () => {
   await Promise.resolve();
 
   expect(release).toHaveBeenCalledTimes(1);
-  expect(state.reportSetupFailure).toHaveBeenCalledWith(failure, "push", "run-1");
+  expect(state.reportSetupFailure).toHaveBeenCalledWith(failure, "push", "run-1", undefined);
   expect(state.admit("next", state.execute)).toEqual({ accepted: false, status: "busy" });
   expect(release).toHaveBeenCalledTimes(2);
 });

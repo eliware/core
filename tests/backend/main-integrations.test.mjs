@@ -35,9 +35,20 @@ test("wires deployment, health checks, and Discord using runtime settings", asyn
     detail: "Unit is not active",
   });
   await dependencies.createDeploymentManager.mock.calls[0][0].notify("Deployment message");
+  await dependencies.createDeploymentManager.mock.calls[0][0].notify({
+    title: "✅ Core deployment succeeded",
+    message: "Branch: main",
+    color: 0x00ff00,
+  });
   expect(dependencies.sendDiscordNotification).toHaveBeenCalledWith({
     webhookUrl: "https://discord.com/webhook",
     message: "Deployment message",
+  });
+  expect(dependencies.sendDiscordNotification).toHaveBeenLastCalledWith({
+    webhookUrl: "https://discord.com/webhook",
+    title: "✅ Core deployment succeeded",
+    message: "Branch: main",
+    color: 0x00ff00,
   });
   expect(dependencies.createDeploymentManager).toHaveBeenCalledWith({
     repositoryPath: "/etc/eliware/core1",

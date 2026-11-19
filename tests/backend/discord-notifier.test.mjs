@@ -30,6 +30,7 @@ test("sends a rich Discord embed", async () => {
             fields: [{ name: "Router", value: "core1", inline: true }],
           },
         ],
+        allowed_mentions: { parse: [] },
       }),
       signal: expect.any(AbortSignal),
     }),

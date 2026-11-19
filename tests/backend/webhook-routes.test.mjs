@@ -47,7 +47,7 @@ test("accepts a signed push to the configured branch", async () => {
   });
   expect(response.statusCode).toBe(202);
   expect(response.json()).toEqual({ accepted: true, runId: "run-1" });
-  expect(deployment.start).toHaveBeenCalledWith("delivery-1");
+  expect(deployment.start).toHaveBeenCalledWith("delivery-1", { ref: "refs/heads/main" });
   await server.close();
 });
 

@@ -8,6 +8,7 @@ import acquireDeploymentLock from "./deployment/lock.mjs";
 import reportSetupFailure from "./deployment/setup-failure.mjs";
 import createDeploymentAdmission from "./deployment/admission.mjs";
 import createFailureStatus from "./deployment/failure-status.mjs";
+import createDeploymentDiscordNotification from "./deployment/discord-notification.mjs";
 import verifyDeploymentWorktree from "./deployment/worktree.mjs";
 import validateDeploymentRepository from "./deployment/validate-repository.mjs";
 
@@ -29,10 +30,10 @@ export default function createDeploymentManager({
     repositoryPath,
     generateRunId,
     acquireLock,
-    reportSetupFailure: (error, event, runId) =>
-      reportSetupFailure({ error, event, runId, status, notify, now }),
+    reportSetupFailure: (error, event, runId, githubPayload) =>
+      reportSetupFailure({ error, event, runId, githubPayload, branch, status, notify, now }),
   });
-  async function execute(event, runId, releaseLock) {
+  async function execute(event, runId, releaseLock, githubPayload) {
     let startedAt;
     const steps = [];
     let previousCommit;
@@ -78,18 +79,25 @@ export default function createDeploymentManager({
       await verifyCleanWorktree("npm run preflight");
       reloadStarted = true;
       await step("npm run reload", "npm", ["run", "reload"]);
+      const finishedAt = now().toISOString();
       status.set({
         ...status.get(),
         runId,
         event,
         status: "succeeded",
         startedAt,
-        finishedAt: now().toISOString(),
+        finishedAt,
         steps,
       });
       releaseLockSafely();
       try {
-        await notify(`Core deployment ${runId} succeeded on ${branch}.`);
+        await notify(
+          createDeploymentDiscordNotification({
+            ...status.get(),
+            branch,
+            githubPayload,
+          }),
+        );
       } catch {
         status.update({ notificationError: "Discord notification failed." });
       }
@@ -118,7 +126,11 @@ export default function createDeploymentManager({
       releaseLockSafely();
       try {
         await notify(
-          `Core deployment ${runId} failed at ${status.get().failedStep}.${recovery ? ` ${recovery}` : ""}`,
+          createDeploymentDiscordNotification({
+            ...status.get(),
+            branch,
+            githubPayload,
+          }),
         );
       } catch {
         status.update({ notificationError: "Discord notification failed." });
@@ -128,8 +140,8 @@ export default function createDeploymentManager({
       releaseLockSafely();
     }
   }
-  function start(event) {
-    return admit(event, execute);
+  function start(event, githubPayload) {
+    return admit(event, execute, githubPayload);
   }
   return { start, getStatus: status.get };
 }

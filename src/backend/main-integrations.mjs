@@ -1,8 +1,8 @@
 export default function createApplicationIntegrations(configuration, dependencies, log) {
-  const notify = (message) =>
+  const notify = (notification) =>
     dependencies.sendDiscordNotification({
       webhookUrl: configuration.discordWebhookUrl,
-      message,
+      ...(typeof notification === "string" ? { message: notification } : notification),
     });
   const healthMonitor = dependencies.createHealthMonitor({
     units: configuration.healthUnits,

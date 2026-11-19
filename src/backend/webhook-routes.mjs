@@ -34,7 +34,7 @@ export default function registerWebhookRoutes(
     if (deliveries.get(delivery) === "accepted")
       return reply.code(202).send({ accepted: false, reason: "duplicate delivery" });
 
-    const result = deployment.start(delivery);
+    const result = deployment.start(delivery, request.body);
     if (!result.accepted) {
       if (result.status === "busy") {
         deliveries.set(delivery, "busy");
