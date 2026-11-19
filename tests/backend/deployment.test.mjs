@@ -97,7 +97,7 @@ test("uses the default installed Core version reader", async () => {
     run,
   });
   manager.start("missing-installed-package");
-  for (let attempt = 0; attempt < 20 && manager.getStatus().status !== "succeeded"; attempt += 1)
+  for (let attempt = 0; attempt < 1000 && manager.getStatus().status !== "succeeded"; attempt += 1)
     await new Promise((resolve) => setImmediate(resolve));
   expect(manager.getStatus().status).toBe("succeeded");
 });

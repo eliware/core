@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { resolve, win32 } from "node:path";
 
 export default function checkShellSyntax(
   root,
@@ -12,7 +12,7 @@ export default function checkShellSyntax(
   for (const file of files.filter((item) => item.endsWith(".sh"))) {
     let script;
     try {
-      script = readFile(resolve(root, file), "utf8");
+      script = readFile(resolveFromRoot(root, file), "utf8");
     } catch {
       errors.push(`FAIL Bash syntax: ${file}.`);
       continue;
@@ -22,4 +22,8 @@ export default function checkShellSyntax(
     else count += 1;
   }
   return { count, errors };
+}
+
+function resolveFromRoot(root, file) {
+  return /^[A-Za-z]:[\\/]/u.test(root) ? win32.resolve(root, file) : resolve(root, file);
 }

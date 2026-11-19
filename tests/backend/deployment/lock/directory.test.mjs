@@ -19,7 +19,7 @@ test("uses default options and platform paths", () => {
 });
 
 test("creates a private per-user directory when no directory is supplied", () => {
-  const fileSystem = createFileSystem();
+  const fileSystem = createFileSystem(1000);
   const directory = prepareLockDirectory({
     fileSystem,
     userId: 1000,
@@ -72,7 +72,7 @@ test.each([
   [{ uid: 1000, mode: 0o100600, isDirectory: () => false, isSymbolicLink: () => false }, 1000],
   [{ uid: 1000, mode: 0o120777, isDirectory: () => false, isSymbolicLink: () => true }, 1000],
 ])("rejects an unsafe lock directory", (info, userId) => {
-  const fileSystem = createFileSystem();
+  const fileSystem = createFileSystem(1000);
   fileSystem.lstatSync = jest.fn(() => info);
   expect(() => prepareLockDirectory({ fileSystem, userId })).toThrow(
     /private to the application user|must be a real directory/u,

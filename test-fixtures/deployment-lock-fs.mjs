@@ -1,4 +1,4 @@
-export default function createFileSystem() {
+export default function createFileSystem(uid = process.getuid?.() ?? 1000) {
   const files = new Map();
   const handles = new Map();
   const directories = new Set();
@@ -13,7 +13,7 @@ export default function createFileSystem() {
     lstatSync(path) {
       if (!directories.has(path)) throw new Error("missing directory");
       return {
-        uid: process.getuid?.() ?? 1000,
+        uid,
         mode: 0o40700,
         isDirectory: () => true,
         isSymbolicLink: () => false,

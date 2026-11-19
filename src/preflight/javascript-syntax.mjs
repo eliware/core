@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { resolve } from "node:path";
+import { resolve, win32 } from "node:path";
 
 export default function checkJavaScriptSyntax(
   root,
@@ -9,7 +9,7 @@ export default function checkJavaScriptSyntax(
   let count = 0;
   const errors = [];
   for (const file of files.filter((item) => item.endsWith(".mjs"))) {
-    const result = run(nodePath, ["--check", resolve(root, file)], {
+    const result = run(nodePath, ["--check", resolveFromRoot(root, file)], {
       cwd: root,
       encoding: "utf8",
     });
@@ -17,4 +17,8 @@ export default function checkJavaScriptSyntax(
     else count += 1;
   }
   return { count, errors };
+}
+
+function resolveFromRoot(root, file) {
+  return /^[A-Za-z]:[\\/]/u.test(root) ? win32.resolve(root, file) : resolve(root, file);
 }

@@ -25,6 +25,7 @@
 - Select ISC DHCP leases by lease start time when duplicate addresses appear out of order.
 - Save the final deployment result after notifications are sent.
 - Document the interface command used by the metrics collector accurately.
+- Pass Ubuntu CI checks for deployment waits, lock ownership, and Windows-style fixture paths.
 
 ## 15.2.2 — 2026-11-18
 
