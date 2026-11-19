@@ -42,5 +42,5 @@ export default async function runRestartWorker(payload, { run, checkReady, saveS
     branch: payload.branch,
     githubPayload: payload.githubPayload,
   });
-  saveStatus(payload.status);
+  await saveStatus(payload.status);
 }

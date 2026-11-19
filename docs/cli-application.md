@@ -85,7 +85,7 @@ components:
         path: /var/cache/bind/named.stats
 ```
 
-Use `interfaces` to read link state and traffic counters with `ip -j -s link`.
+Use `interfaces` to read interface addresses, link state, and traffic counters with `ip -j -s address show`.
 Use `haproxy` with a local Unix socket path to read `show stat` counters.
 Use `dhcp-leases` with `format` set to `isc`, `dnsmasq`, or `kea-csv` and an absolute lease file path.
 Use `dns-cache` with the path to a name-server statistics dump.
