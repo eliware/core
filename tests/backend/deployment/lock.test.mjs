@@ -97,6 +97,51 @@ test("replaces a stale process lock", () => {
   jest.restoreAllMocks();
 });
 
+test("reports a competing process that creates a lock during stale recovery", () => {
+  const fileSystem = createFileSystem();
+  const path = lockPath("/tmp/locks", "/router/repo");
+  fileSystem.files.set(path, "99999999");
+  const openSync = fileSystem.openSync;
+  let lockAttempts = 0;
+  fileSystem.openSync = (target, flags, mode) => {
+    if (target === path && ++lockAttempts === 2) {
+      fileSystem.files.set(path, "123");
+      throw Object.assign(new Error("exists"), { code: "EEXIST" });
+    }
+    return openSync(target, flags, mode);
+  };
+
+  expect(() =>
+    acquireDeploymentLock("/router/repo", {
+      directory: "/tmp/locks",
+      fileSystem,
+      isProcessAlive: () => false,
+    }),
+  ).toThrow("Another deployment process is active");
+  expect(fileSystem.files.get(path)).toBe("123");
+});
+
+test("reports storage errors when recreating a recovered lock", () => {
+  const fileSystem = createFileSystem();
+  const path = lockPath("/tmp/locks", "/router/repo");
+  fileSystem.files.set(path, "99999999");
+  const openSync = fileSystem.openSync;
+  let lockAttempts = 0;
+  fileSystem.openSync = (target, flags, mode) => {
+    if (target === path && ++lockAttempts === 2)
+      throw Object.assign(new Error("lock storage unavailable"), { code: "EACCES" });
+    return openSync(target, flags, mode);
+  };
+
+  expect(() =>
+    acquireDeploymentLock("/router/repo", {
+      directory: "/tmp/locks",
+      fileSystem,
+      isProcessAlive: () => false,
+    }),
+  ).toThrow("lock storage unavailable");
+});
+
 test("does not recover a stale lock while another process holds the recovery guard", () => {
   const fileSystem = createFileSystem();
   const directory = "/tmp/locks";

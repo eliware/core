@@ -26,6 +26,22 @@ test("rejects a symlink target outside the repository", () => {
   expect(readFile).not.toHaveBeenCalled();
 });
 
+test("rejects a missing file below a symlink outside the repository", () => {
+  const root = resolve("C:/router");
+  const outside = resolve("C:/private");
+  const readFile = jest.fn();
+  const realPath = (path) => {
+    if (path === root) return root;
+    if (path === resolve(root, "link")) return outside;
+    throw Object.assign(new Error("missing"), { code: "ENOENT" });
+  };
+
+  expect(() => readRepositoryFile(root, "link/missing.conf", readFile, realPath)).toThrow(
+    "outside the configuration repository",
+  );
+  expect(readFile).not.toHaveBeenCalled();
+});
+
 test("rejects lexical traversal outside the repository", () => {
   expect(() => readRepositoryFile("C:/router", "../private/secret", jest.fn())).toThrow(
     "outside the configuration repository",
@@ -52,6 +68,16 @@ test("propagates other real path errors", () => {
   };
 
   expect(() => readRepositoryFile(root, "etc/named.conf", jest.fn(), realPath)).toThrow(
+    "access denied",
+  );
+});
+
+test("propagates errors while resolving the repository root", () => {
+  const realPath = () => {
+    throw Object.assign(new Error("access denied"), { code: "EACCES" });
+  };
+
+  expect(() => readRepositoryFile("C:/router", "etc/named.conf", jest.fn(), realPath)).toThrow(
     "access denied",
   );
 });

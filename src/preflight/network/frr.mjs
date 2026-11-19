@@ -12,8 +12,8 @@ export default function validateFrr(file, text) {
     else if (value === "address-family ipv4 unicast") addressFamily = true;
     else if (value === "exit-address-family") addressFamily = false;
     else if (/^bgp router-id\s+/u.test(value)) {
-      if (!isIP(value.split(/\s+/u).at(-1)))
-        errors.push(`FAIL ${file}:${index + 1}: router ID must be an IP address.`);
+      if (isIP(value.split(/\s+/u).at(-1)) !== 4)
+        errors.push(`FAIL ${file}:${index + 1}: router ID must be an IPv4 address.`);
     } else if (value.startsWith("neighbor ")) {
       const peer = value.match(
         /^neighbor\s+(\S+)\s+(remote-as|description|bfd|activate|weight)\b(?:\s+(\S+))?/u,

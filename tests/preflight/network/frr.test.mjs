@@ -17,8 +17,17 @@ test("rejects malformed BGP statements and missing router settings", () => {
   ).join(" ");
   expect(result).toContain("invalid neighbor statement");
   expect(result).toContain("remote-as must be a valid ASN");
-  expect(result).toContain("router ID must be an IP address");
+  expect(result).toContain("router ID must be an IPv4 address");
   expect(result).toContain("weight must be within");
   expect(result).toContain("network must use IPv4 CIDR");
   expect(result).toContain("router bgp section is required");
+});
+
+test("rejects an IPv6 BGP router ID", () => {
+  expect(
+    validateFrr(
+      "frr.conf",
+      "router bgp 65001\n bgp router-id 2001:db8::1\n neighbor 10.0.0.2 remote-as 65002\n",
+    ),
+  ).toContain("FAIL frr.conf:2: router ID must be an IPv4 address.");
 });

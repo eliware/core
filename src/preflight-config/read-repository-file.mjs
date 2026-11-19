@@ -1,5 +1,5 @@
 import { realpathSync, readFileSync } from "node:fs";
-import { isAbsolute, relative, resolve, sep } from "node:path";
+import { isAbsolute, join, relative, resolve, sep } from "node:path";
 
 export default function readRepositoryFile(
   root,
@@ -11,15 +11,23 @@ export default function readRepositoryFile(
   const filePath = resolve(rootPath, file);
   assertWithin(rootPath, filePath);
   let resolvedRoot;
-  let resolvedFile;
   try {
     resolvedRoot = realPath(rootPath);
-    resolvedFile = realPath(filePath);
   } catch (error) {
     if (error.code !== "ENOENT") throw error;
     return readFile(filePath, "utf8");
   }
-  assertWithin(resolvedRoot, resolvedFile);
+  const parts = relative(rootPath, filePath).split(sep).filter(Boolean);
+  let candidate = rootPath;
+  try {
+    for (const part of parts) {
+      candidate = join(candidate, part);
+      assertWithin(resolvedRoot, realPath(candidate));
+    }
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+    return readFile(filePath, "utf8");
+  }
   return readFile(filePath, "utf8");
 }
 

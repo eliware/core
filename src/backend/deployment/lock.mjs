@@ -45,7 +45,12 @@ export default function acquireDeploymentLock(repositoryPath, options = {}) {
         fileSystem.unlinkSync(recoveryPath);
       }
     }
-    descriptor = fileSystem.openSync(lockPath, "wx", 0o600);
+    try {
+      descriptor = fileSystem.openSync(lockPath, "wx", 0o600);
+    } catch (error) {
+      if (error.code === "EEXIST") throw new Error("Another deployment process is active.");
+      throw error;
+    }
   }
   try {
     fileSystem.writeFileSync(descriptor, String(processId));
