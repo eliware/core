@@ -109,7 +109,10 @@ test("rejects duplicate deliveries and busy deployment requests", async () => {
       start: jest
         .fn()
         .mockReturnValueOnce({ accepted: true, runId: "run-1" })
-        .mockReturnValueOnce({ accepted: false, status: "busy" }),
+        .mockReturnValueOnce({ accepted: false, status: "busy" })
+        .mockReturnValueOnce({ accepted: false, status: "busy" })
+        .mockReturnValueOnce({ accepted: false, status: "busy" })
+        .mockReturnValueOnce({ accepted: true, runId: "run-2" }),
     },
   });
   const headers = signedHeaders(body);
@@ -151,7 +154,15 @@ test("rejects duplicate deliveries and busy deployment requests", async () => {
   });
   expect(busyRetry.statusCode).toBe(409);
   expect(busyRetry.json()).toEqual({ accepted: false, status: "busy" });
-  expect(deployment.start).toHaveBeenCalledTimes(2);
+  const acceptedRetry = await server.inject({
+    method: "POST",
+    url: "/api/github/webhook",
+    headers: busyHeaders,
+    payload: body,
+  });
+  expect(acceptedRetry.statusCode).toBe(202);
+  expect(acceptedRetry.json()).toEqual({ accepted: true, runId: "run-2" });
+  expect(deployment.start).toHaveBeenCalledTimes(5);
   await server.close();
 });
 

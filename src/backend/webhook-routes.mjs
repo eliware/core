@@ -28,14 +28,11 @@ export default function registerWebhookRoutes(
     if (typeof delivery !== "string" || delivery.length > 100) {
       return reply.code(400).send({ error: "Webhook delivery ID is invalid." });
     }
-    if (deliveries.has(delivery)) {
-      if (deliveries.get(delivery) === "busy")
-        return reply.code(409).send({ accepted: false, status: "busy" });
-      return reply.code(202).send({ accepted: false, reason: "duplicate delivery" });
-    }
-    if (request.body?.ref !== `refs/heads/${branch}`) {
+    if (request.body.ref !== `refs/heads/${branch}`) {
       return reply.code(202).send({ accepted: false, reason: "branch ignored" });
     }
+    if (deliveries.get(delivery) === "accepted")
+      return reply.code(202).send({ accepted: false, reason: "duplicate delivery" });
 
     const result = deployment.start(delivery);
     if (!result.accepted) {

@@ -10,10 +10,18 @@ export default async function startWebApplication(dependencies) {
     discordWebhookUrl,
     githubBranch,
     healthUnits,
+    snowflake,
   } = dependencies.loadConfig();
   const log = dependencies.createLogger({ level: logLevel });
   const { healthMonitor, deployment } = createApplicationIntegrations(
-    { repositoryPath, githubWebhookSecret, discordWebhookUrl, githubBranch, healthUnits },
+    {
+      repositoryPath,
+      githubWebhookSecret,
+      discordWebhookUrl,
+      githubBranch,
+      healthUnits,
+      snowflake,
+    },
     dependencies,
     log,
   );

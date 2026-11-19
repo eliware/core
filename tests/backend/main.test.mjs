@@ -108,6 +108,20 @@ test("uses the configured log level", async () => {
   expect(deps.values.createLogger).toHaveBeenCalledWith({ level: "debug" });
 });
 
+test("passes the configured Snowflake identity to deployment integrations", async () => {
+  const snowflake = { workerId: 1, processId: 2 };
+  const deps = dependencies({
+    tcpEndpoint: 8081,
+    webhookEndpoint: 9301,
+    logLevel: "info",
+    snowflake,
+  });
+  await startWebApplication(deps.values);
+  expect(deps.values.createDeploymentManager).toHaveBeenCalledWith(
+    expect.objectContaining({ snowflake }),
+  );
+});
+
 test("disables webhook routes when the repository path lacks a secret", async () => {
   const deps = dependencies({
     tcpEndpoint: 8082,

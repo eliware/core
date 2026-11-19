@@ -72,6 +72,8 @@ Set both `CORE_REPO_PATH` and `GITHUB_WEBHOOK_SECRET` to enable deployment hooks
 The application disables webhook routes when one value is missing.
 Configure the GitHub webhook to send JSON push events to `http://<router>:<WEBHOOK_PORT>/api/github/webhook`.
 Forward that external address and port to `127.0.0.1` on `WEBHOOK_PORT`.
+The listener requires `application/json` with a JSON object body.
+It returns HTTP 415 for non-JSON content types and HTTP 400 for JSON values that are not objects.
 
 Set the GitHub secret to the same value as `GITHUB_WEBHOOK_SECRET`.
 The listener checks the `x-hub-signature-256` signature against the raw request body.
@@ -88,8 +90,9 @@ It checks that the repository remains clean after Git pull and each npm validati
 If a check finds changes, the sequence stops and recovery restores the previous commit.
 
 The server rejects JSON request bodies larger than 1 MiB.
-It remembers accepted GitHub request IDs and busy request IDs until the application restarts.
-It returns HTTP 409 again when GitHub retries a request that was busy.
+It remembers accepted GitHub request IDs until the application restarts.
+On a GitHub retry after a busy response, the server tries deployment admission again.
+While a deployment runs, it returns HTTP 409.
 
 The application records the local commit before `git pull` as its recovery target.
 Check out `CORE_GITHUB_BRANCH` in the configuration repository before starting the application.
