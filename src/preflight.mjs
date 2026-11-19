@@ -8,6 +8,8 @@ import validatePackageMetadata from "./preflight/package-metadata.mjs";
 import isParseableConfig from "./preflight/config-files.mjs";
 import validateServiceCatalog from "./service-catalog/validate.mjs";
 import findAffectedComponents from "./service-catalog/affected-components.mjs";
+import checkJavaScriptSyntax from "./preflight/javascript-syntax.mjs";
+import checkShellSyntax from "./preflight/shell-syntax.mjs";
 
 export default async function preflight(
   root,
@@ -62,29 +64,9 @@ export default async function preflight(
   if (format.error || format.status !== 0) errors.push("FAIL repository formatting check.");
   else lines.push("PASS repository formatting");
 
-  let javascriptCount = 0;
-  for (const file of inventory.files.filter((item) => item.endsWith(".mjs"))) {
-    const check = run(nodePath, ["--check", resolve(root, file)], {
-      cwd: root,
-      encoding: "utf8",
-    });
-    if (check.error || check.status !== 0) errors.push(`FAIL JavaScript syntax: ${file}.`);
-    else javascriptCount += 1;
-  }
-
-  let shellCount = 0;
-  for (const file of inventory.files.filter((item) => item.endsWith(".sh"))) {
-    let script;
-    try {
-      script = readFile(resolve(root, file), "utf8");
-    } catch {
-      errors.push(`FAIL Bash syntax: ${file}.`);
-      continue;
-    }
-    const check = run("bash", ["-n"], { cwd: root, encoding: "utf8", input: script });
-    if (check.error || check.status !== 0) errors.push(`FAIL Bash syntax: ${file}.`);
-    else shellCount += 1;
-  }
+  const javascript = checkJavaScriptSyntax(root, inventory.files, { run, nodePath });
+  const shell = checkShellSyntax(root, inventory.files, { run, readFile });
+  errors.push(...javascript.errors, ...shell.errors);
 
   const configuration = configValidator(root, inventory.files, {
     readFile,
@@ -92,8 +74,8 @@ export default async function preflight(
   });
   lines.push(...configuration.lines);
   errors.push(...configuration.errors);
-  if (javascriptCount > 0) lines.push(`PASS JavaScript syntax (${javascriptCount} files)`);
-  if (shellCount > 0) lines.push(`PASS Bash syntax (${shellCount} files)`);
+  if (javascript.count > 0) lines.push(`PASS JavaScript syntax (${javascript.count} files)`);
+  if (shell.count > 0) lines.push(`PASS Bash syntax (${shell.count} files)`);
   if (supported.length > 0)
     lines.push(`PASS parsed JSON, JSONC, and YAML (${supported.length} files)`);
   lines.push(...errors);

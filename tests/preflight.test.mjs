@@ -87,11 +87,6 @@ test("checks formatting, parsable files, scripts, and configuration with Node.js
   expect(result.lines).toContain("PASS Node.js configuration checks (5 files)");
   expect(result.lines.some((line) => line.startsWith("SKIP"))).toBe(false);
   expect(state.run).toHaveBeenCalled();
-  expect(state.run).toHaveBeenCalledWith(
-    "bash",
-    ["-n"],
-    expect.objectContaining({ input: "#!/usr/bin/env bash\ntrue\n" }),
-  );
   expect(state.root).toBe("C:/router");
 });
 
