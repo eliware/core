@@ -80,7 +80,7 @@ test.each([
 });
 
 test("tolerates an existing directory and reports creation errors", () => {
-  const fileSystem = createFileSystem();
+  const fileSystem = createFileSystem(1000);
   const directory = "\\tmp\\eliware-core-locks-1000";
   fileSystem.directories.add(directory);
   expect(prepareLockDirectory({ fileSystem, userId: 1000, tempDirectory: "/tmp" })).toBe(directory);
