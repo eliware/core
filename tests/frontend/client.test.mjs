@@ -65,7 +65,10 @@ test("renders the status dashboard and polls its read-only endpoint", async () =
         startedAt: "2026-11-18T11:00:00.000Z",
         failedStep: "npm test",
         error: "Tests failed.",
-        steps: [{ name: "npm test", status: "failed", detail: "Tests failed." }],
+        steps: [
+          { name: "npm test", status: "failed", detail: "Tests failed." },
+          { name: "git status after npm test", status: "passed", internal: true },
+        ],
       },
     }),
   });

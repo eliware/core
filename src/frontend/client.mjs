@@ -75,6 +75,7 @@ function renderDeployment(document, deployment) {
   if (!list) return;
   list.replaceChildren();
   for (const step of deployment.steps ?? []) {
+    if (step.internal) continue;
     const item = document.createElement("li");
     item.dataset.state = step.status ?? "unknown";
     addTextElement(document, item, "span", "step-name", step.name ?? "Unknown step");

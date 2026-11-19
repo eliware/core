@@ -18,12 +18,15 @@ test("records a clean worktree check", async () => {
     onStart,
   });
 
-  expect(steps).toEqual([{ name: "git status after npm test", status: "passed" }]);
-  expect(onStart).toHaveBeenCalledWith("git status after npm test", steps);
+  expect(steps).toEqual([{ name: "git status after npm test", status: "passed", internal: true }]);
+  expect(onStart).toHaveBeenCalledWith("npm test", steps);
 });
 
 test.each([
-  [{ stdout: " M package.json\n" }, "Configuration repository has uncommitted changes."],
+  [
+    { stdout: " M package.json\n" },
+    "Configuration repository has uncommitted changes after npm ci.",
+  ],
   [{ stdout: "", status: 1 }, "Git status exited with code 1."],
   [new Error("status failed"), "status failed"],
 ])("rejects an invalid worktree check", async (result, message) => {
@@ -42,11 +45,15 @@ test.each([
       onStart: jest.fn(),
     }),
   ).rejects.toMatchObject({
-    message: "git status after npm ci failed.",
+    message: `Repository check after npm ci failed: ${message}`,
     cause: expect.objectContaining({ message }),
-    stepName: "git status after npm ci",
+    stepName: "npm ci",
   });
-  expect(steps[0]).toMatchObject({ name: "git status after npm ci", status: "failed" });
+  expect(steps[0]).toMatchObject({
+    name: "git status after npm ci",
+    status: "failed",
+    internal: true,
+  });
 });
 
 test("treats a status result without output as clean", async () => {
@@ -74,7 +81,7 @@ test("records status commands that reject without an error object", async () => 
       steps,
       onStart: jest.fn(),
     }),
-  ).rejects.toMatchObject({ cause: null, stepName: "git status after npm test" });
+  ).rejects.toMatchObject({ cause: null, stepName: "npm test" });
   expect(steps[0].detail).toBe("null");
 });
 
@@ -100,7 +107,10 @@ test("stops after dependency scripts change the worktree and restores the prior 
   for (let attempt = 0; attempt < 100 && manager.getStatus().status !== "failed"; attempt += 1)
     await Promise.resolve();
 
-  expect(manager.getStatus().failedStep).toBe("git status after npm ci --include=dev");
+  expect(manager.getStatus().failedStep).toBe("npm ci --include=dev");
+  expect(manager.getStatus().error).toContain(
+    "Configuration repository has uncommitted changes after npm ci --include=dev.",
+  );
   expect(run).not.toHaveBeenCalledWith("npm", ["test"], expect.any(Object));
   expect(run).not.toHaveBeenCalledWith("npm", ["run", "reload"], expect.any(Object));
   expect(run).toHaveBeenCalledWith("git", ["reset", "--hard", commit], expect.any(Object));

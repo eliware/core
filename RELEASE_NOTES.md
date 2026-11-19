@@ -1,5 +1,11 @@
 # Release Notes
 
+## 15.2.3 — 2026-11-19
+
+### Changed
+
+- Hide internal repository checks from the deployment dashboard.
+
 ## 15.2.2 — 2026-11-18
 
 ### Changed
