@@ -6,6 +6,8 @@ import parseConfigFile from "./config-parser.mjs";
 import validateConfigFiles from "./preflight-config.mjs";
 import validatePackageMetadata from "./preflight/package-metadata.mjs";
 import isParseableConfig from "./preflight/config-files.mjs";
+import validateServiceCatalog from "./service-catalog/validate.mjs";
+import findAffectedComponents from "./service-catalog/affected-components.mjs";
 
 export default async function preflight(
   root,
@@ -30,7 +32,20 @@ export default async function preflight(
     try {
       const result = parseConfigFile(file, readFile(resolve(root, file), "utf8"));
       if (result.error) errors.push(`FAIL ${file}: ${result.error}.`);
-      else supported.push(file);
+      else {
+        supported.push(file);
+        if (file === "core-catalog.yaml") {
+          const catalogErrors = validateServiceCatalog(result.value);
+          if (catalogErrors.length)
+            errors.push(...catalogErrors.map((error) => `FAIL ${file}: ${error}.`));
+          else {
+            lines.push(`PASS service catalog, entries: ${result.value.components.length}`);
+            for (const path of inventory.files.filter((item) => /^(etc|var|scripts)\//u.test(item)))
+              if (!findAffectedComponents(result.value, [path]).length)
+                errors.push(`FAIL ${file}: managed path ${path} is not mapped to a component.`);
+          }
+        }
+      }
       if (file === "package.json" && !result.error) packageJson = result.value;
     } catch {
       errors.push(`FAIL ${file}: could not read or parse the file.`);

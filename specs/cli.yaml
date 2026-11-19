@@ -9,6 +9,8 @@ directives:
       - Keep `--help` and `--version` read-only.
       - Run `preflight` without accessing a partner repository.
       - Validate required files, formatting, parsable data, and router settings in `preflight`.
+      - Validate `core-catalog.yaml` during `preflight` when that file exists.
+      - Provide `core-cli catalog` to list configured router components.
       - Validate JavaScript syntax with Node.js during `preflight`.
       - Validate shell syntax with `bash -n` during `preflight`.
       - Check router settings in Node.js without router configuration tools.

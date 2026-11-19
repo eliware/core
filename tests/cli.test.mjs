@@ -67,3 +67,30 @@ test("returns success when pair comparison passes", async () => {
     await runCli(["compare", "../core2"], { version: "1", write: jest.fn(), compareCommand }),
   ).toBe(0);
 });
+
+test("lists catalog components", async () => {
+  const write = jest.fn();
+  const catalogCommand = jest.fn(() => ({
+    components: [
+      {
+        id: "dns",
+        name: "DNS",
+        configPaths: ["etc/named.conf"],
+        health: { unit: "named.service" },
+        action: { operation: "reload", unit: "named.service" },
+      },
+    ],
+  }));
+
+  await expect(runCli(["catalog"], { cwd: "router", write, catalogCommand })).resolves.toBe(0);
+  expect(catalogCommand).toHaveBeenCalledWith("router");
+  expect(write).toHaveBeenCalledWith(
+    "dns — DNS | paths: etc/named.conf | health: named.service | action: reload named.service",
+  );
+});
+
+test("reports an absent catalog", async () => {
+  const write = jest.fn();
+  await expect(runCli(["catalog"], { write, catalogCommand: () => null })).resolves.toBe(0);
+  expect(write).toHaveBeenCalledWith("No service catalog is configured.");
+});

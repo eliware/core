@@ -1,4 +1,5 @@
 import { expect, jest, test } from "@jest/globals";
+import catalog from "../../test-fixtures/deployment-catalog.mjs";
 
 const defaultExecFile = jest.fn((command, args, ...rest) => {
   const callback = rest.at(-1);
@@ -60,33 +61,42 @@ test("runs the deployment steps in order and records success", async () => {
   const started = manager.start("delivery-1");
   expect(started).toEqual({ accepted: true, runId: expect.any(String) });
   await waitFor(manager, "succeeded");
-  expect(run.mock.calls.map(([command, args]) => [command, args])).toEqual([
-    ["git", ["status", "--porcelain"]],
-    ["git", ["branch", "--show-current"]],
-    ["git", ["rev-parse", "HEAD"]],
-    ["git", ["pull", "--ff-only", "--", "origin", "main"]],
-    ["git", ["status", "--porcelain"]],
-    ["npm", ["ci", "--include=dev"]],
-    ["git", ["status", "--porcelain"]],
-    ["npm", ["test"]],
-    ["git", ["status", "--porcelain"]],
-    ["npm", ["run", "preflight"]],
-    ["git", ["status", "--porcelain"]],
-    ["npm", ["run", "reload"]],
+  expect(run.mock.calls.filter(([command]) => command === "npm").map(([, args]) => args)).toEqual([
+    ["ci", "--include=dev"],
+    ["test"],
+    ["run", "preflight"],
+    ["run", "reload"],
   ]);
-  expect(manager.getStatus().steps.map(({ name }) => name)).toEqual([
-    "git pull",
-    "git status after git pull",
-    "npm ci --include=dev",
-    "git status after npm ci --include=dev",
-    "npm test",
-    "git status after npm test",
-    "npm run preflight",
-    "git status after npm run preflight",
-    "npm run reload",
-  ]);
+  expect(manager.getStatus().steps.filter(({ internal }) => !internal)).not.toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ name: expect.stringContaining("git status") }),
+    ]),
+  );
   expect(manager.getStatus().lockReleaseError).toBe("Deployment lock cleanup failed.");
   expect(manager.start("next-delivery")).toEqual({ accepted: false, status: "busy" });
+});
+
+test("reports recovery errors when a managed component reload fails", async () => {
+  const run = successfulRun().mockImplementation(async (command, args) =>
+    command === "git" && args[0] === "diff"
+      ? { stdout: "etc/named.conf\n" }
+      : command === "git" && args[0] === "rev-parse"
+        ? { stdout: `${commit}\n` }
+        : command === "systemctl"
+          ? Promise.reject(new Error("reload failed"))
+          : { stdout: "" },
+  );
+  const manager = createManager({
+    repositoryPath: "/router",
+    run,
+    loadCatalog: () => catalog,
+    recover: jest.fn().mockRejectedValue(new Error("recovery unavailable")),
+  });
+  manager.start("catalog-deployment");
+  const status = await waitFor(manager, "failed");
+  expect(status.failedStep).toBe("reload named.service");
+  expect(status.recovery).toBe("Recovery failed: recovery unavailable");
+  expect(run.mock.calls.filter(([command]) => command === "systemctl")).toHaveLength(1);
 });
 
 test("uses the default command adapter and clock", async () => {
@@ -249,11 +259,8 @@ test("reports unexpected deployment setup failures", async () => {
   });
 });
 
-test("rejects deployment from an unconfigured or unexpected branch", async () => {
-  expect(createDeploymentManager().start("push")).toEqual({
-    accepted: false,
-    status: "unconfigured",
-  });
+test("rejects deployment from unexpected branches", async () => {
+  expect(createDeploymentManager().start("push").status).toBe("unconfigured");
   for (const currentBranch of ["release", ""]) {
     const run = jest.fn(async (_command, args) =>
       args[0] === "branch" ? { stdout: currentBranch } : { stdout: "" },

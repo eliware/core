@@ -1,0 +1,13 @@
+version: 1
+components:
+  - id: dns
+    name: DNS
+    configPaths:
+      - etc/named.conf
+    health:
+      type: systemd
+      unit: named.service
+    action:
+      type: systemd
+      operation: reload
+      unit: named.service

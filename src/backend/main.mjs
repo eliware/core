@@ -10,6 +10,7 @@ export default async function startWebApplication(dependencies) {
     discordWebhookUrl,
     githubBranch,
     healthUnits,
+    catalog,
     snowflake,
   } = dependencies.loadConfig();
   const log = dependencies.createLogger({ level: logLevel });
@@ -20,6 +21,7 @@ export default async function startWebApplication(dependencies) {
       discordWebhookUrl,
       githubBranch,
       healthUnits,
+      catalog,
       snowflake,
     },
     dependencies,

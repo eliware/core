@@ -15,12 +15,56 @@ Install Bash when the repository contains shell scripts. Preflight runs `bash -n
 | `core-cli --help`                 | Print help.                             |
 | `core-cli --version`              | Print the package version.              |
 | `core-cli preflight`              | Validate the current router repository. |
+| `core-cli catalog`                | List configured router components.      |
 | `core-cli compare <partner repo>` | Validate two partner repositories.      |
 
 Run `core-cli preflight` from the root of a router configuration repository.
 Run `core-cli compare ../partner` from each repository.
 The compare command accepts a filesystem path to the partner repository.
 The commands do not call router-native validators, reload services, or change router configuration.
+Preflight validates `core-catalog.yaml` when the repository contains it.
+The catalog command lists each component and its configuration paths.
+
+## Router component catalog
+
+Create `core-catalog.yaml` in the router repository to define managed components.
+Use version `1` and list at least one component.
+Set a unique lowercase `id` and a readable `name` for each component.
+List exact configuration paths or directory patterns that end in `/**`.
+Map each maintained file under `etc/`, `var/`, and `scripts/` to a component.
+Set `health.type` and `action.type` to `systemd`.
+
+Set the health unit to a systemd unit.
+Set the action operation to `reload` or `restart` and name its unit.
+Keep paths relative to the repository.
+Keep secrets and host network settings out of the catalog.
+
+```yaml
+version: 1
+components:
+  - id: dns
+    name: DNS
+    configPaths:
+      - etc/named.conf
+      - var/named/**
+    health:
+      type: systemd
+      unit: named.service
+    action:
+      type: systemd
+      operation: reload
+      unit: named.service
+```
+
+The web application reads health units from the catalog when it exists.
+During deployment, Core applies systemd actions to components with changed configuration paths.
+The catalog file itself selects every configured component during deployment.
+Preflight fails when a maintained configuration path has no component mapping.
+If no catalog exists, deployment uses the repository `npm run reload` script.
+
+Use catalog paths to create configuration links during router bootstrap.
+Confirm that systemd units exist before enabling Core.
+The catalog does not install operating system packages or set host network values.
 
 Use `--help` or `--version` only as the sole argument.
 The compare command requires exactly one non-empty partner path.

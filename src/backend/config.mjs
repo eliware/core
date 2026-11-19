@@ -5,6 +5,7 @@ import parseHealthUnits from "./config/health-units.mjs";
 import parseSnowflakeOptions from "./config/snowflake.mjs";
 import loadApplicationValues from "./config/loader.mjs";
 import validateEndpoints from "./config/endpoints.mjs";
+import loadServiceCatalog from "../service-catalog/load.mjs";
 
 export default function loadApplicationConfig({ environment }) {
   const application = loadApplicationValues(environment);
@@ -13,7 +14,8 @@ export default function loadApplicationConfig({ environment }) {
   validateEndpoints(tcpEndpoint, webhookEndpoint);
   const githubBranch = validateBranch(application.githubBranch);
   const discordWebhookUrl = validateDiscordUrl(application.discordWebhookUrl);
-  const healthUnits = parseHealthUnits(application.healthUnits);
+  const catalog = loadServiceCatalog(application.repositoryPath ?? process.cwd());
+  const healthUnits = catalog ? [] : parseHealthUnits(application.healthUnits);
   const snowflake = parseSnowflakeOptions({
     SNOWFLAKE_WORKER_ID: application.workerId,
     SNOWFLAKE_PROCESS_ID: application.processId,
@@ -28,6 +30,7 @@ export default function loadApplicationConfig({ environment }) {
     discordWebhookUrl,
     githubBranch,
     healthUnits,
+    catalog,
     snowflake,
   };
 }

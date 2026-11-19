@@ -49,6 +49,7 @@ test("loads application configuration through the production dependency", () => 
       discordWebhookUrl: undefined,
       githubBranch: "main",
       healthUnits: [],
+      catalog: null,
       snowflake: { workerId: 1, processId: 2 },
     });
   } finally {

@@ -20,10 +20,11 @@ directives:
       - Run `npm ci --include=dev` after `git pull` succeeds.
       - Run `npm test` after dependency installation succeeds.
       - Run `npm run preflight` after tests pass.
-      - Run `npm run reload` only after all earlier deployment steps pass.
+      - Run catalog actions or `npm run reload` only after all earlier deployment steps pass.
       - Stop the deployment sequence when any step fails.
       - Restore the previous commit without reloading applications when an earlier step fails.
       - Restore the previous commit and reload its configuration when `npm run reload` fails.
+      - Restore the previous commit and replay affected catalog actions when a catalog action fails.
       - Send Discord notifications for deployment success and failure.
       - Use decimal deployment identifiers from `@eliware/common` snowflakes.
       - Use a unique snowflake worker and process pair for each active application instance.

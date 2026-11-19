@@ -1,4 +1,5 @@
 import { expect, test } from "@jest/globals";
+import { resolve } from "node:path";
 import loadApplicationConfig from "../../src/backend/config.mjs";
 
 test("assembles and validates parsed application configuration", () => {
@@ -20,8 +21,23 @@ test("assembles and validates parsed application configuration", () => {
     logLevel: "debug",
     githubBranch: "production",
     healthUnits: ["sshd.service", "frr.service"],
+    catalog: null,
     snowflake: { workerId: 7, processId: 11 },
   });
+});
+
+test("uses service catalog health units instead of environment unit overrides", () => {
+  const configuration = loadApplicationConfig({
+    environment: {
+      CORE_REPO_PATH: resolve("test-fixtures/router-catalog"),
+      CORE_HEALTH_UNITS: "invalid unit value",
+      SNOWFLAKE_WORKER_ID: "1",
+      SNOWFLAKE_PROCESS_ID: "1",
+    },
+  });
+
+  expect(configuration.catalog.components[0].health.unit).toBe("named.service");
+  expect(configuration.healthUnits).toEqual([]);
 });
 
 test.each([

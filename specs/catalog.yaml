@@ -1,0 +1,25 @@
+version: "15.2"
+description: Requirements for the generic router component catalog.
+directives:
+  - id: E-9300.3
+    dos:
+      - Define router components in `core-catalog.yaml` in each router repository.
+      - Keep the catalog versioned with the configuration repository.
+      - List component IDs, names, configuration paths, health checks, and actions.
+      - Map every maintained file under `etc/`, `var/`, and `scripts/` to a component.
+      - Use relative repository paths for component configuration paths.
+      - Allow exact paths and directory patterns that end in `/**`.
+      - Use systemd units for health checks and reload actions.
+      - Allow `reload` or `restart` as a component action.
+      - Validate the catalog during `core-cli preflight`.
+      - List configured components with `core-cli catalog`.
+      - Monitor catalog health units on the dashboard when a catalog exists.
+      - Reload only catalog components with changed configuration paths during deployment.
+      - Run all component actions when the catalog file changes.
+      - Use `npm run reload` when a router repository has no catalog.
+      - Use catalog paths and units to guide router bootstrap.
+      - Keep secrets and host network settings outside the catalog.
+    donts:
+      - Do not allow absolute paths or parent directory traversal in catalog paths.
+      - Do not allow unsupported catalog fields or systemd operations.
+      - Do not install operating system packages or change host network settings from the catalog.

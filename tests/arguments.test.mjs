@@ -6,6 +6,7 @@ test.each([
   [["--help"], { type: "help" }],
   [["--version"], { type: "version" }],
   [["preflight"], { type: "preflight" }],
+  [["catalog"], { type: "catalog" }],
   [["compare", "../core2"], { type: "compare", partnerRepo: "../core2" }],
   [["compare"], { type: "unknown", argument: "compare" }],
   [["preflight", "extra"], { type: "unknown", argument: "preflight" }],

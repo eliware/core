@@ -70,3 +70,25 @@ test("logs Discord notification failures for health checks", async () => {
   expect(log.warn).toHaveBeenCalledWith("Discord notification failed for health check frr.service");
   expect(integrations.healthMonitor).toBeDefined();
 });
+
+test("uses catalog health units for the dashboard", () => {
+  const { dependencies, log } = setup();
+  const catalog = {
+    version: 1,
+    components: [
+      { health: { unit: "named.service" } },
+      { health: { unit: "named.service" } },
+      { health: { unit: "frr.service" } },
+    ],
+  };
+
+  createApplicationIntegrations({ repositoryPath: "/router", catalog }, dependencies, log);
+
+  expect(dependencies.createHealthMonitor).toHaveBeenCalledWith({
+    units: ["named.service", "frr.service"],
+    onUnhealthy: expect.any(Function),
+  });
+  expect(dependencies.createDeploymentManager).toHaveBeenCalledWith(
+    expect.objectContaining({ repositoryPath: "/router" }),
+  );
+});

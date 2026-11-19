@@ -99,7 +99,11 @@ While a deployment runs, it returns HTTP 409.
 The application records the local commit before `git pull` as its recovery target.
 Check out `CORE_GITHUB_BRANCH` in the configuration repository before starting the application.
 
-It runs `git pull --ff-only -- origin <branch>`, `npm ci --include=dev`, `npm test`, `npm run preflight`, and `npm run reload` in order.
+It runs `git pull --ff-only -- origin <branch>`, `npm ci --include=dev`, `npm test`, and `npm run preflight` in order.
+When the catalog exists, it applies actions only to components with changed paths.
+If the catalog file changes, it runs every component action.
+If no catalog exists, it runs `npm run reload` after the validation steps pass.
+
 It stops the sequence at the first failed command.
 If a command fails before reload, the application resets the repository to the previous commit without reloading router processes.
 If the new reload fails, the application resets the repository and attempts to reload the previous configuration.
@@ -115,7 +119,8 @@ Set a unique worker and process pair for every active instance. The application 
 
 ## Health monitoring and notifications
 
-Set `CORE_HEALTH_UNITS` to a comma-separated list of systemd unit names such as `named.service,kea-dhcp4.service`.
+When `core-catalog.yaml` exists in the configuration repository, the dashboard monitors its component health units.
+If no catalog exists, set `CORE_HEALTH_UNITS` to a comma-separated list of systemd unit names such as `named.service,kea-dhcp4.service`.
 The application checks each unit at startup and every five minutes.
 The application marks a unit unhealthy when its systemd check runs longer than ten seconds.
 An empty list reports the monitored units as unconfigured.
@@ -123,6 +128,11 @@ An empty list reports the monitored units as unconfigured.
 The dashboard refreshes every 30 seconds.
 Set `DISCORD_WEBHOOK_URL` to send deployment and health notifications as Discord rich embeds.
 The application sends a health notification on each failed check interval.
+
+The deployment uses catalog path mappings to select changed components.
+It runs each selected component's systemd `reload` or `restart` action.
+Preflight fails when a file under `etc/`, `var/`, or `scripts/` has no component mapping.
+If no catalog exists, it runs `npm run reload` for compatibility.
 
 Deployment embeds list the repository, branch, commit links, changed files, elapsed time, and deployment steps.
 A green check marks a completed deployment. A red cross marks a failed deployment and includes recovery details when available.

@@ -1,4 +1,5 @@
 import { expect, jest, test } from "@jest/globals";
+import catalog from "../../../test-fixtures/deployment-catalog.mjs";
 import recoverDeployment from "../../../src/backend/deployment/recovery.mjs";
 
 jest.unstable_mockModule("node:child_process", () => ({ execFile: jest.fn() }));
@@ -61,6 +62,27 @@ test("reloads restored configuration after an unsuccessful deployment reload", a
   expect(steps.at(-1)).toEqual({ name: "reload previous configuration", status: "passed" });
 });
 
+test("reapplies catalog actions after restoring the prior commit", async () => {
+  const steps = [];
+  const run = jest.fn().mockResolvedValue({});
+  await expect(
+    recoverDeployment({
+      run,
+      repositoryPath: "/router",
+      previousCommit: "abc",
+      reloadStarted: true,
+      catalogActions: [{ operation: "restart", unit: "frr.service" }],
+      steps,
+    }),
+  ).resolves.toBeUndefined();
+  expect(run).toHaveBeenCalledWith(
+    "systemctl",
+    ["restart", "frr.service"],
+    expect.objectContaining({ cwd: "/router" }),
+  );
+  expect(steps.at(-1)).toEqual({ name: "restore restart frr.service", status: "passed" });
+});
+
 test("reports reset and restored reload failures", async () => {
   const resetSteps = [];
   await expect(
@@ -115,12 +137,35 @@ test("restores the previous commit and skips reload when a preflight step fails"
     if (command === "npm" && args[0] === "test") throw new Error("tests failed");
     return { stdout: "" };
   });
-  const manager = createManager({ repositoryPath: "/router/core1", run });
+  const manager = createManager({ repositoryPath: "/router/core1", run, catalog });
   manager.start("delivery-2");
   const status = await waitFor(manager, "failed");
   expect(status.failedStep).toBe("npm test");
   expect(run).toHaveBeenCalledWith("git", ["reset", "--hard", commit], expect.any(Object));
   expect(run).not.toHaveBeenCalledWith("npm", ["run", "reload"], expect.any(Object));
+});
+
+test("reports when replaying catalog actions fails during recovery", async () => {
+  const steps = [];
+  const run = jest.fn(async (command) => {
+    if (command === "systemctl") throw new Error("systemd unavailable");
+    return {};
+  });
+  await expect(
+    recoverDeployment({
+      run,
+      repositoryPath: "/router",
+      previousCommit: "abc",
+      reloadStarted: true,
+      catalogActions: [{ operation: "reload", unit: "named.service" }],
+      steps,
+    }),
+  ).resolves.toContain("its reload failed");
+  expect(steps.at(-1)).toMatchObject({
+    name: "restore catalog actions",
+    status: "failed",
+    detail: "restore reload named.service failed.",
+  });
 });
 
 test("reloads restored configuration when the new reload fails", async () => {

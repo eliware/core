@@ -95,6 +95,67 @@ test("checks formatting, parsable files, scripts, and configuration with Node.js
   expect(state.root).toBe("C:/router");
 });
 
+test("validates a configured router component catalog", async () => {
+  const state = setup();
+  state.contents.set(
+    "core-catalog.yaml",
+    [
+      "version: 1",
+      "components:",
+      "  - id: dns",
+      "    name: DNS",
+      "    configPaths: [etc/**, var/**, scripts/**]",
+      "    health: {type: systemd, unit: named.service}",
+      "    action: {type: systemd, operation: reload, unit: named.service}",
+      "",
+    ].join("\n"),
+  );
+  state.files.push("core-catalog.yaml");
+
+  const result = await preflight(state.root, state.options);
+
+  expect(result.ok).toBe(true);
+  expect(result.lines).toContain("PASS service catalog, entries: 1");
+});
+
+test("rejects invalid router component catalogs", async () => {
+  const state = setup();
+  state.contents.set("core-catalog.yaml", "version: 1\ncomponents: []\n");
+  state.files.push("core-catalog.yaml");
+
+  const result = await preflight(state.root, state.options);
+
+  expect(result.ok).toBe(false);
+  expect(result.lines).toContain(
+    "FAIL core-catalog.yaml: catalog must define at least one component.",
+  );
+});
+
+test("rejects managed configuration paths that lack a catalog mapping", async () => {
+  const state = setup();
+  state.contents.set(
+    "core-catalog.yaml",
+    [
+      "version: 1",
+      "components:",
+      "  - id: dns",
+      "    name: DNS",
+      "    configPaths: [etc/named.conf]",
+      "    health: {type: systemd, unit: named.service}",
+      "    action: {type: systemd, operation: reload, unit: named.service}",
+      "",
+    ].join("\n"),
+  );
+  state.files.push("core-catalog.yaml");
+
+  const result = await preflight(state.root, state.options);
+
+  expect(result.ok).toBe(false);
+  expect(result.lines).toContain(
+    "FAIL core-catalog.yaml: managed path etc/kea/kea-dhcp4.conf is not mapped to a component.",
+  );
+});
+
 test("runs identical configuration checks on Windows", async () => {
   const state = setup({ platform: "win32" });
   state.run.mockReturnValue({ error: { code: "ENOENT" } });

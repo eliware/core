@@ -6,6 +6,7 @@
 
 - Hide internal repository checks from the deployment dashboard.
 - Send detailed Discord deployment embeds with linked commits and deployment results.
+- Add a shared router component catalog for preflight, health monitoring, and targeted reloads.
 
 ## 15.2.2 — 2026-11-18
 

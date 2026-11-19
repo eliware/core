@@ -8,9 +8,11 @@ import acquireDeploymentLock from "./deployment/lock.mjs";
 import reportSetupFailure from "./deployment/setup-failure.mjs";
 import createDeploymentAdmission from "./deployment/admission.mjs";
 import createFailureStatus from "./deployment/failure-status.mjs";
-import createDeploymentDiscordNotification from "./deployment/discord-notification.mjs";
+import notifyDeployment from "./deployment/notify.mjs";
 import verifyDeploymentWorktree from "./deployment/worktree.mjs";
 import validateDeploymentRepository from "./deployment/validate-repository.mjs";
+import reloadConfiguration from "./deployment/reload-configuration.mjs";
+import loadServiceCatalog from "../service-catalog/load.mjs";
 
 const execFile = promisify(nodeExecFile);
 export default function createDeploymentManager({
@@ -23,6 +25,7 @@ export default function createDeploymentManager({
   createRunId,
   snowflake = {},
   acquireLock = acquireDeploymentLock,
+  loadCatalog = loadServiceCatalog,
 } = {}) {
   const status = createDeploymentStatus();
   const generateRunId = createRunId ?? createSnowflakeGenerator(snowflake);
@@ -36,8 +39,9 @@ export default function createDeploymentManager({
   async function execute(event, runId, releaseLock, githubPayload) {
     let startedAt;
     const steps = [];
-    let previousCommit;
-    let reloadStarted = false;
+    let previousCommit,
+      reloadStarted = false,
+      catalogActions;
     const releaseLockSafely = () => {
       try {
         releaseLock?.();
@@ -77,8 +81,22 @@ export default function createDeploymentManager({
       await verifyCleanWorktree("npm test");
       await step("npm run preflight", "npm", ["run", "preflight"]);
       await verifyCleanWorktree("npm run preflight");
-      reloadStarted = true;
-      await step("npm run reload", "npm", ["run", "reload"]);
+      await reloadConfiguration({
+        previousCommit,
+        repositoryPath,
+        run,
+        loadCatalog,
+        runStep: step,
+        steps,
+        onPlan: (actions) => {
+          catalogActions = actions;
+        },
+        onReloadStart: () => {
+          reloadStarted = true;
+        },
+        onStart: (currentStep, priorSteps) =>
+          status.update({ currentStep, steps: structuredClone(priorSteps) }),
+      });
       const finishedAt = now().toISOString();
       status.set({
         ...status.get(),
@@ -90,23 +108,19 @@ export default function createDeploymentManager({
         steps,
       });
       releaseLockSafely();
-      try {
-        await notify(
-          createDeploymentDiscordNotification({
-            ...status.get(),
-            branch,
-            githubPayload,
-          }),
-        );
-      } catch {
-        status.update({ notificationError: "Discord notification failed." });
-      }
-      return { accepted: true, runId };
+      await notifyDeployment({ status, notify, branch, githubPayload });
     } catch (error) {
       let recovery;
       if (previousCommit) {
         try {
-          recovery = await recover({ run, repositoryPath, previousCommit, reloadStarted, steps });
+          recovery = await recover({
+            run,
+            repositoryPath,
+            previousCommit,
+            reloadStarted,
+            steps,
+            ...(catalogActions !== undefined ? { catalogActions } : {}),
+          });
         } catch (recoveryError) {
           recovery = `Recovery failed: ${String(recoveryError?.message ?? recoveryError).slice(0, 200)}`;
           steps.push({ name: "restore previous commit", status: "failed" });
@@ -124,24 +138,10 @@ export default function createDeploymentManager({
         }),
       );
       releaseLockSafely();
-      try {
-        await notify(
-          createDeploymentDiscordNotification({
-            ...status.get(),
-            branch,
-            githubPayload,
-          }),
-        );
-      } catch {
-        status.update({ notificationError: "Discord notification failed." });
-      }
-      return { accepted: true, runId };
+      await notifyDeployment({ status, notify, branch, githubPayload });
     } finally {
       releaseLockSafely();
     }
   }
-  function start(event, githubPayload) {
-    return admit(event, execute, githubPayload);
-  }
-  return { start, getStatus: status.get };
+  return { start: (event, payload) => admit(event, execute, payload), getStatus: status.get };
 }
