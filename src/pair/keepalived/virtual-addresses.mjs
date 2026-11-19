@@ -10,7 +10,13 @@ export default function parseVirtualAddresses(body) {
     if (!tokens.length) continue;
     const [address, prefix] = tokens[0].split("/");
     const bits = Number(prefix);
-    if (isIP(address) !== 4 || !Number.isInteger(bits) || bits < 0 || bits > 32) {
+    if (
+      isIP(address) !== 4 ||
+      !Number.isInteger(bits) ||
+      bits < 0 ||
+      bits > 32 ||
+      !isUsableHostAddress(address, bits)
+    ) {
       invalid.push(tokens[0]);
       continue;
     }
@@ -24,4 +30,14 @@ export default function parseVirtualAddresses(body) {
   }
   if (valid.length === 0) invalid.push("missing");
   return { valid: valid.sort(), invalid };
+}
+
+function isUsableHostAddress(address, prefix) {
+  if (prefix >= 31) return true;
+  const value = address.split(".").reduce((result, octet) => (result << 8n) | BigInt(octet), 0n);
+  const hostBits = BigInt(32 - prefix);
+  const blockSize = 1n << hostBits;
+  const network = (value / blockSize) * blockSize;
+  const broadcast = network + blockSize - 1n;
+  return value !== network && value !== broadcast;
 }

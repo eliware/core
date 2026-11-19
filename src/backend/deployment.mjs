@@ -67,6 +67,9 @@ export default function createDeploymentManager({
       startedAt = now().toISOString();
       status.set({ runId, event, status: "running", startedAt, finishedAt: null, steps });
       const dirty = await run("git", ["status", "--porcelain"], { cwd: repositoryPath });
+      const statusCode = dirty?.code ?? dirty?.exitCode ?? dirty?.status;
+      if (statusCode !== undefined && statusCode !== 0)
+        throw new Error(`Git status exited with code ${statusCode}.`);
       if (String(dirty.stdout ?? "").trim())
         throw new Error("Configuration repository has uncommitted changes.");
       const currentBranch = await run("git", ["branch", "--show-current"], {

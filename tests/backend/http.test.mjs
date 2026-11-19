@@ -23,18 +23,33 @@ function createServer(options = {}) {
   return server;
 }
 
+function createHandle(content = "asset") {
+  return {
+    stat: jest.fn().mockResolvedValue({ dev: 1, ino: 2 }),
+    readFile: jest.fn().mockResolvedValue(content),
+    close: jest.fn().mockResolvedValue(undefined),
+  };
+}
+
+const resolvePath = async (file) => resolve(file);
+
 test("serves the public page and built client asset", async () => {
-  const read = jest.fn().mockResolvedValue("asset");
-  const app = createServer({ read });
+  const handles = [createHandle(), createHandle()];
+  const openFile = jest.fn().mockImplementation(() => Promise.resolve(handles.shift()));
+  const app = createServer({
+    openFile,
+    statPath: jest.fn().mockResolvedValue({ dev: 1, ino: 2 }),
+    resolvePath,
+  });
 
   const page = await app.inject({ method: "GET", url: "/" });
-  expect(read).toHaveBeenCalledWith(resolve("public", "index.html"));
+  expect(openFile).toHaveBeenCalledWith(resolve("public", "index.html"), "r");
   expect(page.statusCode).toBe(200);
   expect(page.headers["content-type"]).toContain("text/html");
   expect(page.body).toBe("asset");
 
   const client = await app.inject({ method: "GET", url: "/client.js" });
-  expect(read).toHaveBeenLastCalledWith(resolve("dist", "client.js"));
+  expect(openFile).toHaveBeenLastCalledWith(resolve("dist", "client.js"), "r");
   expect(client.statusCode).toBe(200);
   expect(client.headers["content-type"]).toContain("text/javascript");
   expect(client.body).toBe("asset");
@@ -50,8 +65,8 @@ test("rejects unsupported methods for registered asset routes", async () => {
 
 test("returns not found for an unknown route and an unavailable asset", async () => {
   const error = Object.assign(new Error("missing"), { code: "ENOENT" });
-  const read = jest.fn().mockRejectedValue(error);
-  const app = createServer({ read });
+  const openFile = jest.fn().mockRejectedValue(error);
+  const app = createServer({ openFile, resolvePath });
 
   for (const url of ["/private", "/"]) {
     const result = await app.inject({ method: "GET", url });
@@ -59,5 +74,5 @@ test("returns not found for an unknown route and an unavailable asset", async ()
     expect(result.headers["content-type"]).toContain("text/plain");
     expect(result.body).toBe("Not found");
   }
-  expect(read).toHaveBeenCalledTimes(1);
+  expect(openFile).toHaveBeenCalledTimes(1);
 });

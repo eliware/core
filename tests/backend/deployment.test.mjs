@@ -101,6 +101,22 @@ test("uses the default command adapter and clock", async () => {
   jest.useRealTimers();
 });
 
+test("rejects an initial git status command with a nonzero result", async () => {
+  const run = jest.fn().mockResolvedValue({ stdout: "", status: 1 });
+  const manager = createManager({
+    repositoryPath: "/router/core1",
+    run,
+    acquireLock: () => () => {},
+  });
+
+  manager.start("failed-initial-status");
+  const status = await waitFor(manager, "failed");
+
+  expect(status.failedStep).toBe("repository check");
+  expect(status.error).toBe("Git status exited with code 1.");
+  expect(run).toHaveBeenCalledTimes(1);
+});
+
 test("restores the previous commit and skips reload when a preflight step fails", async () => {
   const run = successfulRun();
   run.mockImplementation(async (command, args) => {

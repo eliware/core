@@ -1,11 +1,11 @@
-import { readFile, realpath } from "node:fs/promises";
+import { realpath } from "node:fs/promises";
 import { resolve } from "node:path";
 import readAsset from "./reader.mjs";
 import assertAssetPathWithinRoot from "./path-policy.mjs";
 
 export default async function readRouteAsset(
   route,
-  { publicRoot, buildRoot, read = readFile, resolvePath = realpath },
+  { publicRoot, buildRoot, openFile, statPath, resolvePath = realpath },
 ) {
   if (route === null) return null;
 
@@ -25,7 +25,10 @@ export default async function readRouteAsset(
       resolvePath(assetPath),
     ]);
     assertAssetPathWithinRoot(realRoot, realAsset);
-    return await readAsset(realAsset, read);
+    return await readAsset(
+      { assetRoot: realRoot, assetPath, realAsset },
+      { openFile, statPath, resolvePath },
+    );
   } catch (error) {
     if (error?.code === "ENOENT" || error?.code === "ENOTDIR") return null;
     throw error;

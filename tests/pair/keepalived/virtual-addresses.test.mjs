@@ -16,6 +16,23 @@ test("reports missing blocks and invalid addresses", () => {
   });
 });
 
+test.each(["192.0.2.0/24", "192.0.2.255/24", "0.0.0.0/0", "255.255.255.255/0"])(
+  "rejects IPv4 network or broadcast address %s",
+  (address) => {
+    expect(parseVirtualAddresses(`virtual_ipaddress {\n ${address}\n}`).invalid).toEqual([
+      address,
+      "missing",
+    ]);
+  },
+);
+
+test("accepts all addresses in point-to-point prefixes", () => {
+  expect(parseVirtualAddresses("virtual_ipaddress {\n 192.0.2.0/31\n 192.0.2.1/32\n}")).toEqual({
+    valid: ["192.0.2.0/31", "192.0.2.1/32"],
+    invalid: [],
+  });
+});
+
 test("accepts supported address options and rejects unknown or incomplete options", () => {
   expect(
     parseVirtualAddresses("virtual_ipaddress {\n 192.0.2.1/24 dev enX0 label vip0 notrack\n}")
