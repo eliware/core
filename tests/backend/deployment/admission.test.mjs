@@ -105,7 +105,7 @@ test("reports asynchronous setup failures", async () => {
   expect(state.acquireLock.mock.results[0].value).toHaveBeenCalledTimes(1);
 });
 
-test("reports setup failure when releasing its lock also fails", async () => {
+test("keeps admission busy when setup failure lock cleanup fails", async () => {
   const release = jest.fn(() => {
     throw new Error("lock cleanup failed");
   });
@@ -118,7 +118,7 @@ test("reports setup failure when releasing its lock also fails", async () => {
 
   expect(release).toHaveBeenCalledTimes(1);
   expect(state.reportSetupFailure).toHaveBeenCalledWith(failure, "push", "run-1");
-  expect(state.admit("next", state.execute)).toEqual({ accepted: true, runId: "run-1" });
+  expect(state.admit("next", state.execute)).toEqual({ accepted: false, status: "busy" });
 });
 
 test("contains a rejection from setup failure reporting", async () => {
