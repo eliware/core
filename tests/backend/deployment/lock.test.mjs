@@ -69,10 +69,11 @@ test("serializes processes and releases the lock once", () => {
 
 test("uses a private directory when no lock directory is supplied", () => {
   const fileSystem = createFileSystem();
-  const release = acquireDeploymentLock("/router/repo", { fileSystem, userId: 1000 });
+  const userId = process.getuid?.() ?? 1000;
+  const release = acquireDeploymentLock("/router/repo", { fileSystem, userId });
   expect(fileSystem.directories.size).toBe(1);
   release();
-  const secondRelease = acquireDeploymentLock("/router/repo", { fileSystem, userId: 1000 });
+  const secondRelease = acquireDeploymentLock("/router/repo", { fileSystem, userId });
   secondRelease();
 });
 
@@ -191,7 +192,7 @@ test("rejects a lock whose directory is missing", () => {
   fileSystem.openSync = () => {
     throw new Error("lock storage unavailable");
   };
-  expect(() => acquireDeploymentLock("/router", { fileSystem })).toThrow(
+  expect(() => acquireDeploymentLock("/router", { fileSystem, userId: null })).toThrow(
     "lock storage unavailable",
   );
 });

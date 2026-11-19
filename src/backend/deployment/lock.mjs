@@ -6,7 +6,7 @@ import recoverStaleLock from "./stale-lock.mjs";
 
 export default function acquireDeploymentLock(repositoryPath, options = {}) {
   const fileSystem = options.fileSystem ?? defaultFileSystem;
-  const userId = options.userId ?? process.getuid?.();
+  const userId = options.userId === null ? undefined : (options.userId ?? process.getuid?.());
   const directory = options.directory ?? join(tmpdir(), `eliware-core-locks-${userId ?? "user"}`);
   if (!options.directory) ensurePrivateDirectory(directory, fileSystem, userId);
   const processId = options.processId ?? process.pid;
