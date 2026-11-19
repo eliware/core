@@ -91,8 +91,19 @@ test("shows unknown sources and skips absent optional dashboard fields", () => {
         },
       },
       { values: { totals: { count: 1 } } },
-      { values: { count: 2, backends: [{ name: "api", state: "UP" }] } },
-      { values: { totals: {} } },
+      {
+        values: {
+          count: 2,
+          backends: [{ name: "api", state: "UP", addresses: ["10.0.0.1/24", "10.0.0.2/24"] }],
+        },
+      },
+      {
+        values: {
+          totals: {},
+          peers: [],
+          routes: Array.from({ length: 101 }, (_value, index) => ({ prefix: `route-${index}` })),
+        },
+      },
     ],
   });
   expect(list.children).toHaveLength(4);
@@ -101,7 +112,10 @@ test("shows unknown sources and skips absent optional dashboard fields", () => {
     "count: — · enabled: false",
   );
   expect(list.children[1].children[1].children[2].textContent).toBe("—");
-  expect(list.children[2].children[1].children.at(-1).children[0].textContent).toBe(
-    "name: api · state: UP",
+  expect(list.children[2].children[1].children.at(-1).children[1].children[0].textContent).toBe(
+    "name: api · state: UP · addresses: 10.0.0.1/24, 10.0.0.2/24",
+  );
+  expect(list.children[3].children[1].children.at(-1).children[1].children.at(-1).textContent).toBe(
+    "Showing 100 of 101 entries",
   );
 });

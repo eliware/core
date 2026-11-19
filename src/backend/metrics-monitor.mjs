@@ -1,5 +1,25 @@
 import collectMetric from "./metrics/collect.mjs";
 
+const builtInMetrics = [
+  ["interfaces", "Interfaces"],
+  ["routes", "Routing table"],
+  ["arp", "ARP table"],
+  ["frr", "FRR"],
+  ["vrrp", "VRRP"],
+].map(([type, name]) => ({ component: { id: type, name }, metric: { type } }));
+
+function metricIsUnhealthy(type, values) {
+  return (
+    (type === "ntp" && values.synchronized === false) ||
+    (type === "haproxy" &&
+      (values.totals.down > 0 ||
+        values.backends.some(({ state }) => !/^UP\b/u.test(state ?? "")))) ||
+    (type === "frr" && values.totals.down > 0) ||
+    (type === "arp" && values.totals.failed > 0) ||
+    (type === "vrrp" && values.totals.fault > 0)
+  );
+}
+
 export default function createMetricsMonitor({
   catalog,
   intervalMs = 300_000,
@@ -8,9 +28,17 @@ export default function createMetricsMonitor({
   setIntervalFn = setInterval,
   clearIntervalFn = clearInterval,
 } = {}) {
-  const configured = (catalog?.components ?? []).flatMap((component) =>
+  const catalogMetrics = (catalog?.components ?? []).flatMap((component) =>
     (component.metrics ?? []).map((metric) => ({ component, metric })),
   );
+  const builtInTypes = new Set(builtInMetrics.map(({ metric }) => metric.type));
+  const configured = [
+    ...builtInMetrics.map(
+      (builtIn) =>
+        catalogMetrics.find(({ metric }) => metric.type === builtIn.metric.type) ?? builtIn,
+    ),
+    ...catalogMetrics.filter(({ metric }) => !builtInTypes.has(metric.type)),
+  ];
   let status = {
     checkedAt: null,
     components: configured.map(({ component, metric }) => ({
@@ -33,11 +61,7 @@ export default function createMetricsMonitor({
         const checkedAt = now().toISOString();
         try {
           const values = await collect(metric, { now });
-          const unhealthy =
-            (metric.type === "ntp" && values.synchronized === false) ||
-            (metric.type === "haproxy" &&
-              (values.totals.down > 0 ||
-                values.backends.some(({ state }) => !/^UP\b/u.test(state ?? ""))));
+          const unhealthy = metricIsUnhealthy(metric.type, values);
           return {
             id: component.id,
             name: component.name,

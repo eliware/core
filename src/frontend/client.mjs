@@ -24,14 +24,26 @@ function renderHealth(document, data) {
 
   list.replaceChildren();
   const health = data.health ?? { status: "unknown", units: [] };
+  const metrics = data.metrics?.components ?? [];
+  const overall =
+    health.status === "unhealthy" || metrics.some(({ status }) => status === "unhealthy")
+      ? "unhealthy"
+      : metrics.some(({ status }) => status === "unavailable")
+        ? "unavailable"
+        : metrics.some(({ status }) => status === "unknown")
+          ? "unknown"
+          : health.status === "healthy" || (health.status === "unconfigured" && metrics.length > 0)
+            ? "healthy"
+            : health.status;
   const states = {
-    healthy: "All configured applications are healthy",
-    unhealthy: "One or more applications need attention",
-    unconfigured: "No applications are configured",
-    unknown: "Health checks are pending",
+    healthy: "All available router checks are healthy",
+    unhealthy: "One or more router checks need attention",
+    unavailable: "Some router data is unavailable",
+    unconfigured: "No systemd applications are configured",
+    unknown: "Router checks are pending",
   };
-  if (summary) summary.textContent = states[health.status] ?? states.unknown;
-  if (dot) dot.dataset.state = health.status ?? "unknown";
+  if (summary) summary.textContent = states[overall] ?? states.unknown;
+  if (dot) dot.dataset.state = overall ?? "unknown";
   if (checkedAt)
     checkedAt.textContent = health.checkedAt
       ? `Checked ${formatTime(health.checkedAt)}`

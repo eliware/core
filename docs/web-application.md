@@ -139,18 +139,31 @@ The application marks a unit unhealthy when its systemd check runs longer than t
 An empty list reports the monitored units as unconfigured.
 
 The dashboard refreshes every 30 seconds.
-The server refreshes configured health checks and metric sources every five minutes.
+The server refreshes health checks and metric sources every five minutes.
 The server keeps the latest metric summary and totals in memory.
 It does not use a database or keep historical metric samples.
-Use component `metrics` entries in `core-catalog.yaml` to configure metric sources.
+The dashboard collects interface, route, IPv4 neighbor, FRR, and VRRP status without a catalog.
+
+Use component `metrics` entries in `core-catalog.yaml` to add or configure other metrics.
 The dashboard shows each result timestamp and marks a source unavailable when its local interface fails.
 
-Interface data comes from `ip -j -s link` and includes link state and byte, packet, error, and drop totals.
-HAProxy data comes from the configured local Unix socket using its `show stat` command.
+Interface data comes from `ip -j -s address show` and includes addresses, link state, and traffic totals.
+The routing table comes from `ip -j route show table all`.
+The IPv4 neighbor table comes from `ip -4 -j neigh show` and includes address resolution state.
+FRR data comes from `vtysh` BGP summary and route commands.
+The dashboard shows FRR peer states and its route table.
+
+The dashboard shows a maximum of 100 entries in each table and reports the full total.
+VRRP data comes from the Keepalived JSON state dump and includes instance state, virtual addresses, and advertisement counters.
+Core sends `SIGUSR1` to the Keepalived VRRP process to refresh its JSON state dump.
+Set `path` and `pidPath` in a catalog `vrrp` metric when Keepalived uses non-default files.
+
+Read HAProxy counters from its configured Unix socket.
 DHCP lease totals come from a configured ISC DHCP, dnsmasq, or Kea CSV lease file.
 Name-server cache totals come from the configured cache statistics file.
 Chrony synchronization data comes from `chronyc -n tracking`.
 The dashboard reports missing or unreadable files, sockets, and commands as unavailable data.
+The Core process needs permission to run `vtysh`, read local status files, and signal Keepalived.
 
 Set `DISCORD_WEBHOOK_URL` to send deployment and health notifications as Discord rich embeds.
 The application sends one health notification when a unit first becomes unhealthy.

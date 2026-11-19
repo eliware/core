@@ -1,5 +1,6 @@
 import { expect, jest, test } from "@jest/globals";
 import renderHome from "../../src/frontend/client.mjs";
+import "../../test-fixtures/frontend-client-aux-tests.mjs";
 
 function element() {
   return {
@@ -116,16 +117,41 @@ test("shows empty health configuration and generic deployment state", async () =
   expect(document.elements["[data-deployment-result]"].textContent).toBe("unknown");
 });
 
-test("shows retry text when the status endpoint fails", async () => {
+test("includes metric failures in the overall router state", async () => {
   const document = dashboardDocument();
   renderHome(document, {
-    fetcher: async () => ({ ok: false }),
+    fetcher: async () => ({
+      ok: true,
+      json: async () => ({
+        health: { status: "healthy", units: [] },
+        metrics: { components: [{ status: "unavailable" }] },
+      }),
+    }),
     setIntervalFn: () => undefined,
-    now: () => new Date("2026-11-18T12:00:00.000Z"),
   });
   await Promise.resolve();
   await Promise.resolve();
-  expect(document.elements["[data-status]"].textContent).toContain("unavailable");
+  expect(document.elements["[data-health-summary]"].textContent).toBe(
+    "Some router data is unavailable",
+  );
+  expect(document.elements["[data-state-dot]"].dataset.state).toBe("unavailable");
+});
+
+test("keeps the overall state pending for unknown metric results", async () => {
+  const document = dashboardDocument();
+  renderHome(document, {
+    fetcher: async () => ({
+      ok: true,
+      json: async () => ({
+        health: { status: "unconfigured" },
+        metrics: { components: [{ status: "unknown" }] },
+      }),
+    }),
+    setIntervalFn: () => undefined,
+  });
+  await Promise.resolve();
+  await Promise.resolve();
+  expect(document.elements["[data-state-dot]"].dataset.state).toBe("unknown");
 });
 
 test("does not start a status poll while another request is pending", async () => {
@@ -152,13 +178,6 @@ test("does not start a status poll while another request is pending", async () =
   await Promise.resolve();
   await Promise.resolve();
   await Promise.resolve();
-});
-
-test("supports a non-dashboard document with or without a status label", () => {
-  const status = {};
-  renderHome({ querySelector: (selector) => (selector === "[data-status]" ? status : null) });
-  expect(status.textContent).toBe("Core dashboard assets loaded.");
-  expect(renderHome({ querySelector: () => null })).toBeUndefined();
 });
 
 test("renders partial health and deployment data without optional page elements", async () => {
@@ -257,7 +276,7 @@ test("uses browser defaults for polling and time and handles a missing footer la
   await Promise.resolve();
   await Promise.resolve();
   expect(fetcher).toHaveBeenCalledWith("/api/status", { cache: "no-store" });
-  expect(document.elements["[data-health-summary]"].textContent).toBe("Health checks are pending");
+  expect(document.elements["[data-health-summary]"].textContent).toBe("Router checks are pending");
   expect(document.elements["[data-state-dot]"].dataset.state).toBe("unknown");
   expect(document.elements["[data-health-empty]"].hidden).toBe(false);
   expect(document.elements["[data-deployment-result]"].textContent).toBe("No deployment recorded.");

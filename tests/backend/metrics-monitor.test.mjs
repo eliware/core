@@ -12,81 +12,81 @@ const catalog = {
 };
 
 test("keeps only the latest in-memory metrics and exposes missing sources", async () => {
-  const collect = jest
-    .fn()
-    .mockResolvedValueOnce({ totals: { rrsets: 3 } })
-    .mockResolvedValueOnce({ synchronized: false })
-    .mockRejectedValueOnce(new Error("source unavailable"))
-    .mockResolvedValueOnce({ totals: { down: 0 }, backends: [{}] });
+  const collect = jest.fn(async ({ type }) => {
+    if (type === "dns-cache") return { totals: { rrsets: 3 } };
+    if (type === "ntp") return { synchronized: false };
+    if (type === "dhcp-leases") throw new Error("source unavailable");
+    if (type === "haproxy") return { totals: { down: 0 }, backends: [{ state: "UP" }] };
+    if (type === "arp") return { totals: { neighbors: 0, reachable: 0, failed: 0 }, neighbors: [] };
+    if (type === "frr") return { totals: { peers: 0, established: 0, down: 0, routes: 0 } };
+    if (type === "vrrp") return { totals: { instances: 0, master: 0, backup: 0, fault: 0 } };
+    if (type === "routes") return { totals: { routes: 0, defaultRoutes: 0 } };
+    return { totals: { interfaces: 0, up: 0 } };
+  });
   const monitor = createMetricsMonitor({
     catalog,
     collect,
     now: () => new Date("2026-11-19T12:00:00.000Z"),
   });
-  expect(monitor.getStatus()).toEqual({
-    checkedAt: null,
-    components: [
-      {
-        id: "dns",
-        name: "DNS",
-        type: "dns-cache",
-        status: "unknown",
-        checkedAt: null,
-        detail: "Waiting for first check",
-        values: null,
-      },
-      {
-        id: "ntp",
-        name: "NTP",
-        type: "ntp",
-        status: "unknown",
-        checkedAt: null,
-        detail: "Waiting for first check",
-        values: null,
-      },
-      {
-        id: "dhcp",
-        name: "DHCP",
-        type: "dhcp-leases",
-        status: "unknown",
-        checkedAt: null,
-        detail: "Waiting for first check",
-        values: null,
-      },
-      {
-        id: "proxy",
-        name: "Proxy",
-        type: "haproxy",
-        status: "unknown",
-        checkedAt: null,
-        detail: "Waiting for first check",
-        values: null,
-      },
-    ],
-  });
+  expect(monitor.getStatus().checkedAt).toBeNull();
+  expect(monitor.getStatus().components.map(({ type, status }) => [type, status])).toEqual([
+    ["interfaces", "unknown"],
+    ["routes", "unknown"],
+    ["arp", "unknown"],
+    ["frr", "unknown"],
+    ["vrrp", "unknown"],
+    ["dns-cache", "unknown"],
+    ["ntp", "unknown"],
+    ["dhcp-leases", "unknown"],
+    ["haproxy", "unknown"],
+  ]);
   const result = await monitor.check();
   expect(result).toMatchObject({
     checkedAt: "2026-11-19T12:00:00.000Z",
-    components: [
-      { id: "dns", status: "healthy", values: { totals: { rrsets: 3 } } },
+    components: expect.arrayContaining([
+      {
+        id: "dns",
+        status: "healthy",
+        values: { totals: { rrsets: 3 } },
+        name: "DNS",
+        type: "dns-cache",
+        checkedAt: "2026-11-19T12:00:00.000Z",
+        detail: null,
+      },
       {
         id: "ntp",
         status: "unhealthy",
         detail: "The component reports an unhealthy state",
         values: { synchronized: false },
+        name: "NTP",
+        type: "ntp",
+        checkedAt: "2026-11-19T12:00:00.000Z",
       },
-      { id: "dhcp", status: "unavailable", detail: "source unavailable", values: null },
+      {
+        id: "dhcp",
+        status: "unavailable",
+        detail: "source unavailable",
+        values: null,
+        name: "DHCP",
+        type: "dhcp-leases",
+        checkedAt: "2026-11-19T12:00:00.000Z",
+      },
       {
         id: "proxy",
-        status: "unhealthy",
-        detail: "The component reports an unhealthy state",
-        values: { totals: { down: 0 }, backends: [{}] },
+        status: "healthy",
+        values: { totals: { down: 0 }, backends: [{ state: "UP" }] },
+        name: "Proxy",
+        type: "haproxy",
+        checkedAt: "2026-11-19T12:00:00.000Z",
+        detail: null,
       },
-    ],
+    ]),
   });
-  result.components[0].values.totals.rrsets = 99;
-  expect(monitor.getStatus().components[0].values.totals.rrsets).toBe(3);
-  expect(collect).toHaveBeenCalledTimes(4);
+  result.components.find(({ type }) => type === "dns-cache").values.totals.rrsets = 99;
+  expect(
+    monitor.getStatus().components.find(({ type }) => type === "dns-cache").values.totals.rrsets,
+  ).toBe(3);
+  expect(collect).toHaveBeenCalledTimes(9);
 });
 
 test("uses a generic detail when a metric collector throws a non-error value", async () => {
@@ -94,8 +94,11 @@ test("uses a generic detail when a metric collector throws a non-error value", a
     catalog: { components: [{ id: "ntp", name: "NTP", metrics: [{ type: "ntp" }] }] },
     collect: jest.fn().mockRejectedValue("offline"),
   });
-  await expect(monitor.check()).resolves.toMatchObject({
-    components: [{ status: "unavailable", detail: "Metric check failed", values: null }],
+  const result = await monitor.check();
+  expect(result.components.find(({ type }) => type === "ntp")).toMatchObject({
+    status: "unavailable",
+    detail: "Metric check failed",
+    values: null,
   });
 });
 
@@ -112,7 +115,31 @@ test("marks HAProxy metrics unhealthy when any server is down", async () => {
     },
     collect: jest.fn().mockResolvedValue({ totals: { down: 1 }, backends: [{ state: "UP" }] }),
   });
-  await expect(monitor.check()).resolves.toMatchObject({ components: [{ status: "unhealthy" }] });
+  const result = await monitor.check();
+  expect(result.components.find(({ id }) => id === "proxy").status).toBe("unhealthy");
+});
+
+test.each([
+  ["frr", { totals: { down: 1 } }],
+  ["arp", { totals: { failed: 1 } }],
+  ["vrrp", { totals: { fault: 1 } }],
+  ["haproxy", { totals: { down: 0 }, backends: [{ state: "DOWN" }] }],
+  ["haproxy", { totals: { down: 0 }, backends: [{}] }],
+])("marks unhealthy %s state", async (type, values) => {
+  const monitor = createMetricsMonitor({
+    catalog: {
+      components: [
+        {
+          id: type,
+          name: type,
+          metrics: [{ type, ...(type === "haproxy" ? { socketPath: "/run/haproxy.sock" } : {}) }],
+        },
+      ],
+    },
+    collect: jest.fn().mockResolvedValue(values),
+  });
+  const result = await monitor.check();
+  expect(result.components.find((item) => item.type === type).status).toBe("unhealthy");
 });
 
 test("runs an initial check, refreshes on its interval, and stops the timer", async () => {
@@ -142,14 +169,14 @@ test("runs an initial check, refreshes on its interval, and stops the timer", as
   });
   monitor.start();
   await monitor.check();
-  expect(collect).toHaveBeenCalledTimes(2);
+  expect(collect).toHaveBeenCalledTimes(7);
   expect(monitor.getStatus().components[0].status).toBe("healthy");
   expect(tick).toBeDefined();
   await monitor.stop();
   expect(clearIntervalFn).toHaveBeenCalledTimes(1);
 });
 
-test("handles an empty catalog, skips duplicate timers, and stops without an active timer", async () => {
+test("collects built-in router views without a catalog and skips duplicate timers", async () => {
   let tick;
   const setIntervalFn = jest.fn((callback) => {
     tick = callback;
@@ -157,7 +184,13 @@ test("handles an empty catalog, skips duplicate timers, and stops without an act
   });
   const clearIntervalFn = jest.fn();
   const monitor = createMetricsMonitor({ setIntervalFn, clearIntervalFn });
-  expect(monitor.getStatus()).toEqual({ checkedAt: null, components: [] });
+  expect(monitor.getStatus().components.map(({ type }) => type)).toEqual([
+    "interfaces",
+    "routes",
+    "arp",
+    "frr",
+    "vrrp",
+  ]);
   await monitor.stop();
   monitor.start();
   monitor.start();
@@ -167,11 +200,11 @@ test("handles an empty catalog, skips duplicate timers, and stops without an act
   await monitor.check();
   await monitor.stop();
   expect(clearIntervalFn).toHaveBeenCalledWith(1);
-  expect(monitor.getStatus().components).toEqual([]);
+  expect(monitor.getStatus().components).toHaveLength(5);
 });
 
 test("uses default monitor settings", async () => {
   const monitor = createMetricsMonitor();
-  await expect(monitor.check()).resolves.toEqual({ checkedAt: expect.any(String), components: [] });
-  expect(monitor.getStatus().components).toEqual([]);
+  await expect(monitor.check()).resolves.toMatchObject({ checkedAt: expect.any(String) });
+  expect(monitor.getStatus().components).toHaveLength(5);
 });

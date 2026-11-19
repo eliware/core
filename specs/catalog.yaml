@@ -7,6 +7,9 @@ directives:
       - Keep the catalog versioned with the configuration repository.
       - List component IDs, names, configuration paths, health checks, and actions.
       - Allow supported local metric sources in component `metrics` entries.
+      - Support `interfaces`, `routes`, `arp`, `frr`, and `vrrp` metrics.
+      - Support `haproxy`, `dhcp-leases`, `dns-cache`, and `ntp` metrics.
+      - Allow `path` and `pidPath` overrides for Keepalived VRRP JSON status files.
       - Validate metric source types and fields during `core-cli preflight`.
       - Map every maintained file under `etc/`, `var/`, and `scripts/` to a component.
       - Use relative repository paths for component configuration paths.
@@ -23,6 +26,8 @@ directives:
       - Use catalog paths and units to guide router bootstrap.
       - Keep DHCP lease identities out of metric snapshots.
       - Keep only aggregate lease counts in the dashboard.
+      - Keep only the latest network and application metric snapshot in memory.
+      - Limit each displayed metric table to 100 rows and show its full total.
       - Keep secrets and host network settings outside the catalog.
     donts:
       - Do not allow absolute paths or parent directory traversal in component configuration paths.

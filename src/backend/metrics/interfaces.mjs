@@ -21,6 +21,10 @@ export default function summarizeInterfaces(interfaces) {
       txPackets: Number(tx.packets ?? 0),
       errors: Number(rx.errors ?? 0) + Number(tx.errors ?? 0),
       dropped: Number(rx.dropped ?? 0) + Number(tx.dropped ?? 0),
+      addresses: (item.addr_info ?? []).map(
+        ({ family, local, prefixlen, scope }) =>
+          `${family} ${local}/${prefixlen}${scope ? ` (${scope})` : ""}`,
+      ),
     };
     if (item.operstate === "UP") totals.up += 1;
     for (const key of ["rxBytes", "txBytes", "rxPackets", "txPackets", "errors", "dropped"])

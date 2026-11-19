@@ -12,6 +12,7 @@
 - Include both paths of moved files when selecting deployment actions.
 - Show current router metrics and keep only the latest in-memory summary.
 - Follow systemd unit events for prompt health updates and single Discord notifications.
+- Show interface addresses, routes, IPv4 neighbors, FRR peers, and VRRP state on the dashboard.
 
 ## 15.2.2 — 2026-11-18
 

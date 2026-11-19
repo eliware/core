@@ -7,6 +7,10 @@ test("sums interface states and traffic counters", () => {
       {
         ifname: "eth0",
         operstate: "UP",
+        addr_info: [
+          { family: "inet", local: "10.0.0.1", prefixlen: 24, scope: "global" },
+          { family: "inet6", local: "fe80::1", prefixlen: 64 },
+        ],
         stats64: {
           rx: { bytes: 10, packets: 2, errors: 1 },
           tx: { bytes: 20, packets: 3, dropped: 2 },
@@ -28,6 +32,7 @@ test("sums interface states and traffic counters", () => {
       {
         name: "eth0",
         state: "up",
+        addresses: ["inet 10.0.0.1/24 (global)", "inet6 fe80::1/64"],
         rxBytes: 10,
         txBytes: 20,
         rxPackets: 2,

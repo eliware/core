@@ -16,6 +16,10 @@ test("accepts a valid service catalog", () => {
 test("accepts each supported local metric source", () => {
   const metrics = [
     { type: "interfaces" },
+    { type: "routes" },
+    { type: "arp" },
+    { type: "frr" },
+    { type: "vrrp", path: "/run/keepalived.json", pidPath: "/run/keepalived_vrrp.pid" },
     { type: "haproxy", socketPath: "/run/haproxy/admin.sock" },
     { type: "dhcp-leases", format: "isc", path: "/var/lib/dhcp/dhcpd.leases" },
     { type: "dhcp-leases", format: "dnsmasq", path: "/var/lib/misc/dnsmasq.leases" },
@@ -52,6 +56,11 @@ test.each([
     [],
     { type: "interfaces", extra: true },
     { type: "ntp", extra: true },
+    { type: "routes", extra: true },
+    { type: "arp", extra: true },
+    { type: "frr", extra: true },
+    { type: "vrrp", path: "relative" },
+    { type: "vrrp", pidPath: "/run/a\n" },
     { type: "haproxy" },
     { type: "haproxy", socketPath: "/run/a", extra: true },
     { type: "haproxy", socketPath: 2 },

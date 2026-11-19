@@ -33,6 +33,12 @@ directives:
       - Use decimal deployment identifiers from `@eliware/common` snowflakes.
       - Use a unique snowflake worker and process pair for each active application instance.
       - Check configured essential applications every five minutes.
+      - Collect interface addresses, link states, and traffic totals from local interfaces.
+      - Show the active routing table and IPv4 neighbor table.
+      - Show FRR peer states and the FRR routing table.
+      - Show Keepalived VRRP states, virtual addresses, peers, and counters.
+      - Collect baseline router metrics without a component catalog.
+      - Mark unavailable metric sources separately from healthy sources.
       - Follow systemd journal events for configured essential applications.
       - Update dashboard health after a configured unit stops, fails, or restarts.
       - Include the component, event time, state, and dashboard link in notifications.

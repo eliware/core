@@ -23,8 +23,17 @@ function validConfigPath(path) {
 
 function validMetric(metric) {
   if (!metric || typeof metric !== "object" || Array.isArray(metric)) return false;
-  if (metric.type === "interfaces" || metric.type === "ntp")
+  if (["interfaces", "ntp", "routes", "arp", "frr"].includes(metric.type))
     return Object.keys(metric).length === 1;
+  if (metric.type === "vrrp")
+    return (
+      Object.keys(metric).every((key) => ["type", "path", "pidPath"].includes(key)) &&
+      [metric.path, metric.pidPath].every(
+        (path) =>
+          path === undefined ||
+          (typeof path === "string" && path.startsWith("/") && !/[\r\n]/u.test(path)),
+      )
+    );
   if (metric.type === "haproxy")
     return (
       Object.keys(metric).every((key) => ["type", "socketPath"].includes(key)) &&
