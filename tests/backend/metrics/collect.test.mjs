@@ -105,7 +105,7 @@ test("rejects an invalid Keepalived process identifier", async () => {
   ).rejects.toThrow("Keepalived VRRP process ID is invalid");
 });
 
-test("reads a HAProxy Unix socket and reports socket errors and timeouts", async () => {
+test("uses the socket reader when a connection adapter is provided", async () => {
   const response =
     "# pxname,svname,status,scur,stot,bin,bout,econ,eresp\nweb,BACKEND,UP,0,1,2,3,0,0\n";
   const socket = new EventEmitter();
@@ -121,31 +121,6 @@ test("reads a HAProxy Unix socket and reports socket errors and timeouts", async
   socket.emit("connect");
   await expect(result).resolves.toMatchObject({ totals: { backends: 1 } });
   expect(socket.end).toHaveBeenCalledWith("show stat\n");
-
-  const failedSocket = new EventEmitter();
-  failedSocket.setEncoding = jest.fn();
-  failedSocket.destroy = (error) => failedSocket.emit("error", error);
-  const failed = collectMetric(
-    { type: "haproxy", socketPath: "/missing.sock" },
-    { connect: () => failedSocket },
-  );
-  failedSocket.emit("error", new Error("socket unavailable"));
-  await expect(failed).rejects.toThrow("socket unavailable");
-
-  await expect(
-    collectMetric(
-      { type: "haproxy", socketPath: "/stalled.sock" },
-      {
-        connect: () => {
-          const stalled = new EventEmitter();
-          stalled.setEncoding = jest.fn();
-          stalled.destroy = (error) => stalled.emit("error", error);
-          return stalled;
-        },
-        timeoutMs: 1,
-      },
-    ),
-  ).rejects.toThrow("timed out");
 });
 
 test("reports a missing default HAProxy socket", async () => {

@@ -1,5 +1,4 @@
 import { execFile as nodeExecFile } from "node:child_process";
-import { createConnection } from "node:net";
 import { readFile as nodeReadFile } from "node:fs/promises";
 import { promisify } from "node:util";
 import summarizeInterfaces from "./interfaces.mjs";
@@ -11,33 +10,9 @@ import summarizeRoutes from "./routes.mjs";
 import summarizeNeighbors from "./neighbors.mjs";
 import summarizeFrr from "./frr.mjs";
 import summarizeVrrp from "./vrrp.mjs";
+import readSocket from "./socket-reader.mjs";
 
 const execFile = promisify(nodeExecFile);
-
-function readSocket(socketPath, timeoutMs, connect = createConnection) {
-  return new Promise((resolve, reject) => {
-    const socket = connect(socketPath);
-    let output = "";
-    const timeout = setTimeout(
-      () => socket.destroy(new Error("HAProxy socket timed out")),
-      timeoutMs,
-    );
-    socket.setEncoding("utf8");
-    socket.on("connect", () => socket.end("show stat\n"));
-    socket.on("data", (chunk) => {
-      output += chunk;
-    });
-    socket.on("end", () => {
-      clearTimeout(timeout);
-      resolve(output);
-    });
-    socket.on("error", (error) => {
-      clearTimeout(timeout);
-      reject(error);
-    });
-    socket.on("close", () => clearTimeout(timeout));
-  });
-}
 
 export default async function collectMetric(
   metric,
