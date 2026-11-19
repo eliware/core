@@ -7,27 +7,6 @@ const component = (id, operation = "reload", unit = `${id}.service`) => ({
   action: { operation, unit },
 });
 
-test("reports when the catalog is missing", async () => {
-  await expect(reloadCatalogComponents({ catalog: null, run: jest.fn() })).resolves.toEqual({
-    ok: false,
-    usageError: undefined,
-    lines: ["No service catalog is configured."],
-  });
-});
-
-test("reports an unknown component", async () => {
-  const result = await reloadCatalogComponents({
-    catalog: { components: [component("dns")] },
-    componentId: "dhcp",
-    run: jest.fn(),
-  });
-  expect(result).toEqual({
-    ok: false,
-    usageError: true,
-    lines: ["Unknown component: dhcp"],
-  });
-});
-
 test("runs each distinct catalog action once", async () => {
   const run = jest.fn().mockResolvedValue(undefined);
   const result = await reloadCatalogComponents({

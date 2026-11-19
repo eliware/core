@@ -51,4 +51,4 @@ export default function renderMetrics(document, metrics) {
     list.append(item);
   }
 }
-import renderMetricDetails from "./metrics-details.mjs";
+import renderMetricDetails from "../metrics-details.mjs";

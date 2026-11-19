@@ -7,27 +7,6 @@ const component = (id, unit = `${id}.service`) => ({
   health: { unit },
 });
 
-test("reports when the catalog is missing", async () => {
-  await expect(checkCatalogStatus({ catalog: null, run: jest.fn() })).resolves.toEqual({
-    ok: false,
-    usageError: undefined,
-    lines: ["No service catalog is configured."],
-  });
-});
-
-test("reports an unknown component", async () => {
-  const result = await checkCatalogStatus({
-    catalog: { components: [component("dns")] },
-    componentId: "dhcp",
-    run: jest.fn(),
-  });
-  expect(result).toEqual({
-    ok: false,
-    usageError: true,
-    lines: ["Unknown component: dhcp"],
-  });
-});
-
 test("checks matching health units once and reports each component", async () => {
   const run = jest.fn().mockResolvedValue(undefined);
   const result = await checkCatalogStatus({

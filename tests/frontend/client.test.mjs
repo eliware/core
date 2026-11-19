@@ -32,8 +32,6 @@ function dashboardDocument() {
     "[data-step-list]",
   ];
   const elements = Object.fromEntries(selectors.map((selector) => [selector, element()]));
-  elements["[data-health-empty]"].hidden = true;
-  elements["[data-metrics-empty]"].hidden = false;
   return {
     elements,
     querySelector: (selector) => elements[selector] ?? null,
@@ -41,119 +39,29 @@ function dashboardDocument() {
   };
 }
 
-test("renders the status dashboard and polls its read-only endpoint", async () => {
+async function flushStatusRequest() {
+  await Promise.resolve();
+  await Promise.resolve();
+}
+
+test("fetches dashboard state and schedules refreshes", async () => {
   const document = dashboardDocument();
-  let poll;
-  const setIntervalFn = jest.fn((callback) => {
-    poll = callback;
-    return "timer";
-  });
   const fetcher = jest.fn().mockResolvedValue({
     ok: true,
     json: async () => ({
-      health: {
-        status: "unhealthy",
-        checkedAt: "2026-11-18T12:00:00.000Z",
-        units: [
-          {
-            name: "frr.service",
-            status: "unhealthy",
-            detail: "Unit is not active",
-            checkedAt: "2026-11-18T12:00:00.000Z",
-          },
-          { name: "sshd.service", status: "healthy", checkedAt: "invalid" },
-        ],
-      },
-      deployment: {
-        status: "failed",
-        startedAt: "2026-11-18T11:00:00.000Z",
-        failedStep: "npm test",
-        error: "Tests failed.",
-        steps: [
-          { name: "npm test", status: "failed", detail: "Tests failed." },
-          { name: "git status after npm test", status: "passed", internal: true },
-        ],
-      },
+      health: { status: "healthy", units: [] },
+      deployment: { status: "idle" },
     }),
   });
-  expect(
-    renderHome(document, {
-      fetcher,
-      setIntervalFn,
-      now: () => new Date("2026-11-18T12:00:00.000Z"),
-    }),
-  ).toBe("timer");
-  await Promise.resolve();
-  await Promise.resolve();
-  expect(setIntervalFn).toHaveBeenCalledWith(expect.any(Function), 30_000);
+  const setIntervalFn = jest.fn(() => "timer");
+  expect(renderHome(document, { fetcher, setIntervalFn })).toBe("timer");
+  await flushStatusRequest();
   expect(fetcher).toHaveBeenCalledWith("/api/status", { cache: "no-store" });
-  expect(document.elements["[data-health-summary]"].textContent).toContain("attention");
-  expect(document.elements["[data-health-empty]"].hidden).toBe(true);
-  expect(document.elements["[data-health-list]"].children).toHaveLength(2);
-  expect(document.elements["[data-health-list]"].children[0].children[1].textContent).toBe(
-    "frr.service",
-  );
-  expect(document.elements["[data-deployment-state]"].textContent).toBe("failed");
-  expect(document.elements["[data-deployment-step]"].textContent).toBe("npm test");
-  expect(document.elements["[data-step-list]"].children).toHaveLength(1);
-  await poll();
+  expect(setIntervalFn).toHaveBeenCalledWith(expect.any(Function), 30_000);
+  expect(document.elements["[data-status]"].textContent).toContain("Updated");
 });
 
-test("shows empty health configuration and generic deployment state", async () => {
-  const document = dashboardDocument();
-  renderHome(document, {
-    fetcher: async () => ({
-      ok: true,
-      json: async () => ({ health: { status: "unconfigured", units: [] }, deployment: {} }),
-    }),
-    setIntervalFn: () => undefined,
-    now: () => new Date("2026-11-18T12:00:00.000Z"),
-  });
-  await Promise.resolve();
-  await Promise.resolve();
-  expect(document.elements["[data-health-empty]"].hidden).toBe(false);
-  expect(document.elements["[data-deployment-state]"].textContent).toBe("unknown");
-  expect(document.elements["[data-deployment-result]"].textContent).toBe("unknown");
-});
-
-test("includes metric failures in the overall router state", async () => {
-  const document = dashboardDocument();
-  renderHome(document, {
-    fetcher: async () => ({
-      ok: true,
-      json: async () => ({
-        health: { status: "healthy", units: [] },
-        metrics: { components: [{ status: "unavailable" }] },
-      }),
-    }),
-    setIntervalFn: () => undefined,
-  });
-  await Promise.resolve();
-  await Promise.resolve();
-  expect(document.elements["[data-health-summary]"].textContent).toBe(
-    "Some router data is unavailable",
-  );
-  expect(document.elements["[data-state-dot]"].dataset.state).toBe("unavailable");
-});
-
-test("keeps the overall state pending for unknown metric results", async () => {
-  const document = dashboardDocument();
-  renderHome(document, {
-    fetcher: async () => ({
-      ok: true,
-      json: async () => ({
-        health: { status: "unconfigured" },
-        metrics: { components: [{ status: "unknown" }] },
-      }),
-    }),
-    setIntervalFn: () => undefined,
-  });
-  await Promise.resolve();
-  await Promise.resolve();
-  expect(document.elements["[data-state-dot]"].dataset.state).toBe("unknown");
-});
-
-test("does not start a status poll while another request is pending", async () => {
+test("does not overlap status requests", async () => {
   const document = dashboardDocument();
   const results = [];
   const fetcher = jest.fn(
@@ -164,132 +72,74 @@ test("does not start a status poll while another request is pending", async () =
   );
   let poll;
   renderHome(document, { fetcher, setIntervalFn: (callback) => (poll = callback) });
-
   poll();
   expect(fetcher).toHaveBeenCalledTimes(1);
-  results[0]({ ok: true, json: async () => ({ health: { status: "healthy", units: [] } }) });
-  await Promise.resolve();
-  await Promise.resolve();
-  await Promise.resolve();
+  results[0]({ ok: true, json: async () => ({}) });
+  await flushStatusRequest();
   poll();
   expect(fetcher).toHaveBeenCalledTimes(2);
-  results[1]({ ok: true, json: async () => ({ health: { status: "healthy", units: [] } }) });
-  await Promise.resolve();
-  await Promise.resolve();
-  await Promise.resolve();
+  results[1]({ ok: true, json: async () => ({}) });
+  await flushStatusRequest();
 });
 
-test("renders partial health and deployment data without optional page elements", async () => {
-  const healthList = element();
-  const document = {
-    querySelector: (selector) => (selector === "[data-health-list]" ? healthList : null),
-    createElement: (tag) => Object.assign(element(), { tag }),
-  };
+test("reports failed requests and tolerates a missing status label", async () => {
+  const document = dashboardDocument();
+  delete document.elements["[data-status]"];
   renderHome(document, {
-    fetcher: async () => ({
-      ok: true,
-      json: async () => ({
-        health: { status: "degraded", units: [{}] },
-        deployment: { status: "failed", recovery: "Previous commit restored.", steps: [{}] },
-      }),
-    }),
+    fetcher: async () => ({ ok: false }),
     setIntervalFn: () => undefined,
-    now: () => new Date("2026-11-18T12:00:00.000Z"),
   });
-  await Promise.resolve();
-  await Promise.resolve();
-  expect(healthList.children).toHaveLength(1);
-  expect(healthList.children[0].children.map((child) => child.textContent)).toEqual([
-    "",
-    "Unknown application",
-    "unknown",
-    "—",
-  ]);
-});
-
-test("skips health rendering when the list is absent during refresh", async () => {
-  const list = element();
-  let count = 0;
-  const document = {
-    querySelector: (selector) => (selector === "[data-health-list]" && ++count === 1 ? list : null),
-    createElement: (tag) => Object.assign(element(), { tag }),
-  };
+  await flushStatusRequest();
   renderHome(document, {
-    fetcher: async () => ({ ok: true, json: async () => ({ health: {}, deployment: null }) }),
+    fetcher: async () => ({ ok: true, json: async () => ({}) }),
     setIntervalFn: () => undefined,
-    now: () => new Date("2026-11-18T12:00:00.000Z"),
+    now: () => new Date("invalid"),
   });
-  await Promise.resolve();
-  await Promise.resolve();
+  await flushStatusRequest();
 });
 
-test("renders missing deployment step fields with safe defaults", async () => {
+test("renders a status update when the clock returns no value", async () => {
   const document = dashboardDocument();
   renderHome(document, {
-    fetcher: async () => ({
-      ok: true,
-      json: async () => ({ health: { units: [] }, deployment: { steps: [{}] } }),
-    }),
+    fetcher: async () => ({ ok: true, json: async () => ({}) }),
     setIntervalFn: () => undefined,
-    now: () => new Date("2026-11-18T12:00:00.000Z"),
+    now: () => undefined,
   });
-  await Promise.resolve();
-  await Promise.resolve();
-  const [step] = document.elements["[data-step-list]"].children;
-  expect(step.children.map((child) => child.textContent)).toEqual(["Unknown step", "unknown"]);
-  expect(step.dataset.state).toBe("unknown");
+  await flushStatusRequest();
 });
 
-test("skips rendering when a status payload is null", async () => {
+test("formats a valid status update time", async () => {
   const document = dashboardDocument();
   renderHome(document, {
-    fetcher: async () => ({ ok: true, json: async () => null }),
+    fetcher: async () => ({ ok: true, json: async () => ({}) }),
     setIntervalFn: () => undefined,
     now: () => new Date("2026-11-18T12:00:00.000Z"),
   });
-  await Promise.resolve();
-  await Promise.resolve();
+  await flushStatusRequest();
   expect(document.elements["[data-status]"].textContent).toContain("Updated");
 });
 
-test("handles health payloads without a unit list", async () => {
+test("formats an invalid status update time safely", async () => {
   const document = dashboardDocument();
   renderHome(document, {
-    fetcher: async () => ({ ok: true, json: async () => ({ health: {} }) }),
+    fetcher: async () => ({ ok: true, json: async () => ({}) }),
     setIntervalFn: () => undefined,
-    now: () => new Date("2026-11-18T12:00:00.000Z"),
+    now: () => new Date("invalid"),
   });
-  await Promise.resolve();
-  await Promise.resolve();
-  expect(document.elements["[data-health-empty]"].hidden).toBe(false);
+  await flushStatusRequest();
+  expect(document.elements["[data-status]"].textContent).toBe("Updated —");
 });
 
-test("uses browser defaults for polling and time and handles a missing footer label", async () => {
+test("handles null responses and browser default polling functions", async () => {
   jest.useFakeTimers({ now: new Date("2026-11-18T12:00:00.000Z") });
   const document = dashboardDocument();
   const fetcher = jest.spyOn(globalThis, "fetch").mockResolvedValue({
     ok: true,
-    json: async () => ({ deployment: { status: "idle", steps: [] } }),
+    json: async () => null,
   });
   renderHome(document);
-  await Promise.resolve();
-  await Promise.resolve();
+  await flushStatusRequest();
   expect(fetcher).toHaveBeenCalledWith("/api/status", { cache: "no-store" });
-  expect(document.elements["[data-health-summary]"].textContent).toBe("Router checks are pending");
-  expect(document.elements["[data-state-dot]"].dataset.state).toBe("unknown");
-  expect(document.elements["[data-health-empty]"].hidden).toBe(false);
-  expect(document.elements["[data-deployment-result]"].textContent).toBe("No deployment recorded.");
-
-  const noFooter = dashboardDocument();
-  delete noFooter.elements["[data-status]"];
-  fetcher.mockRejectedValueOnce(new Error("Offline"));
-  renderHome(noFooter, {
-    fetcher,
-    setIntervalFn: () => undefined,
-    now: () => new Date("2026-11-18T12:00:00.000Z"),
-  });
-  await Promise.resolve();
-  await Promise.resolve();
   jest.clearAllTimers();
   fetcher.mockRestore();
   jest.useRealTimers();

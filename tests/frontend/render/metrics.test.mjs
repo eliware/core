@@ -1,5 +1,5 @@
 import { expect, test } from "@jest/globals";
-import renderMetrics from "../../src/frontend/render-metrics.mjs";
+import renderMetrics from "../../../src/frontend/render/metrics.mjs";
 
 function element() {
   return {
