@@ -1,5 +1,5 @@
 import parseArguments from "./arguments.mjs";
-import reportUnknownArgument from "./errors.mjs";
+import formatCliError from "./cli/error-output.mjs";
 import writeHelp from "./help.mjs";
 import preflight from "./preflight.mjs";
 import compare from "./compare.mjs";
@@ -45,7 +45,7 @@ export default async function runCli(
     try {
       catalog = catalogCommand(cwd);
     } catch (error) {
-      write(`Catalog error: ${error.message}`);
+      write(formatCliError("catalog", error));
       return 1;
     }
     if (!catalog) {
@@ -62,7 +62,7 @@ export default async function runCli(
     try {
       catalog = catalogCommand(repositoryPath);
     } catch (error) {
-      write(`Catalog error: ${error.message}`);
+      write(formatCliError("catalog", error));
       return 1;
     }
     const command = parsed.type === "status" ? statusCommand : reloadCommand;
@@ -78,10 +78,10 @@ export default async function runCli(
   }
 
   if (parsed.type === "invalid") {
-    write(`Invalid arguments for ${parsed.command}.`);
+    write(formatCliError("invalid", parsed.command));
     return 2;
   }
 
-  reportUnknownArgument(parsed.argument, write);
+  write(formatCliError("unknown", parsed.argument));
   return 2;
 }

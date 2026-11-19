@@ -1,5 +1,4 @@
-import runCatalogActions from "./catalog-actions.mjs";
-import planCatalogActions from "./plan-catalog-actions.mjs";
+import reloadCatalogConfiguration from "./catalog/reload.mjs";
 import loadServiceCatalog from "../../service-catalog/load.mjs";
 
 export default async function reloadConfiguration({
@@ -19,14 +18,18 @@ export default async function reloadConfiguration({
     await runStep("npm run reload", "npm", ["run", "reload"]);
     return { actions: undefined, started: true };
   }
-  const actions = await planCatalogActions({ catalog, repositoryPath, previousCommit, run });
-  onPlan(actions);
-  if (actions.length) {
-    onReloadStart();
-    await runCatalogActions({ actions, repositoryPath, run, steps, onStart });
-    return { actions, started: true };
-  }
+  const result = await reloadCatalogConfiguration({
+    catalog,
+    repositoryPath,
+    previousCommit,
+    run,
+    steps,
+    onStart,
+    onPlan,
+    onReloadStart,
+  });
+  if (result.started) return result;
   steps.push({ name: "No catalog components changed", status: "passed" });
   onStart("No catalog components changed", steps);
-  return { actions, started: false };
+  return { actions: result.actions, started: false };
 }
