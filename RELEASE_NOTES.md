@@ -2,16 +2,28 @@
 
 ## 15.2.1 — 2026-11-18
 
+### Changed
+
+- Set package metadata and the lockfile to 15.2.1.
+- Split configuration, health, deployment, and validation helpers into focused modules.
+- Update the README, CLI guide, web guide, and contributor guidance for 15.2.1.
+- Document screenshot output settings, package checks, runtime environment values, and route behavior.
+
 ### Fixed
 
 - Accept approved system-managed DNS includes during repository preflight.
-- Compare reciprocal FRR preferences when some external peers use equal baseline weights.
-- Reject duplicate BGP sections, repeated firewall tables, and malformed DNS record fields.
-- Reject duplicate required Keepalived settings and invalid virtual addresses.
-- Require explicit snowflake identities and validate Git deployment recovery targets.
-- Keep webhook request handling idempotent when a deployment is busy.
-- Deployment locks use a private directory for the application user.
-- Keep `/ready` at HTTP 503 until both listeners start and after shutdown begins.
+- Compare reciprocal FRR preferences while allowing unchanged external peer weights.
+- Validate DNS owners, SOA names and timers, MX, SRV, CAA, and TXT record values.
+- Accept valid empty TXT strings and quoted Keepalived option values.
+- Reject duplicate BGP sections, repeated firewall tables, and duplicate Keepalived settings.
+- Reject subnet and final host addresses as Keepalived virtual addresses.
+- Resolve configuration references inside symlinked repository roots.
+- Read web assets through verified file handles to prevent path changes during reads.
+- Require explicit snowflake worker and process identities.
+- Check Git status, branch, and revision results before deployment.
+- Use private lock directories and release admission state after lock cleanup errors.
+- Keep busy webhook request IDs from starting deployments on retries.
+- Bound concurrent health checks and report readiness only after both listeners start.
 
 ## 15.2.0 — 2026-11-18
 
