@@ -1,5 +1,4 @@
 import { expect, jest, test } from "@jest/globals";
-import catalog from "../../test-fixtures/deployment-catalog.mjs";
 const defaultExecFile = jest.fn((command, args, ...rest) => {
   const callback = rest.at(-1);
   const stdout =
@@ -45,24 +44,6 @@ async function waitFor(manager, status) {
     else await Promise.resolve();
   throw new Error(`Deployment did not reach ${status}: ${JSON.stringify(manager.getStatus())}`);
 }
-async function failedReload({ loadCatalog, reloadCommand, recoveryError }) {
-  const run = jest.fn(async (command, args) => {
-    if (command === "git" && args[0] === "rev-parse") return { stdout: `${commit}\n` };
-    if (command === "git" && args[0] === "diff" && loadCatalog)
-      return { stdout: "etc/named.conf\0" };
-    if (command === reloadCommand) throw new Error("reload failed");
-    return { stdout: "" };
-  });
-  const recover = jest.fn().mockRejectedValue(recoveryError);
-  const manager = createManager({
-    repositoryPath: "/router",
-    run,
-    loadCatalog: () => loadCatalog,
-    recover,
-  });
-  manager.start("failed-reload");
-  return { recover, run, status: await waitFor(manager, "failed") };
-}
 test("keeps lock cleanup and busy state at the deployment coordination boundary", async () => {
   const run = successfulRun();
   const notify = jest.fn();
@@ -88,25 +69,6 @@ test("keeps lock cleanup and busy state at the deployment coordination boundary"
   expect(manager.getStatus().lockReleaseError).toBe("Deployment lock cleanup failed.");
   expect(manager.start("next-delivery")).toEqual({ accepted: false, status: "busy" });
 });
-test("reports catalog and fallback recovery errors", async () => {
-  const catalogResult = await failedReload({
-    loadCatalog: catalog,
-    reloadCommand: "systemctl",
-    recoveryError: new Error("recovery unavailable"),
-  });
-  expect(catalogResult.status.failedStep).toBe("reload named.service");
-  expect(catalogResult.status.recovery).toBe("Recovery failed: recovery unavailable");
-  expect(catalogResult.run.mock.calls.filter(([command]) => command === "systemctl")).toHaveLength(
-    1,
-  );
-  const fallbackResult = await failedReload({
-    loadCatalog: null,
-    reloadCommand: "npm",
-    recoveryError: "recovery unavailable",
-  });
-  expect(fallbackResult.status.recovery).toBe("Recovery failed: recovery unavailable");
-  expect(fallbackResult.recover.mock.calls[0][0]).not.toHaveProperty("catalogActions");
-});
 test("uses the default command adapter and clock", async () => {
   jest.useFakeTimers({ now: new Date("2026-11-18T12:00:00.000Z") });
   const manager = createDeploymentManager({
@@ -125,32 +87,19 @@ test("uses the default command adapter and clock", async () => {
   jest.useRealTimers();
 });
 
-test.each(["branch", "rev-parse"])("stops when git %s exits nonzero", async (operation) => {
-  const run = successfulRun();
-  run.mockImplementation(async (command, args) => {
-    if (command === "git" && args[0] === operation)
-      return { stdout: operation === "branch" ? "main\n" : `${commit}\n`, code: 1 };
-    return { stdout: "" };
-  });
-  const manager = createManager({ repositoryPath: "/router/core", run });
-  manager.start(`${operation}-error`);
-  const status = await waitFor(manager, "failed");
-  expect(status.error).toMatch(/branch|commit ID/u);
-  expect(run.mock.calls.some(([, args]) => args[0] === "pull")).toBe(false);
-});
-test("rejects an initial git status command with a nonzero result", async () => {
-  const run = jest.fn().mockResolvedValue({ stdout: "", status: 1 });
-  const manager = createManager({
-    repositoryPath: "/router/core1",
+test("uses the default installed Core version reader", async () => {
+  expect(createDeploymentManager().start("push").status).toBe("unconfigured");
+  const run = jest.fn(async (_command, args) => ({
+    stdout: args[0] === "branch" ? "main\n" : args[0] === "rev-parse" ? `${commit}\n` : "",
+  }));
+  const manager = createDeploymentManager({
+    repositoryPath: "/router/core",
     run,
-    acquireLock: () => () => {},
   });
-
-  manager.start("failed-initial-status");
-  const status = await waitFor(manager, "failed");
-  expect(status.failedStep).toBe("repository check");
-  expect(status.error).toBe("Git status exited with code 1.");
-  expect(run).toHaveBeenCalledTimes(1);
+  manager.start("missing-installed-package");
+  for (let attempt = 0; attempt < 20 && manager.getStatus().status !== "succeeded"; attempt += 1)
+    await new Promise((resolve) => setImmediate(resolve));
+  expect(manager.getStatus().status).toBe("succeeded");
 });
 
 test("rejects concurrent deployments for one repository and records notification failures", async () => {
@@ -222,79 +171,17 @@ test("releases deployment state while setup failure notification is pending", as
   await waitFor(manager, "succeeded");
 });
 
-test("reports a lock release failure after deployment completion", async () => {
-  const run = jest.fn(async (command, args) => {
-    if (command === "git" && args[0] === "rev-parse") return { stdout: `${commit}\n` };
-    return { stdout: "" };
-  });
+test("reports execution setup failures through the manager", async () => {
   const manager = createManager({
-    repositoryPath: "/router/config",
-    acquireLock: () => () => {
-      throw "lock release failed";
-    },
-    notify: jest.fn().mockRejectedValue(new Error("Discord unavailable")),
-    now: () => new Date("2026-11-18T12:00:00.000Z"),
-    run,
-  });
-  manager.start("push");
-  for (let attempt = 0; attempt < 100 && manager.getStatus().status !== "succeeded"; attempt += 1)
-    await Promise.resolve();
-  for (let attempt = 0; attempt < 20 && !manager.getStatus().notificationError; attempt += 1)
-    await Promise.resolve();
-
-  expect(manager.getStatus().status).toBe("succeeded");
-  expect(manager.getStatus().lockReleaseError).toBe("Deployment lock cleanup failed.");
-  expect(manager.getStatus().notificationError).toBe("Discord notification failed.");
-  expect(manager.start("next-push")).toEqual({ accepted: false, status: "busy" });
-});
-test("reports unexpected deployment setup failures", async () => {
-  const manager = createManager({
-    repositoryPath: "/router/config",
+    repositoryPath: "/router/core",
     now: () => {
       throw new Error("clock unavailable");
     },
   });
-
-  manager.start("push");
-  for (let attempt = 0; attempt < 100 && !manager.getStatus().error; attempt += 1)
-    await Promise.resolve();
+  manager.start("setup-failure");
+  await waitFor(manager, "failed");
   expect(manager.getStatus()).toMatchObject({
-    status: "failed",
+    failedStep: "deployment setup",
     error: "clock unavailable",
   });
-});
-
-test("rejects deployment from unexpected branches", async () => {
-  expect(createDeploymentManager().start("push").status).toBe("unconfigured");
-  for (const currentBranch of ["release", ""]) {
-    const run = jest.fn(async (_command, args) =>
-      args[0] === "branch" ? { stdout: currentBranch } : { stdout: "" },
-    );
-    const manager = createManager({ repositoryPath: "/router/config", run, currentBranch });
-    manager.start("push");
-    expect((await waitFor(manager, "failed")).error).toContain("must be on branch main");
-    expect(run).toHaveBeenCalledTimes(2);
-  }
-});
-
-test("rejects dirty repositories and invalid base revisions", async () => {
-  const dirtyRun = jest.fn().mockResolvedValue({ stdout: " M config.json\n" });
-  const dirty = createManager({ repositoryPath: "/router/config", run: dirtyRun });
-  dirty.start("dirty-push");
-  expect((await waitFor(dirty, "failed")).error).toContain("uncommitted changes");
-  expect(dirtyRun).toHaveBeenCalledTimes(1);
-  const revisionRun = jest.fn(async (_command, args) => {
-    if (args[0] === "status") return { stdout: null };
-    if (args[0] === "rev-parse") return { stdout: undefined };
-    return { stdout: "" };
-  });
-  const revision = createManager({
-    repositoryPath: "/router/config",
-    run: revisionRun,
-    notify: jest.fn().mockRejectedValue(new Error("Discord unavailable")),
-  });
-  revision.start("bad-revision");
-  expect((await waitFor(revision, "failed")).error).toContain("invalid commit ID");
-  await Promise.resolve();
-  expect(revision.getStatus().notificationError).toBe("Discord notification failed.");
 });

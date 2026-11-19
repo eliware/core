@@ -29,6 +29,16 @@ test("rejects a branch command without output", async () => {
   ).rejects.toThrow("must be on branch main");
 });
 
+test("uses empty command output when Git omits stdout", async () => {
+  const run = jest.fn(async (_command, args) => {
+    if (args[0] === "status" || args[0] === "rev-parse") return {};
+    return { stdout: "main\n" };
+  });
+  await expect(
+    validateDeploymentRepository({ run, repositoryPath: "/router", branch: "main" }),
+  ).rejects.toThrow("invalid commit ID");
+});
+
 test.each([
   [{ status: 1 }, "Git status exited"],
   [{ dirty: " M file" }, "uncommitted changes"],
