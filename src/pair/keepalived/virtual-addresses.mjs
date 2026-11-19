@@ -1,4 +1,4 @@
-import { isIP } from "node:net";
+import isUsableVirtualAddress from "./address-policy.mjs";
 
 export default function parseVirtualAddresses(body) {
   const block = body.match(/virtual_ipaddress\s*\{([^}]*)\}/u);
@@ -8,15 +8,7 @@ export default function parseVirtualAddresses(body) {
   for (const line of block[1].split(/\r?\n/u)) {
     const tokens = stripComment(line).trim().split(/\s+/u).filter(Boolean);
     if (!tokens.length) continue;
-    const [address, prefix] = tokens[0].split("/");
-    const bits = Number(prefix);
-    if (
-      isIP(address) !== 4 ||
-      !Number.isInteger(bits) ||
-      bits < 0 ||
-      bits > 32 ||
-      !isUsableHostAddress(address, bits)
-    ) {
+    if (!isUsableVirtualAddress(tokens[0])) {
       invalid.push(tokens[0]);
       continue;
     }
@@ -44,14 +36,4 @@ function stripComment(line) {
     else if (!quote && character === "#") return line.slice(0, index);
   }
   return line;
-}
-
-function isUsableHostAddress(address, prefix) {
-  if (prefix >= 31) return true;
-  const value = address.split(".").reduce((result, octet) => (result << 8n) | BigInt(octet), 0n);
-  const hostBits = BigInt(32 - prefix);
-  const blockSize = 1n << hostBits;
-  const network = (value / blockSize) * blockSize;
-  const broadcast = network + blockSize - 1n;
-  return value !== network && value !== broadcast;
 }

@@ -6,8 +6,7 @@ import parseConfigFile from "./config-parser.mjs";
 import validateConfigFiles from "./preflight-config.mjs";
 import validatePackageMetadata from "./preflight/package-metadata.mjs";
 import isParseableConfig from "./preflight/config-files.mjs";
-import validateServiceCatalog from "./service-catalog/validate.mjs";
-import findAffectedComponents from "./service-catalog/affected-components.mjs";
+import validateRepositoryCatalog from "./preflight/catalog.mjs";
 import checkJavaScriptSyntax from "./preflight/javascript-syntax.mjs";
 import checkShellSyntax from "./preflight/shell-syntax.mjs";
 
@@ -37,15 +36,9 @@ export default async function preflight(
       else {
         supported.push(file);
         if (file === "core-catalog.yaml") {
-          const catalogErrors = validateServiceCatalog(result.value);
-          if (catalogErrors.length)
-            errors.push(...catalogErrors.map((error) => `FAIL ${file}: ${error}.`));
-          else {
-            lines.push(`PASS service catalog, entries: ${result.value.components.length}`);
-            for (const path of inventory.files.filter((item) => /^(etc|var|scripts)\//u.test(item)))
-              if (!findAffectedComponents(result.value, [path]).length)
-                errors.push(`FAIL ${file}: managed path ${path} is not mapped to a component.`);
-          }
+          const catalog = validateRepositoryCatalog(file, result.value, inventory.files);
+          lines.push(...catalog.lines);
+          errors.push(...catalog.errors);
         }
       }
       if (file === "package.json" && !result.error) packageJson = result.value;

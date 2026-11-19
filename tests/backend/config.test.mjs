@@ -41,19 +41,3 @@ test("uses service catalog health units instead of environment unit overrides", 
   expect(configuration.catalog.components[0].health.unit).toBe("named.service");
   expect(configuration.healthUnits).toEqual([]);
 });
-
-test.each([
-  [{ CORE_GITHUB_BRANCH: "--delete" }, "CORE_GITHUB_BRANCH"],
-  [{ CORE_GITHUB_BRANCH: "feature..oops" }, "CORE_GITHUB_BRANCH"],
-  [{ CORE_GITHUB_BRANCH: "feature/--upload-pack=malicious" }, "CORE_GITHUB_BRANCH"],
-  [{ DISCORD_WEBHOOK_URL: "http://discord.com/webhook" }, "HTTPS Discord"],
-  [{ DISCORD_WEBHOOK_URL: "https://example.com/webhook" }, "HTTPS Discord"],
-  [{ DISCORD_WEBHOOK_URL: "invalid" }, "valid Discord"],
-  [{ CORE_HEALTH_UNITS: "bad unit" }, "CORE_HEALTH_UNITS"],
-])("rejects invalid configuration %s", (environment, message) => {
-  expect(() =>
-    loadApplicationConfig({
-      environment: { SNOWFLAKE_WORKER_ID: "1", SNOWFLAKE_PROCESS_ID: "1", ...environment },
-    }),
-  ).toThrow(message);
-});

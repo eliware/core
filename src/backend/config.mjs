@@ -1,18 +1,18 @@
-import parseTcpEndpoint from "./port.mjs";
 import validateBranch from "./config/branch.mjs";
 import validateDiscordUrl from "./config/discord-url.mjs";
 import parseHealthUnits from "./config/health-units.mjs";
 import parseSnowflakeOptions from "./config/snowflake.mjs";
 import loadApplicationValues from "./config/loader.mjs";
-import validateEndpoints from "./config/endpoints.mjs";
+import parseEndpoints from "./config/endpoints.mjs";
 import loadServiceCatalog from "../service-catalog/load.mjs";
 import validateDashboardUrl from "./config/dashboard-url.mjs";
 
 export default function loadApplicationConfig({ environment }) {
   const application = loadApplicationValues(environment);
-  const tcpEndpoint = parseTcpEndpoint(application.port);
-  const webhookEndpoint = parseTcpEndpoint(application.webhookPort);
-  validateEndpoints(tcpEndpoint, webhookEndpoint);
+  const { tcpEndpoint, webhookEndpoint } = parseEndpoints(
+    application.port,
+    application.webhookPort,
+  );
   const githubBranch = validateBranch(application.githubBranch);
   const dashboardUrl = validateDashboardUrl(application.dashboardUrl, tcpEndpoint);
   const discordWebhookUrl = validateDiscordUrl(application.discordWebhookUrl);
