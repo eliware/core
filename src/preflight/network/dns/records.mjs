@@ -62,8 +62,12 @@ export default function validateDnsRecord(file, tokens, line) {
       !fields[2])
   )
     errors.push(`FAIL ${file}:${line}: CAA record needs valid flags, a tag, and a value.`);
-  else if (type === "TXT" && fields.some((field) => field.length === 0))
-    errors.push(`FAIL ${file}:${line}: TXT record contains an empty value.`);
+  else if (type === "TXT") {
+    if (fields.some((field) => field.length === 0))
+      errors.push(`FAIL ${file}:${line}: TXT record contains an empty value.`);
+    else if (fields.some((field) => !/^"(?:[^"\\]|\\.)*"$/u.test(field)))
+      errors.push(`FAIL ${file}:${line}: TXT record values must be quoted strings.`);
+  }
   return { errors, type };
 }
 

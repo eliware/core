@@ -66,3 +66,12 @@ test("rejects an empty TXT token", () => {
     "FAIL test.zone:2: TXT record contains an empty value.",
   );
 });
+
+test.each([["not-a-string"], ['"quoted"', "not-a-string"], ['"unterminated']])(
+  "rejects unquoted or malformed TXT values %s",
+  (...values) => {
+    expect(validateDnsRecord("test.zone", ["@", "IN", "TXT", ...values], 2).errors).toContain(
+      "FAIL test.zone:2: TXT record values must be quoted strings.",
+    );
+  },
+);
