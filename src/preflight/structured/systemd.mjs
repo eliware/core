@@ -1,3 +1,5 @@
+import validateSystemdReferences from "./systemd-references.mjs";
+
 export default function validateSystemd(file, text, files) {
   const errors = [];
   const sections = new Set();
@@ -35,16 +37,9 @@ export default function validateSystemd(file, text, files) {
       )
         errors.push(`FAIL ${file}:${index + 1}: duplicate ${setting[1]} setting.`);
       seen.add(key);
-      const command = value.match(
-        /^Exec(?:Start|StartPre|StartPost|Reload)=\s*(?:\+|-|!|@|:|\|)*([^\s]+)/u,
-      );
-      if (command?.[1].startsWith("/eliware/core")) {
-        const target = command[1].replace(/^\/eliware\/core[12]\//u, "");
-        if (!files.includes(target))
-          errors.push(`FAIL ${file}:${index + 1}: referenced ${target} file is missing.`);
-      }
     }
   }
+  errors.push(...validateSystemdReferences(file, text, files));
   if (file.includes(".d/")) {
     if (sections.size === 0) errors.push(`FAIL ${file}: a drop-in needs a unit section.`);
   } else if (!sections.has("Unit") || (!sections.has("Service") && !sections.has("Timer"))) {

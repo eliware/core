@@ -2,15 +2,11 @@ import { execFile as nodeExecFile } from "node:child_process";
 import { readFile as nodeReadFile } from "node:fs/promises";
 import { promisify } from "node:util";
 import summarizeInterfaces from "./interfaces.mjs";
-import parseHaproxyStats from "./haproxy.mjs";
-import summarizeLeases from "./dhcp-leases.mjs";
-import summarizeBindStats from "./dns-cache.mjs";
-import parseChronyTracking from "./ntp.mjs";
 import summarizeRoutes from "./routes.mjs";
 import summarizeNeighbors from "./neighbors.mjs";
 import summarizeFrr from "./frr.mjs";
 import collectVrrp from "./collect/vrrp.mjs";
-import readSocket from "./socket-reader.mjs";
+import collectServiceMetric from "./collect/services.mjs";
 
 const execFile = promisify(nodeExecFile);
 
@@ -19,7 +15,7 @@ export default async function collectMetric(
   {
     run = execFile,
     readFile = nodeReadFile,
-    socket = readSocket,
+    socket,
     connect,
     signalProcess = process.kill,
     vrrpDelayMs = 50,
@@ -61,19 +57,10 @@ export default async function collectMetric(
         wait: () => wait(vrrpDelayMs),
       });
     case "haproxy":
-      return parseHaproxyStats(
-        await (connect
-          ? readSocket(metric.socketPath, timeoutMs, connect)
-          : socket(metric.socketPath, timeoutMs)),
-      );
     case "dhcp-leases":
-      return summarizeLeases(await readFile(metric.path, "utf8"), metric.format, now().getTime());
     case "dns-cache":
-      return summarizeBindStats(await readFile(metric.path, "utf8"));
-    case "ntp": {
-      const { stdout } = await run("chronyc", ["-n", "tracking"], { timeout: timeoutMs });
-      return parseChronyTracking(stdout);
-    }
+    case "ntp":
+      return collectServiceMetric(metric, { run, readFile, socket, connect, now, timeoutMs });
     default:
       throw new Error("Unsupported metric type");
   }
