@@ -4,7 +4,22 @@
 
 ### Changed
 
+- Set the package version to 15.2.2.
 - Move Lighthouse and Puppeteer to development dependencies.
+- Document aggregate test checks, browser builds, webhook payloads, and busy request retries.
+- Organize deployment tests by admission, recovery, setup failure, and workflow behavior.
+
+### Fixed
+
+- Require quoted DNS TXT values and validate DNS include paths.
+- Validate HAProxy server addresses and port ranges.
+- Record unknown health results when a health check fails unexpectedly.
+- Keep asset reads inside their configured roots and preserve read results when file close fails.
+- Retry deployment lock cleanup before admitting later work.
+- Use user-specific lock directories when the operating system does not provide user IDs.
+- Pass configured Snowflake worker and process IDs to the deployment manager.
+- Require JSON object payloads for GitHub webhooks and retry busy requests when GitHub resends them.
+- Add regression coverage for Keepalived CRLF input and firewall rules with undeclared chains.
 
 ## 15.2.1 — 2026-11-18
 
