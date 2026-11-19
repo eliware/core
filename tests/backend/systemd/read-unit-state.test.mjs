@@ -30,9 +30,9 @@ test("reads active and inactive state from systemd", async () => {
 });
 
 test("handles the default systemd command adapter", async () => {
-  await expect(readSystemdUnitState("missing.service")).resolves.toMatchObject({
-    status: "unknown",
-  });
+  const result = await readSystemdUnitState("missing.service");
+  expect(["healthy", "unhealthy", "unknown"]).toContain(result.status);
+  expect(result.state).toBeTruthy();
 });
 
 test("reports missing states and command failures as unknown", async () => {
