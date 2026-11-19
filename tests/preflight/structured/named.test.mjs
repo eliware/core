@@ -61,3 +61,16 @@ test("checks named blocks and local zone file references", () => {
     ),
   ).toEqual([]);
 });
+
+test("allows the system-managed BIND policy and root trust anchor includes", () => {
+  const text =
+    'options { directory "/var/named"; };\ninclude "/etc/crypto-policies/back-ends/bind.config";\ninclude "/etc/named.root.key";';
+  expect(validateNamed("etc/named.conf", text, [], ".", () => "")).toEqual([]);
+});
+
+test("continues to require other repository-managed absolute includes", () => {
+  const text = 'options { }; include "/etc/custom-named.conf";';
+  expect(validateNamed("etc/named.conf", text, [], ".", () => "")).toContain(
+    "FAIL etc/named.conf: referenced etc/custom-named.conf file is missing.",
+  );
+});

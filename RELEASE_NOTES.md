@@ -1,5 +1,12 @@
 # Release Notes
 
+## 15.2.1 — 2026-11-18
+
+### Fixed
+
+- Accept approved system-managed DNS includes during repository preflight.
+- Compare reciprocal FRR preferences when some external peers use equal baseline weights.
+
 ## 15.2.0 — 2026-11-18
 
 ### Added

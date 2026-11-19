@@ -10,6 +10,30 @@ test("validates reciprocal FRR peers and route weights", () => {
   expect(validateFrrPair(...texts()).errors).toEqual([]);
 });
 
+test("ignores unchanged baseline peers when checking reciprocal HA preferences", () => {
+  const [core1, core2] = texts();
+  const left = core1
+    .replace(
+      "neighbor 10.0.0.10 weight 300",
+      "neighbor 10.0.0.10 weight 300\n neighbor 10.0.0.30 remote-as 65200\n neighbor 10.0.0.30 weight 100",
+    )
+    .replace(
+      "neighbor 10.0.0.20 weight 200",
+      "neighbor 10.0.0.20 weight 200\n neighbor 10.0.0.31 remote-as 65200\n neighbor 10.0.0.31 weight 100",
+    );
+  const right = core2
+    .replace(
+      "neighbor 10.0.0.10 weight 300",
+      "neighbor 10.0.0.10 weight 200\n neighbor 10.0.0.30 remote-as 65200\n neighbor 10.0.0.30 weight 100",
+    )
+    .replace(
+      "neighbor 10.0.0.20 weight 200",
+      "neighbor 10.0.0.20 weight 300\n neighbor 10.0.0.31 remote-as 65200\n neighbor 10.0.0.31 weight 100",
+    );
+
+  expect(validateFrrPair(left, right).errors).toEqual([]);
+});
+
 test("reports missing FRR peer definitions", () => {
   expect(validateFrrPair("", "").errors).toEqual([
     "Both repos need a parsable etc/frr/frr.conf file.",
@@ -90,7 +114,9 @@ test("rejects route preference maps with different neighbor keys", () => {
 
 test("rejects weight changes that do not reverse neighbor preference", () => {
   const [core1, core2] = texts();
-  const altered = core2.replace("neighbor 10.0.0.10 weight 300", "neighbor 10.0.0.10 weight 250");
+  const altered = core2
+    .replace("neighbor 10.0.0.10 weight 300", "neighbor 10.0.0.10 weight 250")
+    .replace("neighbor 10.0.0.20 weight 200", "neighbor 10.0.0.20 weight 150");
 
   expect(validateFrrPair(core1, altered).errors).toContain(
     "FRR weight differences must express reciprocal high availability preferences.",

@@ -1,12 +1,18 @@
 import isBalanced from "./balanced.mjs";
 import readRepositoryFile from "../../preflight-config/read-repository-file.mjs";
 
+const systemManagedIncludes = new Set([
+  "/etc/crypto-policies/back-ends/bind.config",
+  "/etc/named.root.key",
+]);
+
 export default function validateNamed(file, text, files, root, readFile, realPath) {
   const errors = [];
   if (!isBalanced(text.replace(/\/\*[\s\S]*?\*\//gu, "").replace(/\/\/[^\n]*/gu, "")))
     errors.push(`FAIL ${file}: configuration blocks are not balanced.`);
   for (const match of text.matchAll(/\b(file|include)\s+"([^"]+)"\s*;/giu)) {
     const [, directive, reference] = match;
+    if (directive.toLowerCase() === "include" && systemManagedIncludes.has(reference)) continue;
     const local = resolveNamedReference(directive.toLowerCase(), reference);
     if (local && !files.includes(local))
       errors.push(`FAIL ${file}: referenced ${local} file is missing.`);
