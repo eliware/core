@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import listRepositoryFiles from "./repo-files.mjs";
+import compareInventories from "./pair/inventory.mjs";
 import normalizePairFile from "./pair/normalize.mjs";
 import validatePair from "./pair/rules.mjs";
 import loadRepository from "./pair/repository.mjs";
@@ -28,15 +29,8 @@ export default function compareRepositories(
   const names = [local.name, partner.name];
   const localFiles = local.files;
   const partnerFiles = partner.files;
-  const errors = [];
-  const localPaths = new Set(localFiles.keys());
-  const partnerPaths = new Set(partnerFiles.keys());
-  for (const file of localPaths) {
-    if (!partnerPaths.has(file)) errors.push(`Partner repo is missing ${file}.`);
-  }
-  for (const file of partnerPaths) {
-    if (!localPaths.has(file)) errors.push(`This repo is missing ${file}.`);
-  }
+  const inventory = compareInventories(localFiles, partnerFiles);
+  const errors = [...inventory.errors];
 
   const pair = validatePair(names[0], names[1], localFiles, partnerFiles);
   errors.push(...pair.errors);
@@ -50,7 +44,7 @@ export default function compareRepositories(
     };
   }
   const variants = [];
-  for (const file of [...localPaths].filter((item) => partnerPaths.has(item)).sort()) {
+  for (const file of inventory.matchingPaths) {
     const leftText = normalizePairFile(file, localFiles.get(file), pair.nodes?.get(names[0]));
     const rightText = normalizePairFile(file, partnerFiles.get(file), pair.nodes?.get(names[1]));
     if (leftText !== rightText) errors.push(`Unexpected configuration difference: ${file}.`);
@@ -64,7 +58,7 @@ export default function compareRepositories(
 
   const lines = [
     errors.length === 0
-      ? `PASS matching configuration inventory (${localPaths.size} files)`
+      ? `PASS matching configuration inventory (${inventory.matchingPaths.length} files)`
       : `FAIL configuration comparison (${errors.length} issues)`,
     ...errors.map((error) => `FAIL ${error}`),
   ];

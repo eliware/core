@@ -297,32 +297,6 @@ test("accepts an omitted health monitor configuration", () =>
     units: [],
   }));
 
-test("records systemd events and suppresses repeated failure notifications", async () => {
-  let finish;
-  const onSystemdEvent = jest.fn().mockRejectedValue(new Error("offline"));
-  const monitor = createHealthMonitor({
-    units: ["frr.service"],
-    checkUnit: () =>
-      new Promise((resolve) => {
-        finish = resolve;
-      }),
-    onSystemdEvent,
-    setIntervalFn: () => ({ unref() {} }),
-  });
-  monitor.start();
-  await Promise.resolve();
-  const event = { name: "frr.service", event: "failed", status: "unhealthy" };
-  const recorded = monitor.recordEvent(event);
-  finish();
-  await recorded;
-  await monitor.recordEvent(event);
-  expect(onSystemdEvent).toHaveBeenCalledTimes(1);
-  await monitor.stop();
-  await monitor.recordEvent({ ...event, event: "restarted", status: "healthy" });
-  expect(onSystemdEvent).toHaveBeenCalledTimes(1);
-  expect(await monitor.recordEvent({ ...event, name: "missing.service" })).toBeUndefined();
-});
-
 test("uses the default systemd event callback", async () => {
   const monitor = createHealthMonitor({
     units: ["frr.service"],

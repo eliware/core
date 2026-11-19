@@ -1,4 +1,5 @@
 import collectMetric from "./metrics/collect.mjs";
+import metricIsUnhealthy from "./metrics/health.mjs";
 
 const builtInMetrics = [
   ["interfaces", "Interfaces"],
@@ -7,18 +8,6 @@ const builtInMetrics = [
   ["frr", "FRR"],
   ["vrrp", "VRRP"],
 ].map(([type, name]) => ({ component: { id: type, name }, metric: { type } }));
-
-function metricIsUnhealthy(type, values) {
-  return (
-    (type === "ntp" && values.synchronized === false) ||
-    (type === "haproxy" &&
-      (values.totals.down > 0 ||
-        values.backends.some(({ state }) => !/^UP\b/u.test(state ?? "")))) ||
-    (type === "frr" && values.totals.down > 0) ||
-    (type === "arp" && values.totals.failed > 0) ||
-    (type === "vrrp" && values.totals.fault > 0)
-  );
-}
 
 export default function createMetricsMonitor({
   catalog,
