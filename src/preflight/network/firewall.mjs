@@ -13,7 +13,8 @@ export default function validateFirewall(file, text) {
       committed = false;
       if (!/^(filter|nat|mangle|raw|security)$/u.test(table))
         errors.push(`FAIL ${file}:${index + 1}: unsupported table.`);
-      tables.set(table, new Set());
+      if (tables.has(table)) errors.push(`FAIL ${file}:${index + 1}: duplicate table ${table}.`);
+      else tables.set(table, new Set());
     } else if (value === "COMMIT") {
       if (!table || committed) errors.push(`FAIL ${file}:${index + 1}: unexpected COMMIT.`);
       committed = true;

@@ -31,3 +31,9 @@ test("rejects an IPv6 BGP router ID", () => {
     ),
   ).toContain("FAIL frr.conf:2: router ID must be an IPv4 address.");
 });
+
+test("rejects repeated BGP router sections", () => {
+  const text =
+    "router bgp 65001\n bgp router-id 10.0.0.1\n neighbor 10.0.0.2 remote-as 65002\nrouter bgp 65001\n";
+  expect(validateFrr("frr.conf", text)).toContain("FAIL frr.conf:4: duplicate BGP router section.");
+});

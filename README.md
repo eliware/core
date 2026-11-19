@@ -97,7 +97,8 @@ Run `core-web` from a router repository to start the web application.
 
 ## Routes
 
-The dashboard serves its page, assets, health, readiness, and status routes.
+The dashboard listener serves its page, assets, health, readiness, and status routes.
+The server registers health, readiness, and status routes on that same listener.
 The webhook listener accepts `POST /api/github/webhook` on its configured port.
 Read the [route guide](docs/web-application.md#routes) for paths and results.
 

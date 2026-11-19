@@ -8,8 +8,11 @@ export default function validateFrr(file, text) {
   for (const [index, line] of text.split(/\r?\n/u).entries()) {
     const value = line.trim();
     if (!value || value === "!") continue;
-    if (/^router bgp\s+\d+$/u.test(value)) bgp = true;
-    else if (value === "address-family ipv4 unicast") addressFamily = true;
+    if (/^router bgp\s+\d+$/u.test(value)) {
+      if (bgp) errors.push(`FAIL ${file}:${index + 1}: duplicate BGP router section.`);
+      bgp = true;
+      addressFamily = false;
+    } else if (value === "address-family ipv4 unicast") addressFamily = true;
     else if (value === "exit-address-family") addressFamily = false;
     else if (/^bgp router-id\s+/u.test(value)) {
       if (isIP(value.split(/\s+/u).at(-1)) !== 4)

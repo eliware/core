@@ -38,6 +38,11 @@ test("accepts negated selectors and boolean options", () => {
   ).toEqual([]);
 });
 
+test("rejects a repeated table declaration", () => {
+  const rules = "*filter\n:INPUT DROP [0:0]\nCOMMIT\n*filter\n:OUTPUT ACCEPT [0:0]\nCOMMIT\n";
+  expect(validateFirewall("iptables", rules)).toContain("FAIL iptables:4: duplicate table filter.");
+});
+
 test("rejects malformed tables, chains, rules, and commit order", () => {
   const result = validateFirewall(
     "iptables",
