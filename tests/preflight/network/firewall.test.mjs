@@ -57,3 +57,9 @@ test("rejects malformed tables, chains, rules, and commit order", () => {
   expect(result).toContain("lacks COMMIT");
   expect(validateFirewall("iptables", "").join(" ")).toContain("filter table is required");
 });
+
+test("rejects rules that reference an undeclared chain", () => {
+  expect(
+    validateFirewall("iptables", "*filter\n:INPUT DROP [0:0]\n-A MISSING -j ACCEPT\nCOMMIT\n"),
+  ).toContain("FAIL iptables:3: rule has an unknown chain or missing target.");
+});

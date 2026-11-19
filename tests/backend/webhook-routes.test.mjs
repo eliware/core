@@ -240,6 +240,27 @@ test("rejects invalid JSON payloads", async () => {
   await server.close();
 });
 
+test.each([
+  [undefined, '{"ref":"refs/heads/main"}', 415],
+  ["text/plain", '{"ref":"refs/heads/main"}', 415],
+  ["application/json", "null", 400],
+  ["application/json", "[]", 400],
+])(
+  "rejects webhook payloads with invalid content types or shapes",
+  async (contentType, body, code) => {
+    const { server, deployment } = await setup();
+    const response = await server.inject({
+      method: "POST",
+      url: "/api/github/webhook",
+      headers: signedHeaders(body, { "content-type": contentType }),
+      payload: body,
+    });
+    expect(response.statusCode).toBe(code);
+    expect(deployment.start).not.toHaveBeenCalled();
+    await server.close();
+  },
+);
+
 test("rejects webhook requests that exceed the body limit", async () => {
   const { server, deployment } = await setup();
   const body = `{"ref":"refs/heads/main","data":"${"x".repeat(1024 * 1024)}"}`;

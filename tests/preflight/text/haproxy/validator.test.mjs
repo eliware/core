@@ -33,6 +33,35 @@ test("requires a valid server address before counting a backend server", () => {
   );
 });
 
+test.each(["127.0.0.1:99999", "bad..host:80", "[not-ipv6]:80"])(
+  "rejects malformed server addresses %s",
+  (address) => {
+    expect(validate(`global\ndefaults\nbackend app\n server app ${address}\n`)).toContain(
+      "FAIL haproxy.cfg:4: server needs a valid address and port.",
+    );
+  },
+);
+
+test.each([
+  "localhost:80",
+  "example.test.:65535",
+  "[::1]:80",
+  "ipv4@127.0.0.1:80",
+  "ipv6@[::1]:80",
+  "unix@/run/haproxy.sock",
+])("accepts valid server address %s", (address) => {
+  expect(validate(`global\ndefaults\nbackend app\n server app ${address}\n`)).toEqual([]);
+});
+
+test.each(["::1:80", "ipv6@localhost:80", "ipv6@127.0.0.1:80", "ipv4@[::1]:80", "0.0.0.0:0"])(
+  "rejects a server address with an invalid host or port %s",
+  (address) => {
+    expect(validate(`global\ndefaults\nbackend app\n server app ${address}\n`)).toContain(
+      "FAIL haproxy.cfg:4: server needs a valid address and port.",
+    );
+  },
+);
+
 test("rejects missing names, duplicate sections, unknown directives, and bad addresses", () => {
   expect(
     validate("global\nglobal\n defaults\nfrontend\n unknown value\nbackend api\n server api bad\n"),

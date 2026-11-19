@@ -77,6 +77,44 @@ test("uses a private directory when no lock directory is supplied", () => {
   secondRelease();
 });
 
+test("uses a per-user lock path when the platform has no user ID", () => {
+  const fileSystem = createFileSystem();
+  const release = acquireDeploymentLock("/router/repo", {
+    fileSystem,
+    userId: null,
+    userName: "router-user",
+    homeDirectory: "/router/home",
+    tempDirectory: "/router/home/temp",
+  });
+  expect([...fileSystem.directories][0]).toContain("eliware-core-locks-router-user");
+  release();
+});
+
+test("rejects lock storage outside the user home when user IDs are unavailable", () => {
+  expect(() =>
+    acquireDeploymentLock("/router/repo", {
+      fileSystem: createFileSystem(),
+      userId: null,
+      userName: "router-user",
+      homeDirectory: "/router/home",
+      tempDirectory: "/shared/tmp",
+    }),
+  ).toThrow("private to the application user");
+});
+
+test("uses a fallback path segment when the user name is empty", () => {
+  const fileSystem = createFileSystem();
+  const release = acquireDeploymentLock("/router/repo", {
+    fileSystem,
+    userId: null,
+    userName: "",
+    homeDirectory: "/router/home",
+    tempDirectory: "/router/home/temp",
+  });
+  expect([...fileSystem.directories][0]).toContain("eliware-core-locks-user");
+  release();
+});
+
 test("rejects a lock directory owned by another user", () => {
   const fileSystem = createFileSystem();
   fileSystem.lstatSync = () => ({

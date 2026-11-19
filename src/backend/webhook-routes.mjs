@@ -8,6 +8,8 @@ export default function registerWebhookRoutes(
 
   server.post("/api/github/webhook", async (request, reply) => {
     if (!enabled || !secret) return reply.code(503).send({ error: "Webhook is not configured." });
+    if (!/^application\/json(?:\s*;|$)/iu.test(request.headers["content-type"]))
+      return reply.code(415).send({ error: "Webhook content type must be application/json." });
     if (
       !verifyGitHubSignature({
         body: request.rawBody,
@@ -17,6 +19,8 @@ export default function registerWebhookRoutes(
     ) {
       return reply.code(401).send({ error: "Webhook signature is invalid." });
     }
+    if (!request.body || typeof request.body !== "object" || Array.isArray(request.body))
+      return reply.code(400).send({ error: "Webhook body must be a JSON object." });
 
     const event = request.headers["x-github-event"];
     if (event !== "push") return reply.code(202).send({ accepted: false, reason: "event ignored" });

@@ -1,14 +1,22 @@
 import { createHash } from "node:crypto";
 import * as defaultFileSystem from "node:fs";
-import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { homedir, tmpdir, userInfo } from "node:os";
+import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import recoverStaleLock from "./stale-lock.mjs";
 
 export default function acquireDeploymentLock(repositoryPath, options = {}) {
   const fileSystem = options.fileSystem ?? defaultFileSystem;
   const userId = options.userId === null ? undefined : (options.userId ?? process.getuid?.());
-  const directory = options.directory ?? join(tmpdir(), `eliware-core-locks-${userId ?? "user"}`);
-  if (!options.directory) ensurePrivateDirectory(directory, fileSystem, userId);
+  const userName = options.userName ?? userInfo().username;
+  const userScope = userId ?? safePathSegment(userName);
+  const temporaryDirectory = options.tempDirectory ?? tmpdir();
+  const directory =
+    options.directory ?? join(temporaryDirectory, `eliware-core-locks-${userScope}`);
+  if (!options.directory)
+    ensurePrivateDirectory(directory, fileSystem, userId, {
+      homeDirectory: options.homeDirectory ?? homedir(),
+      temporaryDirectory,
+    });
   const processId = options.processId ?? process.pid;
   const key = createHash("sha256").update(resolve(repositoryPath)).digest("hex");
   const lockPath = join(directory, `eliware-deployment-${key}.lock`);
@@ -50,7 +58,12 @@ export default function acquireDeploymentLock(repositoryPath, options = {}) {
   };
 }
 
-function ensurePrivateDirectory(directory, fileSystem, userId) {
+function ensurePrivateDirectory(
+  directory,
+  fileSystem,
+  userId,
+  { homeDirectory, temporaryDirectory },
+) {
   try {
     fileSystem.mkdirSync(directory, { mode: 0o700 });
   } catch (error) {
@@ -61,4 +74,20 @@ function ensurePrivateDirectory(directory, fileSystem, userId) {
     throw new Error("Deployment lock directory must be a real directory.");
   if (userId !== undefined && (info.uid !== userId || (info.mode & 0o077) !== 0))
     throw new Error("Deployment lock directory must be private to the application user.");
+  if (userId === undefined) {
+    const relativeTemporaryDirectory = relative(
+      resolve(homeDirectory),
+      resolve(temporaryDirectory),
+    );
+    if (
+      relativeTemporaryDirectory === ".." ||
+      relativeTemporaryDirectory.startsWith(`..${sep}`) ||
+      isAbsolute(relativeTemporaryDirectory)
+    )
+      throw new Error("Deployment lock directory must be private to the application user.");
+  }
+}
+
+function safePathSegment(value) {
+  return String(value).replace(/[^A-Za-z0-9._-]/gu, "_") || "user";
 }
