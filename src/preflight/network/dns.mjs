@@ -8,9 +8,12 @@ export default function validateDns(file, text) {
   let soa = 0;
   let nameservers = 0;
   let pending = "";
+  let pendingOwnerOmitted = false;
+  let previousOwner;
   for (const [index, source] of records.entries()) {
     const line = stripDnsComment(source).trim();
     if (!line) continue;
+    if (!pending) pendingOwnerOmitted = /^\s/u.test(source) && !line.startsWith("$");
     parentheses += countParentheses(line, "(") - countParentheses(line, ")");
     if (parentheses < 0) {
       errors.push(`FAIL ${file}:${index + 1}: record parentheses are not balanced.`);
@@ -20,10 +23,14 @@ export default function validateDns(file, text) {
     }
     pending += `${pending ? " " : ""}${line}`;
     if (parentheses > 0) continue;
-    const tokens = tokenizeDnsRecord(pending);
+    const parsedTokens = tokenizeDnsRecord(pending);
     pending = "";
+    const tokens =
+      pendingOwnerOmitted && previousOwner ? [previousOwner, ...parsedTokens] : parsedTokens;
+    pendingOwnerOmitted = false;
     const result = validateDnsRecord(file, tokens, index + 1);
     errors.push(...result.errors);
+    if (result.type) previousOwner = tokens[0];
     if (result.type === "SOA") soa += 1;
     if (result.type === "NS") nameservers += 1;
   }

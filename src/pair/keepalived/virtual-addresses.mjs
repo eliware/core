@@ -6,7 +6,7 @@ export default function parseVirtualAddresses(body) {
   const valid = [];
   const invalid = [];
   for (const line of block[1].split(/\r?\n/u)) {
-    const tokens = stripComment(line).trim().split(/\s+/u).filter(Boolean);
+    const tokens = tokenizeOptions(stripComment(line));
     if (!tokens.length) continue;
     if (!isUsableVirtualAddress(tokens[0])) {
       invalid.push(tokens[0]);
@@ -22,6 +22,30 @@ export default function parseVirtualAddresses(body) {
   }
   if (valid.length === 0) invalid.push("missing");
   return { valid: valid.sort(), invalid };
+}
+
+function tokenizeOptions(line) {
+  const tokens = [];
+  let token = "";
+  let quote;
+  let escaped = false;
+  const finish = () => {
+    if (token) tokens.push(token);
+    token = "";
+  };
+  for (const character of line.trim()) {
+    if (escaped) {
+      token += character;
+      escaped = false;
+    } else if (quote && character === "\\") escaped = true;
+    else if (quote && character === quote) quote = undefined;
+    else if (quote) token += character;
+    else if (character === '"' || character === "'") quote = character;
+    else if (/\s/u.test(character)) finish();
+    else token += character;
+  }
+  finish();
+  return tokens;
 }
 
 function stripComment(line) {

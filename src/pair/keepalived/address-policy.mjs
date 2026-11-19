@@ -13,6 +13,7 @@ export default function isUsableVirtualAddress(value) {
 }
 
 function isUsableHostAddress(address, prefix) {
+  if (address === "0.0.0.0" || address === "255.255.255.255") return false;
   if (prefix >= 31) return true;
   const value = address.split(".").reduce((result, octet) => (result << 8n) | BigInt(octet), 0n);
   const hostBits = BigInt(32 - prefix);

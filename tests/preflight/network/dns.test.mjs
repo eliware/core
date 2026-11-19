@@ -12,6 +12,12 @@ test("checks SOA timers, DNS targets, and IP record values", () => {
   expect(validateDns("test.zone", invalid).join(" ")).toContain("invalid target name");
 });
 
+test("inherits an omitted record owner and accepts class and TTL in either order", () => {
+  const zone =
+    "@ IN SOA ns.test. host.test. (1 3600 600 86400 300)\n@ IN NS ns.test.\n 1h IN A 192.0.2.1\n IN 2h AAAA 2001:db8::1\n";
+  expect(validateDns("test.zone", zone)).toEqual([]);
+});
+
 test("preserves semicolons and parentheses inside quoted TXT data", () => {
   const zone =
     '@ IN SOA ns.test. host.test. (1 3600 600 86400 300)\n@ IN NS ns.test.\n@ IN TXT "part; two (three)" ; comment\n@ IN TXT "escaped \\\"; still quoted"\n';

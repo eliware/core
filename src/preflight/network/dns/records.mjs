@@ -14,7 +14,7 @@ export default function validateDnsRecord(file, tokens, line) {
   let typeIndex = 1;
   for (let count = 0; count < 2; count += 1) {
     if (
-      /^\d+$/u.test(tokens[typeIndex] ?? "") ||
+      isDnsTtl(tokens[typeIndex]) ||
       ["IN", "CH", "HS"].includes(tokens[typeIndex]?.toUpperCase())
     )
       typeIndex += 1;
@@ -33,4 +33,8 @@ export default function validateDnsRecord(file, tokens, line) {
     validateTextRecord(type, fields);
   if (detail) errors.push(`FAIL ${file}:${line}: ${detail}.`);
   return { errors, type };
+}
+
+function isDnsTtl(value) {
+  return /^(?:\d+[wdhms]?)+$/iu.test(value ?? "");
 }

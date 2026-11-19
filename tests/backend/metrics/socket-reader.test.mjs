@@ -63,3 +63,12 @@ test("rejects socket errors and timeouts", async () => {
     jest.useRealTimers();
   }
 });
+
+test("rejects when a socket closes before its response completes", async () => {
+  const socket = new EventEmitter();
+  socket.setEncoding = jest.fn();
+  socket.destroy = jest.fn();
+  const result = readSocket("/closed.sock", 10_000, () => socket);
+  socket.emit("close");
+  await expect(result).rejects.toThrow("closed before response completed");
+});

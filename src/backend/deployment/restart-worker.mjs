@@ -6,6 +6,7 @@ export default async function runRestartWorker(payload, { run, checkReady, saveS
   let activeStep;
   try {
     activeStep = steps.findLast((step) => step.name === "restart Core service");
+    await saveStatus(payload.status);
     await run("systemctl", ["restart", payload.serviceUnit]);
     if (activeStep) activeStep.status = "passed";
     else steps.push({ name: "restart Core service", status: "passed" });
@@ -31,6 +32,7 @@ export default async function runRestartWorker(payload, { run, checkReady, saveS
     payload.status.finishedAt = new Date().toISOString();
   }
   payload.status.currentStep = null;
+  await saveStatus(payload.status);
   await notifyDeployment({
     status: {
       get: () => payload.status,

@@ -50,6 +50,12 @@ test("preserves an escaped hash inside a quoted address option", () => {
   expect(parseVirtualAddresses(text).invalid).toEqual([]);
 });
 
+test("accepts quoted options that contain spaces", () => {
+  expect(
+    parseVirtualAddresses('virtual_ipaddress {\n 192.0.2.1/24 label "vip primary"\n}'),
+  ).toEqual({ valid: ["192.0.2.1/24"], invalid: [] });
+});
+
 test("parses quoted address options with CRLF line endings", () => {
   const text = 'virtual_ipaddress {\r\n 192.0.2.1/24 label "vip#0"\r\n}\r\n';
   expect(parseVirtualAddresses(text)).toEqual({ valid: ["192.0.2.1/24"], invalid: [] });

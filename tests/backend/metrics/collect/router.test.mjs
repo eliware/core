@@ -55,16 +55,26 @@ test("collects VRRP state from Keepalived", async () => {
   expect(readFile.mock.calls.map(([path]) => path)).toEqual(["/pid", "/vrrp.json"]);
 });
 
-test("rejects invalid Keepalived process IDs and unknown metrics", async () => {
+test("uses the configured VRRP snapshot when signaling is unavailable", async () => {
+  const readFile = jest.fn(async (path) =>
+    path === "/pid" ? "1234" : '{"v1":[{"data":{"iname":"VI_LAN","state":2}}]}',
+  );
+  const signalProcess = jest.fn(() => {
+    throw new Error("permission denied");
+  });
+  const wait = jest.fn();
   await expect(
     collectRouterMetric(
-      { type: "vrrp", pidPath: "/pid" },
-      {
-        readFile: async () => "0",
-        signalProcess: jest.fn(),
-      },
+      { type: "vrrp", pidPath: "/pid", path: "/vrrp.json" },
+      { readFile, signalProcess, wait },
     ),
-  ).rejects.toThrow("Keepalived VRRP process ID is invalid");
+  ).resolves.toMatchObject({ totals: { instances: 1, master: 1 } });
+  expect(signalProcess).toHaveBeenCalledWith(1234, "SIGUSR1");
+  expect(wait).not.toHaveBeenCalled();
+  expect(readFile).toHaveBeenLastCalledWith("/vrrp.json", "utf8");
+});
+
+test("rejects unknown metrics", async () => {
   await expect(collectRouterMetric({ type: "unknown" })).rejects.toThrow("Unsupported metric type");
 });
 

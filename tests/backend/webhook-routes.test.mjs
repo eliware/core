@@ -36,6 +36,15 @@ async function setup({
   return { server, deployment };
 }
 
+function postWebhook(server, body, delivery) {
+  return server.inject({
+    method: "POST",
+    url: "/api/github/webhook",
+    headers: signedHeaders(body, { "x-github-delivery": delivery }),
+    payload: body,
+  });
+}
+
 test("accepts a signed push to the configured branch", async () => {
   const body = JSON.stringify({ ref: "refs/heads/main" });
   const { server, deployment } = await setup();
@@ -168,23 +177,25 @@ test("rejects duplicate deliveries and busy deployment requests", async () => {
 
 test("bounds remembered busy GitHub request IDs", async () => {
   const body = JSON.stringify({ ref: "refs/heads/main" });
-  const deployment = { start: jest.fn(() => ({ accepted: false, status: "busy" })) };
+  const deployment = {
+    start: jest.fn((id) =>
+      id.startsWith("busy") ? { accepted: false, status: "busy" } : { accepted: true, runId: id },
+    ),
+  };
   const { server } = await setup({ deployment, maximumRememberedDeliveries: 1 });
-  for (const id of ["busy-1", "busy-2"])
-    await server.inject({
-      method: "POST",
-      url: "/api/github/webhook",
-      headers: signedHeaders(body, { "x-github-delivery": id }),
-      payload: body,
-    });
-  await server.inject({
-    method: "POST",
-    url: "/api/github/webhook",
-    headers: signedHeaders(body, { "x-github-delivery": "busy-1" }),
-    payload: body,
-  });
-  expect(deployment.start).toHaveBeenCalledTimes(3);
+  for (const id of ["accepted-1", "accepted-2"]) await postWebhook(server, body, id);
+  for (const id of ["busy-1", "busy-2"]) await postWebhook(server, body, id);
+  const duplicate = await postWebhook(server, body, "accepted-1");
+  expect(duplicate.json()).toEqual({ accepted: false, reason: "duplicate delivery" });
+  expect(deployment.start).toHaveBeenCalledTimes(4);
   await server.close();
+
+  const busyDeployment = { start: jest.fn(() => ({ accepted: false, status: "busy" })) };
+  const busyServer = await setup({ deployment: busyDeployment, maximumRememberedDeliveries: 1 });
+  for (const id of ["busy-1", "busy-2"]) await postWebhook(busyServer.server, body, id);
+  await postWebhook(busyServer.server, body, "busy-1");
+  expect(busyDeployment.start).toHaveBeenCalledTimes(3);
+  await busyServer.server.close();
 });
 
 test("returns unavailable when deployment admission cannot start", async () => {
@@ -201,16 +212,9 @@ test("returns unavailable when deployment admission cannot start", async () => {
   await server.close();
 });
 
-test("rejects oversized delivery IDs and bounds remembered deliveries", async () => {
+test("retains accepted delivery IDs beyond the busy delivery cache limit", async () => {
   const body = JSON.stringify({ ref: "refs/heads/main" });
   const { server, deployment } = await setup();
-  const oversized = await server.inject({
-    method: "POST",
-    url: "/api/github/webhook",
-    headers: signedHeaders(body, { "x-github-delivery": "x".repeat(101) }),
-    payload: body,
-  });
-  expect(oversized.statusCode).toBe(400);
   for (let index = 0; index < 1001; index += 1) {
     const response = await server.inject({
       method: "POST",
@@ -227,15 +231,8 @@ test("rejects oversized delivery IDs and bounds remembered deliveries", async ()
     payload: body,
   });
   expect(duplicate.statusCode).toBe(202);
-  expect(deployment.start).toHaveBeenCalledTimes(1002);
-  const recentDuplicate = await server.inject({
-    method: "POST",
-    url: "/api/github/webhook",
-    headers: signedHeaders(body, { "x-github-delivery": "delivery-1000" }),
-    payload: body,
-  });
-  expect(recentDuplicate.json()).toEqual({ accepted: false, reason: "duplicate delivery" });
-  expect(deployment.start).toHaveBeenCalledTimes(1002);
+  expect(deployment.start).toHaveBeenCalledTimes(1001);
+  expect(duplicate.json()).toEqual({ accepted: false, reason: "duplicate delivery" });
   await server.close();
 });
 

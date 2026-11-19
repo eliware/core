@@ -1,4 +1,5 @@
-import isValidServerAddress from "./server-address.mjs";
+import isValidServerDirective from "./server/directive.mjs";
+import isValidBindDirective from "./bind-directive.mjs";
 
 const allowed = {
   global: new Set([
@@ -82,12 +83,14 @@ export default function validateHaproxy(file, { sections: parsedSections }) {
       const nameOfDirective = value.split(/\s+/u)[0];
       if (!allowed[kind].has(nameOfDirective))
         errors.push(`FAIL ${file}:${directiveLine}: unknown ${kind} directive.`);
-      if (/^bind\s+\S+(?:\s|$)/u.test(value)) state.bound = true;
-      const server = value.match(/^server\s+\S+\s+(\S+)/u);
-      if (server && isValidServerAddress(server[1])) state.serverCount += 1;
+      const bind = value.match(/^bind\s+(\S+)/u);
+      if (bind && isValidBindDirective(value)) state.bound = true;
+      if (/^bind(?:\s|$)/u.test(value) && !isValidBindDirective(value))
+        errors.push(`FAIL ${file}:${directiveLine}: bind needs a valid address and port.`);
+      if (/^server\s+/u.test(value) && isValidServerDirective(value)) state.serverCount += 1;
       const reference = value.match(/^(?:default_backend|use_backend)\s+(\S+)/u);
       if (reference) references.push(reference[1]);
-      if (/^server\s+/u.test(value) && (!server || !isValidServerAddress(server[1])))
+      if (/^server\s+/u.test(value) && !isValidServerDirective(value))
         errors.push(`FAIL ${file}:${directiveLine}: server needs a valid address and port.`);
     }
     sections.set(key, state);

@@ -35,6 +35,9 @@ test("restarts Core, checks readiness, and persists success", async () => {
     { name: "check Core health after restart", status: "passed" },
   ]);
   expect(saveStatus).toHaveBeenCalledWith(expect.objectContaining({ status: "succeeded" }));
+  expect(saveStatus).toHaveBeenCalledTimes(3);
+  expect(saveStatus.mock.invocationCallOrder[0]).toBeLessThan(run.mock.invocationCallOrder[0]);
+  expect(saveStatus.mock.invocationCallOrder[1]).toBeLessThan(notify.mock.invocationCallOrder[0]);
   expect(payload.status.notificationError).toBe("Discord notification failed.");
 });
 

@@ -1,5 +1,5 @@
 import { expect, test } from "@jest/globals";
-import isValidServerAddress from "../../../../src/preflight/text/haproxy/server-address.mjs";
+import isValidServerAddress from "../../../../../src/preflight/text/haproxy/server/address.mjs";
 
 test.each([
   ["unix@/run/haproxy.sock", true],
@@ -22,4 +22,13 @@ test.each([
   ["[not-ipv6]:80", false],
 ])("validates HAProxy server address %s", (address, expected) => {
   expect(isValidServerAddress(address)).toBe(expected);
+});
+
+test.each([
+  ["*:443", true, true],
+  [":80", true, true],
+  [":::80", true, true],
+  ["*:443", false, false],
+])("validates wildcard bind address %s", (address, allowWildcard, expected) => {
+  expect(isValidServerAddress(address, { allowWildcard })).toBe(expected);
 });

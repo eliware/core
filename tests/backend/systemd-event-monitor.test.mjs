@@ -101,8 +101,53 @@ test("handles empty unit lists, spawn errors, and stream exits", async () => {
   child.emit("error", new Error("journalctl failed"));
   child.emit("close", 1);
   expect(log.warn).toHaveBeenCalledWith("Systemd event stream is unavailable");
-  expect(log.warn).toHaveBeenCalledWith("Systemd event stream stopped");
   await monitor.stop();
+});
+
+test("restarts journal monitoring after the stream closes", async () => {
+  const first = childProcess();
+  const second = childProcess();
+  const spawn = jest.fn().mockReturnValueOnce(first).mockReturnValueOnce(second);
+  let restart;
+  const timeout = { unref: jest.fn() };
+  const setTimeoutFn = jest.fn((callback, delay) => {
+    restart = callback;
+    expect(delay).toBe(250);
+    return timeout;
+  });
+  const clearTimeoutFn = jest.fn();
+  const monitor = createSystemdEventMonitor({
+    units: ["named.service"],
+    spawn,
+    setTimeoutFn,
+    clearTimeoutFn,
+    restartDelayMs: 250,
+  });
+  monitor.start();
+  first.emit("close", 1);
+  expect(setTimeoutFn).toHaveBeenCalledTimes(1);
+  expect(timeout.unref).toHaveBeenCalledTimes(1);
+  restart();
+  expect(spawn).toHaveBeenCalledTimes(2);
+  await monitor.stop();
+  expect(second.kill).toHaveBeenCalledWith("SIGTERM");
+
+  const stoppedChild = childProcess();
+  let canceledRestart;
+  const stoppedMonitor = createSystemdEventMonitor({
+    units: ["named.service"],
+    spawn: () => stoppedChild,
+    setTimeoutFn: (callback) => {
+      canceledRestart = callback;
+      return timeout;
+    },
+    clearTimeoutFn,
+  });
+  stoppedMonitor.start();
+  stoppedChild.emit("close", 1);
+  await stoppedMonitor.stop();
+  expect(clearTimeoutFn).toHaveBeenCalledWith(timeout);
+  canceledRestart();
 });
 
 test("logs when an event callback fails", async () => {

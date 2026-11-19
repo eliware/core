@@ -62,6 +62,31 @@ test.each(["::1:80", "ipv6@localhost:80", "ipv6@127.0.0.1:80", "ipv4@[::1]:80", 
   },
 );
 
+test("validates server names and remaining server options", () => {
+  const valid =
+    "global\ndefaults\nbackend app\n server api-1 127.0.0.1:8080 check inter 2s fall 3 rise 2 weight 10\n";
+  expect(validate(valid)).toEqual([]);
+  for (const directive of [
+    "server bad/name 127.0.0.1:8080 check",
+    "server api 127.0.0.1:8080 unknown-option",
+    "server api 127.0.0.1:8080 inter",
+    "server api 127.0.0.1:8080 verify invalid",
+  ])
+    expect(validate(`global\ndefaults\nbackend app\n ${directive}\n`)).toContain(
+      "FAIL haproxy.cfg:4: server needs a valid address and port.",
+    );
+});
+
+test.each(["bind", "bind invalid", "bind :0"])("rejects malformed bind directive %s", (bind) => {
+  expect(validate(`global\ndefaults\nfrontend web\n ${bind}\n`)).toContain(
+    "FAIL haproxy.cfg:4: bind needs a valid address and port.",
+  );
+});
+
+test.each(["bind :80", "bind *:443", "bind [::]:443"])("accepts valid bind address %s", (bind) => {
+  expect(validate(`global\ndefaults\nfrontend web\n ${bind}\n`)).toEqual([]);
+});
+
 test("rejects missing names, duplicate sections, unknown directives, and bad addresses", () => {
   expect(
     validate("global\nglobal\n defaults\nfrontend\n unknown value\nbackend api\n server api bad\n"),

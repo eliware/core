@@ -34,17 +34,17 @@ test("uses default Keepalived paths", async () => {
   ]);
 });
 
-test("rejects an invalid process ID without signaling Keepalived", async () => {
+test("uses the configured state when the process ID is invalid", async () => {
   const signalProcess = jest.fn();
   await expect(
     collectVrrp(
       { pidPath: "/pid" },
       {
-        readFile: async () => "0",
+        readFile: async (path) => (path === "/pid" ? "0" : state),
         signalProcess,
         wait: jest.fn(),
       },
     ),
-  ).rejects.toThrow("Keepalived VRRP process ID is invalid");
+  ).resolves.toMatchObject({ totals: { instances: 1, master: 1 } });
   expect(signalProcess).not.toHaveBeenCalled();
 });
