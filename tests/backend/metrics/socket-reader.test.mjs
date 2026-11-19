@@ -1,6 +1,10 @@
 import { expect, jest, test } from "@jest/globals";
 import { EventEmitter } from "node:events";
-import readSocket from "../../../src/backend/metrics/socket-reader.mjs";
+
+let defaultSocket;
+const defaultConnect = jest.fn(() => defaultSocket);
+jest.unstable_mockModule("node:net", () => ({ createConnection: defaultConnect }));
+const { default: readSocket } = await import("../../../src/backend/metrics/socket-reader.mjs");
 
 const response =
   "# pxname,svname,status,scur,stot,bin,bout,econ,eresp\nweb,BACKEND,UP,0,1,2,3,0,0\n";
@@ -21,6 +25,21 @@ test("reads HAProxy stats from the Unix socket", async () => {
   expect(connect).toHaveBeenCalledWith("/run/haproxy.sock");
   expect(socket.setEncoding).toHaveBeenCalledWith("utf8");
   expect(socket.end).toHaveBeenCalledWith("show stat\n");
+});
+
+test("uses the default connection adapter", async () => {
+  const socket = new EventEmitter();
+  defaultSocket = socket;
+  socket.setEncoding = jest.fn();
+  socket.end = jest.fn(() => {
+    socket.emit("data", response);
+    socket.emit("end");
+  });
+  socket.destroy = jest.fn();
+  const result = readSocket("/run/default.sock", 10_000);
+  socket.emit("connect");
+  await expect(result).resolves.toBe(response);
+  expect(defaultConnect).toHaveBeenCalledWith("/run/default.sock");
 });
 
 test("rejects socket errors and timeouts", async () => {

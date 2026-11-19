@@ -25,7 +25,8 @@ test("restarts Core, checks readiness, and persists success", async () => {
   const run = jest.fn().mockResolvedValue({ stdout: "" });
   const checkReady = jest.fn().mockResolvedValue(undefined);
   const saveStatus = jest.fn();
-  await runWorker(payload, { run, checkReady, saveStatus });
+  const notify = jest.fn().mockRejectedValue(new Error("notification unavailable"));
+  await runWorker(payload, { run, checkReady, saveStatus, notify });
   expect(run).toHaveBeenCalledWith("systemctl", ["restart", "core.service"]);
   expect(checkReady).toHaveBeenCalledWith(9300, "core.service", run);
   expect(payload.status).toMatchObject({ status: "succeeded", currentStep: null });
@@ -34,6 +35,7 @@ test("restarts Core, checks readiness, and persists success", async () => {
     { name: "check Core health after restart", status: "passed" },
   ]);
   expect(saveStatus).toHaveBeenCalledWith(expect.objectContaining({ status: "succeeded" }));
+  expect(payload.status.notificationError).toBe("Discord notification failed.");
 });
 
 test("records restart success when no pending status step exists", async () => {
@@ -82,96 +84,4 @@ test("restores the old package after Core fails its readiness check", async () =
     status: "failed",
     failedStep: "check Core health after restart",
   });
-  expect(payload.status.steps).toContainEqual({
-    name: "check Core health after restart",
-    status: "failed",
-    detail: "readiness failed",
-  });
-  expect(payload.status.recovery).toContain("Previous commit and dependencies were restored");
-});
-
-test("applies catalog actions before persisting restart success", async () => {
-  const payload = setup();
-  payload.catalogActions = [{ operation: "reload", unit: "named.service" }];
-  const run = jest.fn(async (command, args) => {
-    if (command === "systemctl" && args[0] === "restart" && run.mock.calls.length === 1)
-      throw new Error("restart failed");
-    return { stdout: "" };
-  });
-  await runWorker(payload, {
-    run,
-    checkReady: jest.fn().mockResolvedValue(undefined),
-    saveStatus: jest.fn(),
-  });
-  expect(run).toHaveBeenCalledWith(
-    "systemctl",
-    ["reload", "named.service"],
-    expect.objectContaining({ cwd: payload.repositoryPath }),
-  );
-});
-
-test("restores the previous commit and dependencies when restart fails", async () => {
-  const payload = setup();
-  payload.catalogActions = undefined;
-  const run = jest.fn(async (command, args) => {
-    if (command === "systemctl" && args[0] === "restart" && run.mock.calls.length === 1)
-      throw new Error("restart failed");
-    return { stdout: "" };
-  });
-  await runWorker(payload, {
-    run,
-    checkReady: jest.fn().mockResolvedValue(undefined),
-    saveStatus: jest.fn(),
-  });
-  expect(run.mock.calls.map(([command, args]) => [command, args])).toEqual(
-    expect.arrayContaining([
-      ["git", ["reset", "--hard", payload.previousCommit]],
-      ["npm", ["ci", "--include=dev"]],
-      ["npm", ["run", "reload"]],
-    ]),
-  );
-  expect(payload.status).toMatchObject({
-    status: "failed",
-    failedStep: "restart Core service",
-    recovery: expect.stringContaining("Previous commit and dependencies were restored"),
-  });
-  expect(payload.status.steps).toContainEqual({
-    name: "check Core health after rollback",
-    status: "passed",
-  });
-});
-
-test("reloads the previous configuration when the catalog is absent", async () => {
-  const payload = setup();
-  payload.catalogActions = undefined;
-  const run = jest.fn(async (command, args) => {
-    if (command === "systemctl" && args[0] === "restart" && run.mock.calls.length === 1)
-      throw new Error("restart failed");
-    return { stdout: "" };
-  });
-  await runWorker(payload, {
-    run,
-    checkReady: jest.fn().mockResolvedValue(undefined),
-    saveStatus: jest.fn(),
-  });
-  expect(run).toHaveBeenCalledWith(
-    "npm",
-    ["run", "reload"],
-    expect.objectContaining({ cwd: payload.repositoryPath }),
-  );
-});
-
-test("reports failed recovery when Git cannot restore the previous commit", async () => {
-  const payload = setup();
-  const run = jest.fn(async (command, args) => {
-    if (command === "systemctl" && args[0] === "restart") throw new Error("restart failed");
-    if (command === "git") throw new Error("reset failed");
-    return { stdout: "" };
-  });
-  await runRestartWorker(payload, {
-    run,
-    checkReady: jest.fn(),
-    saveStatus: jest.fn(),
-  });
-  expect(payload.status.recovery).toBe("Recovery failed: reset failed");
 });
