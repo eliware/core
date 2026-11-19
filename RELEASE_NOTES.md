@@ -11,6 +11,7 @@
 - Require explicit snowflake identities and validate Git deployment recovery targets.
 - Keep webhook request handling idempotent when a deployment is busy.
 - Deployment locks use a private directory for the application user.
+- Keep `/ready` at HTTP 503 until both listeners start and after shutdown begins.
 
 ## 15.2.0 — 2026-11-18
 

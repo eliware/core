@@ -130,23 +130,23 @@ They do not change the runtime server configuration.
 
 The server serves the app page, built browser files, public assets, and status routes.
 
-| Method | Path                               | Result                                     |
-| ------ | ---------------------------------- | ------------------------------------------ |
-| `GET`  | `/`                                | Serves `public/index.html`.                |
-| `GET`  | `/client.js`                       | Serves `dist/client.js`.                   |
-| `GET`  | `/styles.css`                      | Serves `public/styles.css`.                |
-| `GET`  | `/service-worker.js`               | Serves `dist/service-worker.js`.           |
-| `GET`  | `/manifest.webmanifest`            | Serves app install metadata.               |
-| `GET`  | `/icons/template.svg`              | Serves the general app icon.               |
-| `GET`  | `/icons/template-maskable.svg`     | Serves the scalable maskable icon.         |
-| `GET`  | `/icons/template-192.png`          | Serves the 192 by 192 pixel icon.          |
-| `GET`  | `/icons/template-512.png`          | Serves the 512 by 512 pixel icon.          |
-| `GET`  | `/icons/template-maskable-512.png` | Serves the 512 by 512 pixel maskable icon. |
-| `GET`  | `/screenshots/core-desktop.png`    | Serves the desktop preview.                |
-| `GET`  | `/screenshots/core-mobile.png`     | Serves the mobile preview.                 |
-| `GET`  | `/health`                          | Returns `{"status":"ok"}`.                 |
-| `GET`  | `/ready`                           | Returns `{"status":"ready"}`.              |
-| `GET`  | `/api/status`                      | Returns health and deployment status.      |
+| Method | Path                               | Result                                                                                    |
+| ------ | ---------------------------------- | ----------------------------------------------------------------------------------------- |
+| `GET`  | `/`                                | Serves `public/index.html`.                                                               |
+| `GET`  | `/client.js`                       | Serves `dist/client.js`.                                                                  |
+| `GET`  | `/styles.css`                      | Serves `public/styles.css`.                                                               |
+| `GET`  | `/service-worker.js`               | Serves `dist/service-worker.js`.                                                          |
+| `GET`  | `/manifest.webmanifest`            | Serves app install metadata.                                                              |
+| `GET`  | `/icons/template.svg`              | Serves the general app icon.                                                              |
+| `GET`  | `/icons/template-maskable.svg`     | Serves the scalable maskable icon.                                                        |
+| `GET`  | `/icons/template-192.png`          | Serves the 192 by 192 pixel icon.                                                         |
+| `GET`  | `/icons/template-512.png`          | Serves the 512 by 512 pixel icon.                                                         |
+| `GET`  | `/icons/template-maskable-512.png` | Serves the 512 by 512 pixel maskable icon.                                                |
+| `GET`  | `/screenshots/core-desktop.png`    | Serves the desktop preview.                                                               |
+| `GET`  | `/screenshots/core-mobile.png`     | Serves the mobile preview.                                                                |
+| `GET`  | `/health`                          | Returns `{"status":"ok"}`.                                                                |
+| `GET`  | `/ready`                           | Returns HTTP 200 after both listeners start. Returns HTTP 503 during startup or shutdown. |
+| `GET`  | `/api/status`                      | Returns health and deployment status.                                                     |
 
 Unsupported methods on page and asset routes return HTTP 405.
 Unknown paths return HTTP 404.

@@ -17,6 +17,7 @@ export default async function startWebApplication(dependencies) {
     dependencies,
     log,
   );
+  let ready = false;
   dependencies.registerHandlers({ log });
   const server = dependencies.createServer();
   const webhookServer = dependencies.createServer();
@@ -34,6 +35,7 @@ export default async function startWebApplication(dependencies) {
   dependencies.registerStatusRoutes(server, {
     getHealthStatus: healthMonitor.getStatus,
     getDeploymentStatus: deployment.getStatus,
+    isReady: () => ready,
   });
   const shutdownHook = dependencies.createShutdownHook({
     server,
@@ -42,13 +44,18 @@ export default async function startWebApplication(dependencies) {
     stopHealthMonitor: healthMonitor.stop,
     isListening: (item) => openServers.has(item),
   });
-  dependencies.registerSignals({ log, shutdownHook });
+  const stopApplication = async () => {
+    ready = false;
+    return shutdownHook();
+  };
+  dependencies.registerSignals({ log, shutdownHook: stopApplication });
   try {
     openServers.add(server);
     await server.listen({ port: tcpEndpoint, host: "127.0.0.1" });
     openServers.add(webhookServer);
     await webhookServer.listen({ port: webhookEndpoint, host: "127.0.0.1" });
     healthMonitor.start();
+    ready = true;
   } catch (error) {
     await shutdownHook();
     throw error;

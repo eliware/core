@@ -118,6 +118,7 @@ test("reports setup failure when releasing its lock also fails", async () => {
 
   expect(release).toHaveBeenCalledTimes(1);
   expect(state.reportSetupFailure).toHaveBeenCalledWith(failure, "push", "run-1");
+  expect(state.admit("next", state.execute)).toEqual({ accepted: true, runId: "run-1" });
 });
 
 test("contains a rejection from setup failure reporting", async () => {

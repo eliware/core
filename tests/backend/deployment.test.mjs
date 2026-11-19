@@ -86,7 +86,10 @@ test("runs the deployment steps in order and records success", async () => {
     "npm run reload",
   ]);
   expect(manager.getStatus().lockReleaseError).toBe("Deployment lock cleanup failed.");
-  expect(manager.start("next-delivery")).toEqual({ accepted: false, status: "busy" });
+  expect(manager.start("next-delivery")).toMatchObject({
+    accepted: true,
+    runId: expect.any(String),
+  });
 });
 
 test("uses the default command adapter and clock", async () => {

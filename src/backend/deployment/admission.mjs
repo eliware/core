@@ -27,9 +27,12 @@ export default function createDeploymentAdmission({
     let released = false;
     const release = () => {
       if (released) return;
-      releaseLock?.();
-      released = true;
-      active = false;
+      try {
+        releaseLock?.();
+        released = true;
+      } finally {
+        active = false;
+      }
     };
     void execute(event, runId, release)
       .catch(async (error) => {

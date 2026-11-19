@@ -69,6 +69,7 @@ test.each([
     expect(deps.values.registerStatusRoutes).toHaveBeenCalledWith(deps.server, {
       getHealthStatus: deps.healthMonitor.getStatus,
       getDeploymentStatus: deps.deployment.getStatus,
+      isReady: expect.any(Function),
     });
     expect(deps.values.registerWebhookRoutes).toHaveBeenCalledWith(deps.webhookServer, {
       secret: undefined,
@@ -93,7 +94,11 @@ test.each([
     });
     expect(typeof deps.signals.shutdownHook).toBe("function");
     expect(deps.healthMonitor.start).toHaveBeenCalledTimes(1);
-    expect(deps.signals.shutdownHook).toBe(deps.shutdown);
+    const isReady = deps.values.registerStatusRoutes.mock.calls[0][1].isReady;
+    expect(isReady()).toBe(true);
+    await deps.signals.shutdownHook();
+    expect(isReady()).toBe(false);
+    expect(deps.shutdown).toHaveBeenCalledTimes(1);
   },
 );
 
@@ -127,6 +132,7 @@ test("closes both listeners after startup fails", async () => {
   const isListening = deps.values.createShutdownHook.mock.calls[0][0].isListening;
   expect(isListening(deps.webhookServer)).toBe(true);
   expect(deps.healthMonitor.start).not.toHaveBeenCalled();
+  expect(deps.values.registerStatusRoutes.mock.calls[0][1].isReady()).toBe(false);
 });
 
 test("closes a dashboard listener that opens before listen rejects", async () => {

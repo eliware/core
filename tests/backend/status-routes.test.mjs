@@ -21,6 +21,14 @@ test.each([
   expect(result.json()).toEqual(expected);
 });
 
+test("reports not ready until all application listeners start", async () => {
+  server = Fastify({ logger: false });
+  registerStatusRoutes(server, { isReady: () => false });
+  const response = await server.inject({ method: "GET", url: "/ready" });
+  expect(response.statusCode).toBe(503);
+  expect(response.json()).toEqual({ status: "starting" });
+});
+
 test("returns health and deployment snapshots from the read-only status endpoint", async () => {
   server = Fastify({ logger: false });
   registerStatusRoutes(server, {
