@@ -28,7 +28,7 @@ export default async function startWebApplication(dependencies) {
   dependencies.registerWebhookRoutes(webhookServer, {
     secret: githubWebhookSecret,
     branch: githubBranch,
-    enabled: Boolean(repositoryPath),
+    enabled: Boolean(repositoryPath && githubWebhookSecret),
     deployment,
   });
   dependencies.registerStatusRoutes(server, {

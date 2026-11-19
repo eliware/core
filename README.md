@@ -109,9 +109,9 @@ Read the [CLI guide](docs/cli-application.md) for command arguments and validati
 
 ## Routes
 
-The dashboard serves page, asset, health, readiness, status, and API example routes.
+The dashboard serves page, asset, health, readiness, and status routes.
 The separate webhook listener accepts `POST /api/github/webhook`.
-Read the [web application guide](docs/web-application.md#routes-and-api-example) for route details and responses.
+Read the [web application guide](docs/web-application.md#routes) for route details and responses.
 
 ## Assets
 

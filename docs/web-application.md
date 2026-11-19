@@ -6,7 +6,7 @@ This guide explains how to configure and operate the Core dashboard and webhook 
 
 - [Get started](#get-started)
 - [Configuration](#configuration)
-- [Routes and API example](#routes-and-api-example)
+- [Routes](#routes)
 - [Browser app and offline behavior](#browser-app-and-offline-behavior)
 - [Deployment behavior](#deployment-behavior)
 - [Health monitoring and notifications](#health-monitoring-and-notifications)
@@ -37,18 +37,18 @@ Open `http://localhost:9300/` to view the dashboard.
 The server reads values from its process environment and the `.env` file in its working directory.
 Copy `.env.example` to `.env`, then set values for each router.
 
-| Name                    | Required  | Default                         | Accepted values                                                  |
-| ----------------------- | --------- | ------------------------------- | ---------------------------------------------------------------- |
-| `PORT`                  | No        | `9300`                          | Dashboard port from `1` through `65535`.                         |
-| `WEBHOOK_PORT`          | No        | `9301`                          | Webhook port from `1` through `65535`, separate from `PORT`.     |
-| `LOG_LEVEL`             | No        | `info`                          | `error`, `warn`, `info`, `http`, `verbose`, `debug`, or `silly`. |
-| `CORE_REPO_PATH`        | For hooks | None                            | Repository path. Required to enable deployment hooks.            |
-| `GITHUB_WEBHOOK_SECRET` | For hooks | —                               | Secret used to authenticate GitHub webhook signatures.           |
-| `DISCORD_WEBHOOK_URL`   | No        | —                               | Discord webhook URL for rich embed notifications.                |
-| `CORE_GITHUB_BRANCH`    | No        | `main`                          | Branch deployed from the configuration repository.               |
-| `CORE_HEALTH_UNITS`     | No        | Empty list                      | Unit names to monitor. An empty list disables health monitoring. |
-| `SNOWFLAKE_WORKER_ID`   | No        | `0`                             | Snowflake worker value from `0` through `31`.                    |
-| `SNOWFLAKE_PROCESS_ID`  | No        | `process.pid % 32` when omitted | Optional process value from `0` through `31`.                    |
+| Name                    | Required  | Default            | Accepted values                                                  |
+| ----------------------- | --------- | ------------------ | ---------------------------------------------------------------- |
+| `PORT`                  | No        | `9300`             | Dashboard port from `1` through `65535`.                         |
+| `WEBHOOK_PORT`          | No        | `9301`             | Webhook port from `1` through `65535`, separate from `PORT`.     |
+| `LOG_LEVEL`             | No        | `info`             | `error`, `warn`, `info`, `http`, `verbose`, `debug`, or `silly`. |
+| `CORE_REPO_PATH`        | For hooks | None               | Repository path. Required to enable deployment hooks.            |
+| `GITHUB_WEBHOOK_SECRET` | For hooks | —                  | Secret used to authenticate GitHub webhook signatures.           |
+| `DISCORD_WEBHOOK_URL`   | No        | —                  | Discord webhook URL for rich embed notifications.                |
+| `CORE_GITHUB_BRANCH`    | No        | `main`             | Branch deployed from the configuration repository.               |
+| `CORE_HEALTH_UNITS`     | No        | Empty list         | Unit names to monitor. An empty list disables health monitoring. |
+| `SNOWFLAKE_WORKER_ID`   | No        | `0`                | Snowflake worker value from `0` through `31`.                    |
+| `SNOWFLAKE_PROCESS_ID`  | No        | `process.pid % 32` | Optional process value from `0` through `31`.                    |
 
 The server rejects invalid ports and rejects equal dashboard and webhook ports.
 The dashboard and webhook TCP endpoint numbers must not be the same.
@@ -58,10 +58,9 @@ The `LOG_LEVEL` value sets the minimum level for application log messages.
 
 The screenshot and PWA audit commands also read these process environment values:
 
-| Name              | Default                  | Purpose                                  |
-| ----------------- | ------------------------ | ---------------------------------------- |
-| `WEB_URL`         | `http://127.0.0.1:9300/` | Server URL used by browser checks.       |
-| `SCREENSHOT_PATH` | `artifacts/home.png`     | Output path used by the screenshot tool. |
+| Name      | Default                  | Purpose                            |
+| --------- | ------------------------ | ---------------------------------- |
+| `WEB_URL` | `http://127.0.0.1:9300/` | Server URL used by browser checks. |
 
 These values do not configure the web server.
 
@@ -69,6 +68,7 @@ Set `PORT` to `9300` for the read-only dashboard. Set `WEBHOOK_PORT` to a distin
 The application rejects equal dashboard and webhook ports.
 
 Set both `CORE_REPO_PATH` and `GITHUB_WEBHOOK_SECRET` to enable deployment hooks.
+The application disables webhook routes when one value is missing.
 Configure the GitHub webhook to send JSON push events to `http://<router>:<WEBHOOK_PORT>/api/github/webhook`.
 Forward that external address and port to `127.0.0.1` on `WEBHOOK_PORT`.
 
@@ -122,7 +122,7 @@ Keep `.env` out of Git. The example file contains placeholders only.
 The package version, repository URLs, and release tags are metadata or deployment settings.
 They do not change the runtime server configuration.
 
-## Routes and API example
+## Routes
 
 The server serves the app page, built browser files, public assets, and status routes.
 

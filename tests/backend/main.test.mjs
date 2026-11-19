@@ -103,6 +103,20 @@ test("uses the configured log level", async () => {
   expect(deps.values.createLogger).toHaveBeenCalledWith({ level: "debug" });
 });
 
+test("disables webhook routes when the repository path lacks a secret", async () => {
+  const deps = dependencies({
+    tcpEndpoint: 8082,
+    webhookEndpoint: 9303,
+    logLevel: "info",
+    repositoryPath: "/router/config",
+  });
+  await startWebApplication(deps.values);
+  expect(deps.values.registerWebhookRoutes).toHaveBeenCalledWith(
+    deps.webhookServer,
+    expect.objectContaining({ enabled: false }),
+  );
+});
+
 test("closes both listeners after startup fails", async () => {
   const deps = dependencies({ tcpEndpoint: 8083, webhookEndpoint: 9304, logLevel: "info" });
   deps.webhookServer.listen.mockRejectedValue(new Error("Port is in use"));
