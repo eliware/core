@@ -24,6 +24,7 @@ test("records a clean worktree check", async () => {
 
 test.each([
   [{ stdout: " M package.json\n" }, "Configuration repository has uncommitted changes."],
+  [{ stdout: "", status: 1 }, "Git status exited with code 1."],
   [new Error("status failed"), "status failed"],
 ])("rejects an invalid worktree check", async (result, message) => {
   const steps = [];

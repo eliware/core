@@ -11,6 +11,9 @@ export default async function verifyDeploymentWorktree({
   onStart(name, steps);
   try {
     const worktree = await run("git", ["status", "--porcelain"], { cwd: repositoryPath });
+    const exitCode = worktree?.code ?? worktree?.exitCode ?? worktree?.status;
+    if (exitCode !== undefined && exitCode !== 0)
+      throw new Error(`Git status exited with code ${exitCode}.`);
     if (String(worktree.stdout ?? "").trim())
       throw new Error("Configuration repository has uncommitted changes.");
     result.status = "passed";

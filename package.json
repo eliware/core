@@ -32,6 +32,7 @@
     "RELEASE_NOTES.md",
     "bin/",
     "specs/",
+    ".env.example",
     "public/"
   ],
   "scripts": {

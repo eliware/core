@@ -15,6 +15,10 @@ test.each([
 
 test.each([
   [["@", "IN", "SOA", "ns.test.", "host.test.", "1"], "SOA record needs five numeric timers"],
+  [
+    ["@", "IN", "SOA", "ns.test.", "host.test.", "1", "not-a-time", "600", "86400", "300"],
+    "SOA record needs five numeric timers",
+  ],
   [["@", "IN", "NS", "bad/name"], "NS record has an invalid target name"],
   [["@", "IN", "A", "not-an-ip"], "A record has an invalid address"],
   [["@", "IN", "AAAA", "192.0.2.1"], "AAAA record has an invalid address"],

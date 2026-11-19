@@ -150,7 +150,7 @@ Unknown paths return HTTP 404.
 
 The webhook listener accepts `POST /api/github/webhook` on `WEBHOOK_PORT`.
 The dashboard cannot edit configuration or launch deployments.
-The dashboard has no user authentication. Limit access with the router network and firewall.
+The dashboard has no user authentication. Allow proxy and firewall access from approved clients only.
 
 The API example accepts a lowercase letter, digit, or hyphen in `exampleId`.
 The ID must contain between 1 and 40 characters.

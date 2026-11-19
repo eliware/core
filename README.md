@@ -79,7 +79,7 @@ Read the [web application guide](docs/web-application.md) for server, webhook, a
 ## Security
 
 Keep credentials, private data, and runtime state out of Git.
-Limit dashboard access because the dashboard does not provide user authentication.
+Allow proxy and firewall access from approved clients only because the application has no authentication.
 
 ## Configuration
 
