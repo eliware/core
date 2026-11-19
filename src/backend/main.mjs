@@ -25,7 +25,6 @@ export default async function startWebApplication(dependencies) {
     publicRoot: dependencies.resolve("public"),
     buildRoot: dependencies.resolve("dist"),
   });
-  dependencies.registerApiExampleRoutes(server);
   dependencies.registerWebhookRoutes(webhookServer, {
     secret: githubWebhookSecret,
     branch: githubBranch,

@@ -39,8 +39,11 @@ export default function acquireDeploymentLock(repositoryPath, options = {}) {
         throw new Error("Another deployment process is active.");
       fileSystem.unlinkSync(lockPath);
     } finally {
-      fileSystem.closeSync(recoveryDescriptor);
-      fileSystem.unlinkSync(recoveryPath);
+      try {
+        fileSystem.closeSync(recoveryDescriptor);
+      } finally {
+        fileSystem.unlinkSync(recoveryPath);
+      }
     }
     descriptor = fileSystem.openSync(lockPath, "wx", 0o600);
   }

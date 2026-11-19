@@ -40,7 +40,6 @@ function dependencies(
       registerSignals: jest.fn((value) => Object.assign(signals, value)),
       createServer: jest.fn().mockReturnValueOnce(server).mockReturnValueOnce(webhookServer),
       registerWebRoutes: jest.fn(),
-      registerApiExampleRoutes: jest.fn(),
       registerStatusRoutes: jest.fn(),
       createShutdownHook: jest.fn(() => shutdown),
       createHealthMonitor: jest.fn(() => healthMonitor),
@@ -67,7 +66,6 @@ test.each([
       publicRoot: "/app/public",
       buildRoot: "/app/dist",
     });
-    expect(deps.values.registerApiExampleRoutes).toHaveBeenCalledWith(deps.server);
     expect(deps.values.registerStatusRoutes).toHaveBeenCalledWith(deps.server, {
       getHealthStatus: deps.healthMonitor.getStatus,
       getDeploymentStatus: deps.deployment.getStatus,

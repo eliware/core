@@ -27,6 +27,12 @@ test("accepts a backend reference to a listen section", () => {
   ).toEqual([]);
 });
 
+test("requires a valid server address before counting a backend server", () => {
+  expect(validate("global\ndefaults\nbackend app\n server app missing-port\n")).toContain(
+    "FAIL haproxy.cfg: app needs a server directive.",
+  );
+});
+
 test("rejects missing names, duplicate sections, unknown directives, and bad addresses", () => {
   expect(
     validate("global\nglobal\n defaults\nfrontend\n unknown value\nbackend api\n server api bad\n"),
@@ -36,5 +42,6 @@ test("rejects missing names, duplicate sections, unknown directives, and bad add
     "FAIL haproxy.cfg:5: unknown frontend directive.",
     "FAIL haproxy.cfg:7: server needs a valid address and port.",
     "FAIL haproxy.cfg: frontend needs a bind directive.",
+    "FAIL haproxy.cfg: api needs a server directive.",
   ]);
 });

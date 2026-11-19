@@ -3,18 +3,15 @@ import validateDnsRecord from "./dns/records.mjs";
 
 export default function validateDns(file, text) {
   const errors = [];
-  const records = text
-    .replace(/;[^\n]*/gu, "")
-    .replace(/\r/g, "")
-    .split("\n");
+  const records = text.replace(/\r/g, "").split("\n");
   let parentheses = 0;
   let soa = 0;
   let nameservers = 0;
   let pending = "";
   for (const [index, source] of records.entries()) {
-    const line = source.trim();
+    const line = stripDnsComment(source).trim();
     if (!line) continue;
-    parentheses += (line.match(/\(/gu) ?? []).length - (line.match(/\)/gu) ?? []).length;
+    parentheses += countParentheses(line, "(") - countParentheses(line, ")");
     if (parentheses < 0) {
       errors.push(`FAIL ${file}:${index + 1}: record parentheses are not balanced.`);
       parentheses = 0;
@@ -35,4 +32,30 @@ export default function validateDns(file, text) {
   if (soa !== 1) errors.push(`FAIL ${file}: exactly one SOA record is required.`);
   if (nameservers < 1) errors.push(`FAIL ${file}: at least one NS record is required.`);
   return errors;
+}
+
+function stripDnsComment(line) {
+  let quoted = false;
+  let escaped = false;
+  for (let index = 0; index < line.length; index += 1) {
+    const character = line[index];
+    if (escaped) escaped = false;
+    else if (quoted && character === "\\") escaped = true;
+    else if (character === '"') quoted = !quoted;
+    else if (!quoted && character === ";") return line.slice(0, index);
+  }
+  return line;
+}
+
+function countParentheses(line, target) {
+  let quoted = false;
+  let escaped = false;
+  let count = 0;
+  for (const character of line) {
+    if (escaped) escaped = false;
+    else if (quoted && character === "\\") escaped = true;
+    else if (character === '"') quoted = !quoted;
+    else if (!quoted && character === target) count += 1;
+  }
+  return count;
 }

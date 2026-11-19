@@ -42,11 +42,11 @@ Copy `.env.example` to `.env`, then set values for each router.
 | `PORT`                  | No        | `9300`                          | Dashboard port from `1` through `65535`.                         |
 | `WEBHOOK_PORT`          | No        | `9301`                          | Webhook port from `1` through `65535`, separate from `PORT`.     |
 | `LOG_LEVEL`             | No        | `info`                          | `error`, `warn`, `info`, `http`, `verbose`, `debug`, or `silly`. |
-| `CORE_REPO_PATH`        | For hooks | —                               | Router configuration repository path.                            |
+| `CORE_REPO_PATH`        | For hooks | None                            | Repository path. Required to enable deployment hooks.            |
 | `GITHUB_WEBHOOK_SECRET` | For hooks | —                               | Secret used to authenticate GitHub webhook signatures.           |
 | `DISCORD_WEBHOOK_URL`   | No        | —                               | Discord webhook URL for rich embed notifications.                |
 | `CORE_GITHUB_BRANCH`    | No        | `main`                          | Branch deployed from the configuration repository.               |
-| `CORE_HEALTH_UNITS`     | No        | Empty list                      | Comma-separated systemd unit names to monitor.                   |
+| `CORE_HEALTH_UNITS`     | No        | Empty list                      | Unit names to monitor. An empty list disables health monitoring. |
 | `SNOWFLAKE_WORKER_ID`   | No        | `0`                             | Snowflake worker value from `0` through `31`.                    |
 | `SNOWFLAKE_PROCESS_ID`  | No        | `process.pid % 32` when omitted | Optional process value from `0` through `31`.                    |
 
@@ -124,7 +124,7 @@ They do not change the runtime server configuration.
 
 ## Routes and API example
 
-The server serves the app page, built browser files, public assets, API example, and status routes.
+The server serves the app page, built browser files, public assets, and status routes.
 
 | Method | Path                               | Result                                     |
 | ------ | ---------------------------------- | ------------------------------------------ |
@@ -143,7 +143,6 @@ The server serves the app page, built browser files, public assets, API example,
 | `GET`  | `/health`                          | Returns `{"status":"ok"}`.                 |
 | `GET`  | `/ready`                           | Returns `{"status":"ready"}`.              |
 | `GET`  | `/api/status`                      | Returns health and deployment status.      |
-| `POST` | `/api/examples/:exampleId`         | Validates and returns an API example.      |
 
 Unsupported methods on page and asset routes return HTTP 405.
 Unknown paths return HTTP 404.
@@ -151,34 +150,6 @@ Unknown paths return HTTP 404.
 The webhook listener accepts `POST /api/github/webhook` on `WEBHOOK_PORT`.
 The dashboard cannot edit configuration or launch deployments.
 The dashboard has no user authentication. Allow proxy and firewall access from approved clients only.
-
-The API example accepts a lowercase letter, digit, or hyphen in `exampleId`.
-The ID must contain between 1 and 40 characters.
-The JSON body requires `name` with 1 to 80 characters.
-
-The optional `description` field accepts a maximum of 280 characters.
-The optional `source` query value accepts 1 to 40 characters.
-The route rejects unlisted fields and returns HTTP 400 for invalid input.
-The route does not save data.
-
-Send a valid request with curl:
-
-```sh
-curl -X POST 'http://localhost:9300/api/examples/example-123?source=template' \
-  -H 'content-type: application/json' \
-  -d '{"name":"Example item","description":"A sample API contract."}'
-```
-
-The server returns this JSON response:
-
-```json
-{
-  "id": "example-123",
-  "name": "Example item",
-  "description": "A sample API contract.",
-  "source": "template"
-}
-```
 
 ## Browser app and offline behavior
 

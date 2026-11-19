@@ -153,6 +153,25 @@ test("keeps a lock when its owner changes during stale recovery", () => {
   expect(fileSystem.files.get(path)).toBe("456");
 });
 
+test("removes the stale recovery guard when closing its descriptor fails", () => {
+  const fileSystem = createFileSystem();
+  const path = lockPath("/tmp/locks", "/router/repo");
+  const recoveryPath = `${path}.recovery`;
+  fileSystem.files.set(path, "99999999");
+  fileSystem.closeSync = () => {
+    throw new Error("close failed");
+  };
+
+  expect(() =>
+    acquireDeploymentLock("/router/repo", {
+      directory: "/tmp/locks",
+      fileSystem,
+      isProcessAlive: () => false,
+    }),
+  ).toThrow("close failed");
+  expect(fileSystem.files.has(recoveryPath)).toBe(false);
+});
+
 test.each(["", "invalid"])("rejects an unreadable or invalid lock owner: %s", (owner) => {
   const fileSystem = createFileSystem();
   const directory = "/tmp/locks";

@@ -80,8 +80,8 @@ export default function validateHaproxy(file, { sections: parsedSections }) {
       const nameOfDirective = value.split(/\s+/u)[0];
       if (!allowed[kind].has(nameOfDirective))
         errors.push(`FAIL ${file}:${directiveLine}: unknown ${kind} directive.`);
-      if (/^bind\s+\S+/u.test(value)) state.bound = true;
-      if (/^server\s+\S+\s+\S+/u.test(value)) state.serverCount += 1;
+      if (/^bind\s+\S+(?:\s|$)/u.test(value)) state.bound = true;
+      if (/^server\s+\S+\s+(?:\S+:\d+|unix@\S+)(?:\s|$)/u.test(value)) state.serverCount += 1;
       const reference = value.match(/^(?:default_backend|use_backend)\s+(\S+)/u);
       if (reference) references.push(reference[1]);
       if (/^server\s+/u.test(value) && !/^server\s+\S+\s+(?:\S+:\d+|unix@\S+)/u.test(value))
