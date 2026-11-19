@@ -6,14 +6,25 @@
 
 - Hide internal repository checks from the deployment dashboard.
 - Send detailed Discord deployment embeds with linked commits and deployment results.
-- Add a shared router component catalog for preflight, health monitoring, and targeted reloads.
-- Stop and start Core after a deployment changes its installed package version. Restore the prior version when health checks fail.
+- Add a shared router component catalog for CLI operations, health monitoring, and targeted reloads.
+- Stop and start Core after a deployment changes its installed package version, and restore the prior version when readiness checks fail.
 - Add catalog-driven CLI commands for component status checks and reload actions.
 - Include both paths of moved files when selecting deployment actions.
-- Show current router metrics and keep only the latest in-memory summary.
-- Follow systemd unit events for prompt health updates and single Discord notifications.
-- Show interface addresses, routes, IPv4 neighbors, FRR peers, and VRRP state on the dashboard.
-- Document manual CentOS 10 setup, SELinux, firewall, certificate, and local secret steps.
+- Show interface addresses, routes, IPv4 neighbors, FRR peers, VRRP state, and current health on the dashboard.
+- Keep router metrics in memory and show only the latest snapshot.
+- Follow systemd unit events for prompt health updates and failure notifications.
+- Add a manual CentOS 10 installation guide with SELinux, firewall, certificate, and local secret setup.
+- Refactor CLI commands, deployment steps, metrics, and preflight validators into focused modules.
+
+### Fixed
+
+- Keep accepted GitHub request IDs after the busy request cache cleanup.
+- Use configured VRRP snapshots when Keepalived cannot be signaled.
+- Reopen the systemd event stream after it exits.
+- Validate DNS directives, HAProxy listener and backend options, Keepalived addresses, and quoted address options more strictly.
+- Select ISC DHCP leases by lease start time when duplicate addresses appear out of order.
+- Save the final deployment result after notifications are sent.
+- Document the interface command used by the metrics collector accurately.
 
 ## 15.2.2 — 2026-11-18
 
