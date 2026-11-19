@@ -1,4 +1,5 @@
 import { expect, jest, test } from "@jest/globals";
+import { join } from "node:path";
 import createFileSystem from "../../../../test-fixtures/deployment-lock-fs.mjs";
 const defaultFileSystem = createFileSystem();
 jest.unstable_mockModule("node:fs", () => defaultFileSystem);
@@ -81,7 +82,7 @@ test.each([
 
 test("tolerates an existing directory and reports creation errors", () => {
   const fileSystem = createFileSystem(1000);
-  const directory = "\\tmp\\eliware-core-locks-1000";
+  const directory = join("/tmp", "eliware-core-locks-1000");
   fileSystem.directories.add(directory);
   expect(prepareLockDirectory({ fileSystem, userId: 1000, tempDirectory: "/tmp" })).toBe(directory);
   const failedFileSystem = createFileSystem();
