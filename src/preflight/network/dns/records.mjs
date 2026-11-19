@@ -1,12 +1,12 @@
 import { isIP } from "node:net";
+import validateDnsDirective from "./directives.mjs";
 
 const recordTypes = new Set(["SOA", "NS", "A", "AAAA", "PTR", "CNAME", "MX", "TXT", "SRV", "CAA"]);
 
 export default function validateDnsRecord(file, tokens, line) {
   const errors = [];
   if (tokens[0]?.startsWith("$")) {
-    validateDirective(file, tokens, line, errors);
-    return { errors, type: null };
+    return { errors: validateDnsDirective(file, tokens, line), type: null };
   }
   const typeIndex = tokens.findIndex((token) => recordTypes.has(token.toUpperCase()));
   const type = tokens[typeIndex]?.toUpperCase();
@@ -29,29 +29,6 @@ export default function validateDnsRecord(file, tokens, line) {
   else if (["PTR", "CNAME"].includes(type) && !validDnsName(tokens[typeIndex + 1]))
     errors.push(`FAIL ${file}:${line}: ${type} record has an invalid target name.`);
   return { errors, type };
-}
-
-function validateDirective(file, tokens, line, errors) {
-  const [directive, ...args] = tokens;
-  if (directive === "$ORIGIN" && args.length === 1 && validDnsName(args[0])) return;
-  if (directive === "$TTL" && args.length === 1 && /^(?:\d+[wdhms]?)+$/iu.test(args[0])) return;
-  if (
-    directive === "$INCLUDE" &&
-    (args.length === 1 || (args.length === 2 && validDnsName(args[1])))
-  )
-    return;
-  if (directive === "$GENERATE") {
-    const typeIndex = tokens.findIndex(
-      (token, index) => index > 1 && recordTypes.has(token.toUpperCase()),
-    );
-    if (
-      /^\d+(?:-\d+)?(?:\/\d+)?$/u.test(args[0] ?? "") &&
-      typeIndex > 1 &&
-      tokens.length > typeIndex + 1
-    )
-      return;
-  }
-  errors.push(`FAIL ${file}:${line}: invalid DNS directive ${directive}.`);
 }
 
 function validDnsName(name) {

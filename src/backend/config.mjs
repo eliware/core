@@ -3,11 +3,11 @@ import validateBranch from "./config/branch.mjs";
 import validateDiscordUrl from "./config/discord-url.mjs";
 import parseHealthUnits from "./config/health-units.mjs";
 import parseSnowflakeOptions from "./config/snowflake.mjs";
-import mapApplicationConfig from "./config/application.mjs";
+import loadApplicationValues from "./config/loader.mjs";
 import validateEndpoints from "./config/endpoints.mjs";
 
 export default function loadApplicationConfig({ environment }) {
-  const application = mapApplicationConfig(environment);
+  const application = loadApplicationValues(environment);
   const tcpEndpoint = parseTcpEndpoint(application.port);
   const webhookEndpoint = parseTcpEndpoint(application.webhookPort);
   validateEndpoints(tcpEndpoint, webhookEndpoint);

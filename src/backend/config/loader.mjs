@@ -1,4 +1,4 @@
-export default function mapApplicationConfig(environment) {
+export default function loadApplicationValues(environment) {
   return {
     port: environment.PORT,
     webhookPort: environment.WEBHOOK_PORT ?? "9301",

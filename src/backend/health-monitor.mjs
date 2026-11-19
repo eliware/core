@@ -2,6 +2,7 @@ import { execFile as nodeExecFile } from "node:child_process";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { promisify } from "node:util";
 import checkHealthUnit from "./health/check-unit.mjs";
+import createHealthStatus from "./health/status.mjs";
 
 const execFile = promisify(nodeExecFile);
 const notificationContext = new AsyncLocalStorage();
@@ -85,23 +86,7 @@ export default function createHealthMonitor({
   }
 
   function getStatus() {
-    const status =
-      checks.length === 0
-        ? "unconfigured"
-        : checks.some((item) => item.status === "unhealthy")
-          ? "unhealthy"
-          : checks.every((item) => item.status === "healthy")
-            ? "healthy"
-            : "unknown";
-    return {
-      status,
-      checkedAt: checks.reduce(
-        (latest, item) =>
-          item.checkedAt && (!latest || item.checkedAt > latest) ? item.checkedAt : latest,
-        null,
-      ),
-      units: checks,
-    };
+    return createHealthStatus(checks);
   }
 
   return {
