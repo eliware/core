@@ -5,9 +5,17 @@ export default function createDeploymentAdmission({
   reportSetupFailure,
 }) {
   let active = false;
+  let pendingRelease;
   return function admit(event, execute) {
     if (!repositoryPath) return { accepted: false, status: "unconfigured" };
     if (active) return { accepted: false, status: "busy" };
+    if (pendingRelease) {
+      try {
+        pendingRelease();
+      } catch {
+        return { accepted: false, status: "busy" };
+      }
+    }
     let runId;
     try {
       runId = generateRunId();
@@ -27,9 +35,16 @@ export default function createDeploymentAdmission({
     let released = false;
     const release = () => {
       if (released) return;
-      releaseLock?.();
-      released = true;
-      active = false;
+      try {
+        releaseLock?.();
+        released = true;
+        active = false;
+        pendingRelease = undefined;
+      } catch (error) {
+        active = false;
+        pendingRelease = release;
+        throw error;
+      }
     };
     void execute(event, runId, release)
       .catch(async (error) => {

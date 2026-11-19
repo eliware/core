@@ -17,7 +17,7 @@ function createManager(options = {}) {
         : result;
     };
   }
-  return createDeploymentManager({ now: fixedNow, ...managerOptions });
+  return createDeploymentManager({ now: fixedNow, acquireLock: () => () => {}, ...managerOptions });
 }
 
 function successfulRun() {

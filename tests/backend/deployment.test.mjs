@@ -27,7 +27,7 @@ function createManager(options = {}) {
         : result;
     };
   }
-  return createDeploymentManager({ now: fixedNow, ...managerOptions });
+  return createDeploymentManager({ now: fixedNow, acquireLock: () => () => {}, ...managerOptions });
 }
 
 function successfulRun() {
@@ -137,6 +137,14 @@ test("rejects an initial git status command with a nonzero result", async () => 
 test("rejects concurrent deployments for one repository and records notification failures", async () => {
   let finishStatus;
   let firstStatus = true;
+  let lockActive = false;
+  const acquireLock = jest.fn(() => {
+    if (lockActive) throw new Error("Another deployment process is active.");
+    lockActive = true;
+    return () => {
+      lockActive = false;
+    };
+  });
   const run = jest.fn((command, args) => {
     if (command === "git" && args[0] === "status" && firstStatus) {
       firstStatus = false;
@@ -150,10 +158,12 @@ test("rejects concurrent deployments for one repository and records notification
     return Promise.resolve({ stdout: "" });
   });
   const notify = jest.fn().mockRejectedValue(new Error("discord unavailable"));
-  const manager = createManager({ repositoryPath: "/router/core1", run, notify });
+  const manager = createManager({ repositoryPath: "/router/core1", run, notify, acquireLock });
   manager.start("delivery-7");
   expect(manager.start("delivery-8")).toEqual({ accepted: false, status: "busy" });
-  expect(createManager({ repositoryPath: "/router/core1" }).start("delivery-9")).toEqual({
+  expect(
+    createManager({ repositoryPath: "/router/core1", acquireLock }).start("delivery-9"),
+  ).toEqual({
     accepted: false,
     status: "busy",
   });

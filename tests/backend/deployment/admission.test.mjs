@@ -119,6 +119,21 @@ test("keeps admission busy when setup failure lock cleanup fails", async () => {
   expect(release).toHaveBeenCalledTimes(1);
   expect(state.reportSetupFailure).toHaveBeenCalledWith(failure, "push", "run-1");
   expect(state.admit("next", state.execute)).toEqual({ accepted: false, status: "busy" });
+  expect(release).toHaveBeenCalledTimes(2);
+});
+
+test("retries a pending lock release before admitting more work", async () => {
+  const release = jest.fn().mockImplementationOnce(() => {
+    throw new Error("temporary lock cleanup failure");
+  });
+  const state = setup({ acquireLock: () => release });
+  state.execute.mockRejectedValueOnce(new Error("execution failed"));
+
+  state.admit("push", state.execute);
+  await Promise.resolve();
+
+  expect(state.admit("next", state.execute)).toEqual({ accepted: true, runId: "run-1" });
+  expect(release).toHaveBeenCalledTimes(3);
 });
 
 test("contains a rejection from setup failure reporting", async () => {

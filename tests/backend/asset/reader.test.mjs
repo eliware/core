@@ -56,6 +56,22 @@ test("reads content from the checked file handle", async () => {
   expect(handle.close).toHaveBeenCalledTimes(1);
 });
 
+test("returns asset content when closing the handle fails", async () => {
+  const handle = createHandle();
+  handle.close.mockRejectedValue(new Error("close failed"));
+
+  await expect(
+    readAsset(
+      { assetRoot, assetPath, realAsset: assetPath },
+      {
+        openFile: jest.fn().mockResolvedValue(handle),
+        resolvePath: jest.fn().mockResolvedValue(assetPath),
+        statPath: jest.fn().mockResolvedValue({ dev: 1, ino: 2 }),
+      },
+    ),
+  ).resolves.toBe("asset");
+});
+
 test("returns a missing result when the file does not exist", async () => {
   const error = Object.assign(new Error("missing"), { code: "ENOENT" });
 

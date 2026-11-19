@@ -21,6 +21,10 @@ export default async function readAsset(
     if (error?.code === "ENOENT" || error?.code === "ENOTDIR") return null;
     throw error;
   } finally {
-    await handle?.close();
+    try {
+      await handle?.close();
+    } catch {
+      // Close failures do not change the asset read result.
+    }
   }
 }
