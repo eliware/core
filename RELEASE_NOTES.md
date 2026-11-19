@@ -1,5 +1,11 @@
 # Release Notes
 
+## 15.2.2 — 2026-11-18
+
+### Changed
+
+- Move Lighthouse and Puppeteer to development dependencies.
+
 ## 15.2.1 — 2026-11-18
 
 ### Changed

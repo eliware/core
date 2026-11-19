@@ -19,6 +19,16 @@ test("validates the clean repository, branch, and recovery commit", async () => 
   expect(run).toHaveBeenCalledTimes(3);
 });
 
+test("rejects a branch command without output", async () => {
+  const run = jest.fn(async (_command, args) => {
+    if (args[0] === "branch") return {};
+    return { stdout: "" };
+  });
+  await expect(
+    validateDeploymentRepository({ run, repositoryPath: "/router", branch: "main" }),
+  ).rejects.toThrow("must be on branch main");
+});
+
 test.each([
   [{ status: 1 }, "Git status exited"],
   [{ dirty: " M file" }, "uncommitted changes"],
