@@ -16,7 +16,6 @@ const createDeploymentManager = (await import("../../src/backend/deployment.mjs"
 
 const commit = "a".repeat(40);
 const fixedNow = () => new Date("2026-11-18T12:00:00.000Z");
-
 function createManager(options = {}) {
   const { currentBranch = "main", ...managerOptions } = options;
   if (managerOptions.run) {
@@ -28,9 +27,13 @@ function createManager(options = {}) {
         : result;
     };
   }
-  return createDeploymentManager({ now: fixedNow, acquireLock: () => () => {}, ...managerOptions });
+  return createDeploymentManager({
+    now: fixedNow,
+    acquireLock: () => () => {},
+    readVersion: jest.fn().mockResolvedValue(null),
+    ...managerOptions,
+  });
 }
-
 function successfulRun() {
   const run = jest.fn(async (command, args) => {
     if (command === "git" && args[0] === "rev-parse") return { stdout: `${commit}\n` };
@@ -38,15 +41,12 @@ function successfulRun() {
   });
   return run;
 }
-
 async function waitFor(manager, status) {
-  for (let attempt = 0; attempt < 100; attempt += 1) {
+  for (let attempt = 0; attempt < 1000; attempt += 1)
     if (manager.getStatus().status === status) return manager.getStatus();
-    await Promise.resolve();
-  }
+    else await Promise.resolve();
   throw new Error(`Deployment did not reach ${status}: ${JSON.stringify(manager.getStatus())}`);
 }
-
 test("runs the deployment steps in order and records success", async () => {
   const run = successfulRun();
   const notify = jest.fn();
@@ -101,7 +101,10 @@ test("reports recovery errors when a managed component reload fails", async () =
 
 test("uses the default command adapter and clock", async () => {
   jest.useFakeTimers({ now: new Date("2026-11-18T12:00:00.000Z") });
-  const manager = createDeploymentManager({ repositoryPath: "/router/core1" });
+  const manager = createDeploymentManager({
+    repositoryPath: "/router/core1",
+    readVersion: jest.fn().mockResolvedValue(null),
+  });
   manager.start("default-delivery");
   await waitFor(manager, "succeeded");
   expect(manager.getStatus().startedAt).toBe("2026-11-18T12:00:00.000Z");

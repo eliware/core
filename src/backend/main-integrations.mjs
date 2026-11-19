@@ -18,6 +18,7 @@ export default function createApplicationIntegrations(configuration, dependencie
     repositoryPath: configuration.repositoryPath,
     branch: configuration.githubBranch,
     snowflake: configuration.snowflake,
+    dashboardPort: configuration.tcpEndpoint,
     notify,
   });
   return { healthMonitor, deployment };

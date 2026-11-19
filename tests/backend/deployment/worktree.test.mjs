@@ -100,6 +100,7 @@ test("stops after dependency scripts change the worktree and restores the prior 
     repositoryPath: "/router/config",
     now: () => new Date("2026-11-18T12:00:00.000Z"),
     acquireLock: () => () => {},
+    readVersion: jest.fn().mockResolvedValue(null),
     run,
   });
 

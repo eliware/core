@@ -109,6 +109,13 @@ If a command fails before reload, the application resets the repository to the p
 If the new reload fails, the application resets the repository and attempts to reload the previous configuration.
 If Git cannot restore the previous commit, the application records that failure and does not reload the current configuration.
 
+When `npm ci` changes the installed `@eliware/core` version, Core schedules a systemd worker to stop and start `core.service` after configuration reload succeeds.
+The worker checks `/ready` on the dashboard port and records the result in the Git metadata directory.
+If Core fails its health check, the worker restores the previous commit and dependencies, reloads prior settings, and starts the previous Core version.
+The dashboard keeps the final result after Core starts again.
+The worker sends the final deployment notification after the health check.
+Keep `core.service` and the Git metadata directory writable by the Core account.
+
 The application preserves untracked files during recovery.
 Git ignored files such as `.env` and `node_modules` also remain on disk during deployment and recovery.
 Set the systemd unit umask to `0022` so router processes can read files that Git pulls.

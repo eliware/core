@@ -31,6 +31,19 @@ test("merges status updates without exposing nested references", () => {
   });
 });
 
+test("refreshes the current deployment from a detached worker result", () => {
+  let latest = { runId: "123", status: "running", steps: [] };
+  const status = createDeploymentStatus(
+    latest,
+    () => {},
+    () => latest,
+  );
+  latest = { runId: "123", status: "succeeded", steps: [] };
+  expect(status.get().status).toBe("succeeded");
+  latest = { runId: "456", status: "running", steps: [] };
+  expect(status.get().runId).toBe("123");
+});
+
 test("uses a fallback timestamp when the clock fails", () => {
   const status = createDeploymentStatus();
   expect(status.timestamp(() => "time", "fallback")).toBe("time");

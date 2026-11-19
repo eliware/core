@@ -18,7 +18,12 @@ function createManager(options = {}) {
         : result;
     };
   }
-  return createDeploymentManager({ now: fixedNow, acquireLock: () => () => {}, ...managerOptions });
+  return createDeploymentManager({
+    now: fixedNow,
+    acquireLock: () => () => {},
+    readVersion: jest.fn().mockResolvedValue(null),
+    ...managerOptions,
+  });
 }
 
 function successfulRun() {
@@ -27,6 +32,25 @@ function successfulRun() {
     return { stdout: "" };
   });
 }
+
+test("keeps deployment pending while the updated Core worker restarts the service", async () => {
+  const scheduleRestart = jest.fn().mockResolvedValue(undefined);
+  const readVersion = jest.fn().mockResolvedValueOnce("15.2.2").mockResolvedValueOnce("15.2.3");
+  const manager = createManager({
+    repositoryPath: "/router/core",
+    run: successfulRun(),
+    readVersion,
+    scheduleRestart,
+  });
+  manager.start("core-version-update");
+  for (let index = 0; index < 1000 && !scheduleRestart.mock.calls.length; index += 1)
+    await Promise.resolve();
+  expect(scheduleRestart).toHaveBeenCalledTimes(1);
+  expect(manager.getStatus()).toMatchObject({
+    status: "running",
+    currentStep: "restart Core service",
+  });
+});
 
 async function waitFor(manager, status) {
   for (let attempt = 0; attempt < 100; attempt += 1) {
