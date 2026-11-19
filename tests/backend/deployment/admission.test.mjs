@@ -82,31 +82,6 @@ test("rejects concurrent work while an admitted operation runs", async () => {
   await Promise.resolve();
 });
 
-test("supports a lock adapter without a release callback", () => {
-  const state = setup({ acquireLock: () => undefined });
-  const release = jest.fn();
-  state.execute.mockImplementationOnce(async (_event, _runId, releaseLock) => {
-    releaseLock();
-    release();
-  });
-
-  expect(state.admit("push", state.execute)).toEqual({ accepted: true, runId: "run-1" });
-  expect(release).toHaveBeenCalledTimes(1);
-});
-
-test("ignores repeated release calls after lock cleanup succeeds", () => {
-  const releaseLock = jest.fn();
-  const state = setup({ acquireLock: () => releaseLock });
-  state.execute.mockImplementationOnce(async (_event, _runId, release) => {
-    release();
-    release();
-  });
-
-  state.admit("push", state.execute);
-
-  expect(releaseLock).toHaveBeenCalledTimes(1);
-});
-
 test("reports asynchronous setup failures", async () => {
   const state = setup();
   state.execute.mockRejectedValueOnce(new Error("setup failed"));

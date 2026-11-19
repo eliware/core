@@ -1,4 +1,5 @@
 import parseInstances from "./keepalived/instances.mjs";
+import parseVirtualAddresses from "./keepalived/virtual-addresses.mjs";
 
 export default function validateKeepalived(left, right, leftText = "", rightText = "") {
   const first = parseInstances(leftText);
@@ -7,14 +8,18 @@ export default function validateKeepalived(left, right, leftText = "", rightText
   const errors = [];
   if (first.size !== second.size) errors.push("Keepalived VRRP instance sets must match.");
   for (const [name, a] of first) {
-    if (a.invalidVips.length) errors.push(`Keepalived ${name} has an invalid virtual address.`);
+    const addressesA = parseVirtualAddresses(a.body);
+    if (addressesA.invalid.length)
+      errors.push(`Keepalived ${name} has an invalid virtual address.`);
     const b = second.get(name);
     if (!b) {
       errors.push(`Keepalived partner is missing ${name}.`);
       continue;
     }
-    if (b.invalidVips.length) errors.push(`Keepalived ${name} has an invalid virtual address.`);
-    if (a.id !== b.id || JSON.stringify(a.vips) !== JSON.stringify(b.vips)) {
+    const addressesB = parseVirtualAddresses(b.body);
+    if (addressesB.invalid.length)
+      errors.push(`Keepalived ${name} has an invalid virtual address.`);
+    if (a.id !== b.id || JSON.stringify(addressesA.valid) !== JSON.stringify(addressesB.valid)) {
       errors.push(`Keepalived ${name} must use matching VRIDs and virtual addresses.`);
     }
     if (a.source !== b.peer || b.source !== a.peer) {

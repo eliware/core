@@ -1,6 +1,7 @@
 import isBalanced from "./balanced.mjs";
 import parseInstances from "../../pair/keepalived/instances.mjs";
 import validateKeepalivedScripts from "./keepalived-scripts.mjs";
+import parseVirtualAddresses from "../../pair/keepalived/virtual-addresses.mjs";
 
 export default function validateKeepalived(file, text, files) {
   const errors = [];
@@ -9,7 +10,7 @@ export default function validateKeepalived(file, text, files) {
   if (!instances) errors.push(`FAIL ${file}: no VRRP instances are defined.`);
   errors.push(...validateKeepalivedScripts(file, text, files));
   for (const [name, instance] of instances ?? []) {
-    if (instance.invalidVips.length)
+    if (parseVirtualAddresses(instance.body).invalid.length)
       errors.push(`FAIL ${file}: ${name} has an invalid virtual address.`);
     const body = instance.validationBody;
     for (const key of [

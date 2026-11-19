@@ -32,20 +32,16 @@ export default function createDeploymentAdmission({
       };
     }
     active = true;
-    let released = false;
-    const release = () => {
-      if (released) return;
-      try {
-        releaseLock?.();
-        released = true;
+    const release = createLockLifecycle(releaseLock, {
+      onReleased: () => {
         active = false;
         pendingRelease = undefined;
-      } catch (error) {
+      },
+      onRetry: (retry) => {
         active = false;
-        pendingRelease = release;
-        throw error;
-      }
-    };
+        pendingRelease = retry;
+      },
+    });
     void execute(event, runId, release, githubPayload)
       .catch(async (error) => {
         try {
@@ -59,3 +55,4 @@ export default function createDeploymentAdmission({
     return { accepted: true, runId };
   };
 }
+import createLockLifecycle from "./lock/lifecycle.mjs";

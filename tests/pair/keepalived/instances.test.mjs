@@ -11,13 +11,14 @@ test("parses VRRP values and sorts virtual addresses", () => {
     source: "10.0.0.1",
     peer: "10.0.0.2",
   });
-  expect(instances.get("VI_169").vips).toEqual(["192.0.2.169/24"]);
 });
 
 test("rejects empty and incomplete instances", () => {
   expect(parseInstances("")).toBeNull();
   expect(parseInstances("vrrp_instance VI { state MASTER")).toBeNull();
-  expect(parseInstances("vrrp_instance VI { state MASTER }").get("VI")).toMatchObject({ vips: [] });
+  expect(parseInstances("vrrp_instance VI { state MASTER }").get("VI")).toMatchObject({
+    state: "MASTER",
+  });
 });
 
 test("rejects duplicate VRRP instance names", () => {

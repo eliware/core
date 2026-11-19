@@ -1,5 +1,5 @@
 import { expect, jest, test } from "@jest/globals";
-import createFileSystem from "../../../test-fixtures/deployment-lock-fs.mjs";
+import createFileSystem from "../../../../test-fixtures/deployment-lock-fs.mjs";
 const defaultFileSystem = createFileSystem();
 jest.unstable_mockModule("node:fs", () => defaultFileSystem);
 jest.unstable_mockModule("node:os", () => ({
@@ -8,7 +8,7 @@ jest.unstable_mockModule("node:os", () => ({
   userInfo: () => ({ username: "router-user" }),
 }));
 const { default: prepareLockDirectory } =
-  await import("../../../src/backend/deployment/lock-directory.mjs");
+  await import("../../../../src/backend/deployment/lock/directory.mjs");
 
 test("uses default options and platform paths", () => {
   const userScope = process.getuid?.() ?? "router-user";

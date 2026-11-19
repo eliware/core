@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import * as defaultFileSystem from "node:fs";
 import { join, resolve } from "node:path";
 import recoverStaleLock from "./stale-lock.mjs";
-import prepareLockDirectory from "./lock-directory.mjs";
+import prepareLockDirectory from "./lock/directory.mjs";
 
 export default function acquireDeploymentLock(repositoryPath, options = {}) {
   const fileSystem = options.fileSystem ?? defaultFileSystem;

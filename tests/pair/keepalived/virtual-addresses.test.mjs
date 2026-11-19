@@ -8,6 +8,14 @@ test("parses and sorts virtual IPv4 addresses", () => {
   });
 });
 
+test("extracts virtual addresses from an instance body with other settings", () => {
+  expect(
+    parseVirtualAddresses(
+      "state MASTER\nvirtual_router_id 1\nvirtual_ipaddress {\n 192.0.2.9/24\n}\npriority 101",
+    ),
+  ).toEqual({ valid: ["192.0.2.9/24"], invalid: [] });
+});
+
 test("reports missing blocks and invalid addresses", () => {
   expect(parseVirtualAddresses("state MASTER")).toEqual({ valid: [], invalid: ["missing"] });
   expect(parseVirtualAddresses("virtual_ipaddress {\n invalid-address\n}")).toEqual({
