@@ -9,7 +9,7 @@ import parseChronyTracking from "./ntp.mjs";
 import summarizeRoutes from "./routes.mjs";
 import summarizeNeighbors from "./neighbors.mjs";
 import summarizeFrr from "./frr.mjs";
-import summarizeVrrp from "./vrrp.mjs";
+import collectVrrp from "./collect/vrrp.mjs";
 import readSocket from "./socket-reader.mjs";
 
 const execFile = promisify(nodeExecFile);
@@ -23,6 +23,7 @@ export default async function collectMetric(
     connect,
     signalProcess = process.kill,
     vrrpDelayMs = 50,
+    wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)),
     now = () => new Date(),
     timeoutMs = 10_000,
   } = {},
@@ -53,15 +54,12 @@ export default async function collectMetric(
       ]);
       return summarizeFrr(summary.stdout, routes.stdout);
     }
-    case "vrrp": {
-      const pidSource = await readFile(metric.pidPath ?? "/run/keepalived_vrrp.pid", "utf8");
-      const pid = Number(pidSource.trim());
-      if (!Number.isSafeInteger(pid) || pid < 1)
-        throw new Error("Keepalived VRRP process ID is invalid");
-      signalProcess(pid, "SIGUSR1");
-      await new Promise((resolve) => setTimeout(resolve, vrrpDelayMs));
-      return summarizeVrrp(await readFile(metric.path ?? "/tmp/keepalived.json", "utf8"));
-    }
+    case "vrrp":
+      return collectVrrp(metric, {
+        readFile,
+        signalProcess,
+        wait: () => wait(vrrpDelayMs),
+      });
     case "haproxy":
       return parseHaproxyStats(
         await (connect

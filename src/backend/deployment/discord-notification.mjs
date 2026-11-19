@@ -1,11 +1,9 @@
 const SUCCESS_COLOR = 0x00ff00;
 const FAILURE_COLOR = 0xff0000;
-
-function escapeMarkdown(value) {
-  return String(value ?? "")
-    .replace(/[\\_*~`>|]/gu, "\\$&")
-    .replace(/@(everyone|here)\b/giu, "@\u200b$1");
-}
+import escapeMarkdown from "./notification/escape.mjs";
+import formatCommits from "./notification/commits.mjs";
+import formatFileChanges from "./notification/files.mjs";
+import formatSteps from "./notification/steps.mjs";
 
 function resolveRepository(githubPayload) {
   const name = githubPayload?.repository?.full_name;
@@ -19,56 +17,6 @@ function resolveCompareUrl(githubPayload, repository) {
   return typeof githubPayload?.compare === "string" && githubPayload.compare.startsWith(prefix)
     ? githubPayload.compare
     : undefined;
-}
-
-function formatCommits(commits, repository) {
-  if (!commits.length) return "No commit details were included.";
-  const lines = commits.slice(0, 12).map((commit) => {
-    const sha = typeof commit?.id === "string" ? commit.id : "";
-    const summary = typeof commit?.message === "string" ? commit.message.split("\n", 1)[0] : "";
-    const message = escapeMarkdown(summary || "Commit").slice(0, 180);
-    if (!repository || !/^[a-f0-9]{7,64}$/iu.test(sha)) return `• ${message}`;
-    const shortSha = escapeMarkdown(sha.slice(0, 7));
-    return `• [${shortSha}](${repository.url}/commit/${sha}) ${message}`;
-  });
-  if (commits.length > lines.length) {
-    const remaining = commits.length - lines.length;
-    lines.push(`• And ${remaining} more ${remaining === 1 ? "commit" : "commits"}.`);
-  }
-  return lines.join("\n");
-}
-
-function formatFileChanges(commits) {
-  const groups = [
-    ["New", "added"],
-    ["Modified", "modified"],
-    ["Deleted", "removed"],
-  ];
-  return groups.flatMap(([label, property]) => {
-    const files = [
-      ...new Set(
-        commits.flatMap((commit) => (Array.isArray(commit?.[property]) ? commit[property] : [])),
-      ),
-    ].filter((file) => typeof file === "string");
-    if (!files.length) return [];
-    const listed = files.slice(0, 12).map(escapeMarkdown).join("\n");
-    const remaining = files.length - 12;
-    const remainder =
-      remaining > 0 ? `\nAnd ${remaining} more ${remaining === 1 ? "file" : "files"}.` : "";
-    return [{ name: `${label} (${files.length})`, value: `${listed}${remainder}` }];
-  });
-}
-
-function formatSteps(steps) {
-  const visibleSteps = steps.filter((step) => !step.internal);
-  if (!visibleSteps.length) return "No deployment steps were recorded.";
-  return visibleSteps
-    .map((step) => {
-      const icon = step.status === "passed" ? "✅" : step.status === "failed" ? "❌" : "⏳";
-      const detail = step.detail ? `: ${escapeMarkdown(step.detail)}` : "";
-      return `${icon} ${escapeMarkdown(step.name || "Unknown step")}${detail}`;
-    })
-    .join("\n");
 }
 
 function duration(startedAt, finishedAt) {
