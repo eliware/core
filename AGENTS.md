@@ -18,7 +18,6 @@ Use Node.js 26 or later and native ESM for maintained JavaScript modules.
 
 ## Validation
 
-Run `npm test` for aggregate validation before handoff or release.
 Run `npm run lint` to check source code.
 Run `npm run audit` to check dependencies.
 Run `npm run format` to format maintained files.
@@ -34,7 +33,7 @@ Update user documentation and release notes when user-visible behavior changes.
 
 ## Application
 
-Keep launchers in `bin/`, implementation modules in `src/`, and tests in `tests/`.
+Keep launchers in `bin/`, implementation modules in `src/`, tests in `tests/`, and fixtures in `test-fixtures/`.
 Run focused tests first during development.
 Prevent repeated full-suite runs during development.
 Run one test file with `npm test -- tests/path/to/example.test.mjs`.

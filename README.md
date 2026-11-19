@@ -29,48 +29,46 @@ Core Networking Manager.
 
 ## Features
 
-Eliware maintains `@eliware/core`. The package validates and compares router configurations and provides a read-only status dashboard.
-
-Core provides `core-cli` for router configuration validation and `core-web` for status and deployment hooks.
+The `core-cli` tool validates and compares router configuration repositories.
+The `core-web` application provides router health, metrics, and GitHub deployment hooks.
 
 ## Requirements
 
-Use Node.js 26 or later. Install Bash when router repositories contain shell scripts.
+Use Node.js 26 or later.
+Install Bash when the router repository contains shell scripts.
 
 ## Setup
 
-Run `npm ci` from this repository root. Install `@eliware/core` as a development dependency in each router repository.
-
-```sh
-npm install --save-dev @eliware/core@latest
-```
+Follow the [router installation guide](docs/router-installation.md) to prepare a CentOS 10 router.
+Install the package in a router repository with `npm install --save-dev @eliware/core@latest`.
 
 ## Usage
 
-Run `core-cli preflight` for one repository and `core-cli compare <partner-repo>` for a pair.
-Read the [CLI guide](docs/cli-application.md) and [web application guide](docs/web-application.md) for workflows.
+Run `core-cli preflight` to validate one router repository.
+Run `core-cli compare <partner-repo>` to validate a router pair.
+Read the [CLI guide](docs/cli-application.md) and [web application guide](docs/web-application.md) for details.
 Read [release notes](RELEASE_NOTES.md) for version history.
 
 ## Development
 
-Read [AGENTS.md](AGENTS.md) for contributor instructions.
-Use the [documentation index](docs/README.md) and [specifications index](specs/README.md) to find maintained guidance.
+Run `npm ci` from this repository root.
+Read [AGENTS.md](AGENTS.md), the [documentation index](docs/README.md), and the [specifications index](specs/README.md) for maintained guidance.
 
 ## Testing
 
 Run `npm test` for aggregate repository validation.
-`npm test` runs the configured `eliware-test` checks. It does not build browser assets.
-Run `npm run build` after changing frontend source files. Run browser checks separately.
+Run `npm run build` after changing browser source files.
 
 ## Troubleshooting
 
 Read the [CLI guide](docs/cli-application.md) for validation errors.
-Read the [web application guide](docs/web-application.md) for server and webhook issues.
+Read the [installation guide](docs/router-installation.md) for router setup problems.
+Read the [web application guide](docs/web-application.md) for server and webhook problems.
 
 ## Security
 
 Keep credentials, private data, and runtime state out of Git.
-Allow proxy and firewall access from approved clients because the application has no authentication.
+Limit dashboard and webhook access through the router firewall or an approved proxy.
 
 ## Configuration
 
@@ -79,48 +77,56 @@ Read the [configuration guide](docs/web-application.md#configuration) for defaul
 
 ## Operations
 
-Configure the dashboard and webhook listener using the [web application guide](docs/web-application.md).
-Push router repositories separately when deployments require different timing.
+Use the [router installation guide](docs/router-installation.md) to install services and configuration links.
+Read the [web application guide](docs/web-application.md) to configure dashboard and webhook operations.
 
 ## Commands
 
-Run `core-cli --help` or `core-web --help` for command help.
+| Command                                       | Purpose                                      |
+| --------------------------------------------- | -------------------------------------------- |
+| `core-cli preflight`                          | Validate one router repository.              |
+| `core-cli compare <partner-repo>`             | Validate a router pair.                      |
+| `core-cli catalog`                            | List catalog components.                     |
+| `core-cli status [component] [--repo <path>]` | Check component health units.                |
+| `core-cli reload [component] [--repo <path>]` | Run component reload actions.                |
+| `core-web`                                    | Start the dashboard and webhook application. |
+
+Run `core-cli --help` or `core-web --help` for help.
 Run `core-cli --version` or `core-web --version` for the package version.
-Run `core-web` from a router repository to start the web application.
 
 ## Exit codes
 
 | Code | Meaning                                                       |
 | ---- | ------------------------------------------------------------- |
 | `0`  | The command completed successfully.                           |
-| `1`  | Repository or pair validation failed.                         |
+| `1`  | Repository validation or an operation failed.                 |
 | `2`  | The command received invalid syntax or an unsupported option. |
 
 ## Routes
 
-The dashboard listener serves its page, assets, health, readiness, and status routes.
-The server registers health, readiness, and status routes on that same listener.
+The dashboard listener serves the application, assets, health, readiness, and status routes.
 The webhook listener accepts `POST /api/github/webhook` on its configured port.
 Read the [route guide](docs/web-application.md#routes) for paths and results.
 
 ## Assets
 
-Keep browser source assets in `public/`. The build creates `dist/client.js` and `dist/service-worker.js`.
+Keep browser source assets in `public/`.
+The build creates `dist/client.js` and `dist/service-worker.js`.
 
 ## Development server
 
-Run `core-web` from a router repository. The dashboard defaults to port `9300`, and the webhook listener defaults to port `9301`.
+Run `core-web` from a router repository.
+The dashboard defaults to port `9300`, and the webhook listener defaults to port `9301`.
 
 ## Build
 
 Run `npm run build` to create browser bundles in `dist/`.
-Read the [browser validation guide](docs/web-application.md#browser-validation) for screenshot and audit commands.
+Read the [browser validation guide](docs/web-application.md#browser-validation) for browser checks.
 
 ## Deployment
 
-The webhook checks signed pushes and runs deployment steps in order.
+The webhook validates signed GitHub push events and runs configured deployment steps in order.
 Read the [deployment guide](docs/web-application.md#deployment-behavior) for validation and recovery details.
-Use `.github/workflows/npm.yaml` and the approved release process to publish the package.
 
 ## Support
 
