@@ -6,7 +6,12 @@ test("loads environment values before assembling application configuration", () 
 
   expect(
     loadRuntimeConfig({
-      environment: { PORT: "8080", LOG_LEVEL: "debug" },
+      environment: {
+        PORT: "8080",
+        LOG_LEVEL: "debug",
+        SNOWFLAKE_WORKER_ID: "1",
+        SNOWFLAKE_PROCESS_ID: "2",
+      },
       loadEnvironment,
     }),
   ).toEqual({
@@ -18,7 +23,7 @@ test("loads environment values before assembling application configuration", () 
     discordWebhookUrl: undefined,
     githubBranch: "main",
     healthUnits: [],
-    snowflake: { workerId: 0 },
+    snowflake: { workerId: 1, processId: 2 },
   });
   expect(loadEnvironment).toHaveBeenCalledTimes(1);
 });

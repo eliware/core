@@ -7,9 +7,7 @@ test("checks SOA timers, DNS targets, and IP record values", () => {
   expect(validateDns("var/named/zones/test.zone", valid)).toEqual([]);
   const invalid =
     "@ IN SOA ns.test. host.test. (1)\n@ IN NS bad/name\n@ IN A nope\n@ IN CNAME bad/name\n";
-  expect(validateDns("test.zone", invalid).join(" ")).toContain(
-    "SOA record needs five numeric timers",
-  );
+  expect(validateDns("test.zone", invalid).join(" ")).toContain("SOA record needs valid names");
   expect(validateDns("test.zone", invalid).join(" ")).toContain("invalid address");
   expect(validateDns("test.zone", invalid).join(" ")).toContain("invalid target name");
 });

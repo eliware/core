@@ -26,6 +26,12 @@ test("rejects duplicate VRRP instance names", () => {
   expect(parseInstances(duplicate)).toBeNull();
 });
 
+test("rejects duplicate required instance settings", () => {
+  const source = createPairRepo("core1")["etc/keepalived/keepalived.conf"];
+  const duplicate = source.replace("state MASTER", "state MASTER\n state BACKUP");
+  expect(parseInstances(duplicate).get("VI_169").state).toBeUndefined();
+});
+
 test("ignores braces inside comments and quoted values", () => {
   const source = createPairRepo("core1")["etc/keepalived/keepalived.conf"];
   const text = `# } vrrp_instance ignored {\n${source.replace(

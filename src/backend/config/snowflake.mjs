@@ -1,5 +1,5 @@
-function parseIdentityPart(value, fallback, name) {
-  if (value === undefined) return fallback;
+function parseIdentityPart(value, name) {
+  if (value === undefined) throw new Error(`Set ${name} to an integer from 0 through 31.`);
   const normalized = value.trim();
   if (!/^(0|[1-9][0-9]*)$/u.test(normalized)) {
     throw new Error(`Set ${name} to an integer from 0 through 31.`);
@@ -10,15 +10,8 @@ function parseIdentityPart(value, fallback, name) {
 }
 
 export default function parseSnowflakeOptions(environment) {
-  const options = {
-    workerId: parseIdentityPart(environment.SNOWFLAKE_WORKER_ID, 0, "SNOWFLAKE_WORKER_ID"),
+  return {
+    workerId: parseIdentityPart(environment.SNOWFLAKE_WORKER_ID, "SNOWFLAKE_WORKER_ID"),
+    processId: parseIdentityPart(environment.SNOWFLAKE_PROCESS_ID, "SNOWFLAKE_PROCESS_ID"),
   };
-  if (environment.SNOWFLAKE_PROCESS_ID !== undefined) {
-    options.processId = parseIdentityPart(
-      environment.SNOWFLAKE_PROCESS_ID,
-      undefined,
-      "SNOWFLAKE_PROCESS_ID",
-    );
-  }
-  return options;
 }

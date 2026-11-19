@@ -141,7 +141,7 @@ test("rejects duplicate deliveries and busy deployment requests", async () => {
     payload: body,
   });
   expect(busyDuplicate.statusCode).toBe(202);
-  expect(busyDuplicate.json()).toEqual({ accepted: true, runId: "run-2" });
+  expect(busyDuplicate.json()).toEqual({ accepted: false, reason: "duplicate delivery" });
   const acceptedDuplicate = await server.inject({
     method: "POST",
     url: "/api/github/webhook",
@@ -149,7 +149,7 @@ test("rejects duplicate deliveries and busy deployment requests", async () => {
     payload: body,
   });
   expect(acceptedDuplicate.json()).toEqual({ accepted: false, reason: "duplicate delivery" });
-  expect(deployment.start).toHaveBeenCalledTimes(3);
+  expect(deployment.start).toHaveBeenCalledTimes(2);
   await server.close();
 });
 

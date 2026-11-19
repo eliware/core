@@ -1,8 +1,9 @@
 import { expect, test } from "@jest/globals";
 import parseSnowflakeOptions from "../../../src/backend/config/snowflake.mjs";
 
-test("defaults the worker and process identity", () => {
-  expect(parseSnowflakeOptions({})).toEqual({ workerId: 0 });
+test("requires explicit worker and process identities", () => {
+  expect(() => parseSnowflakeOptions({})).toThrow("SNOWFLAKE_WORKER_ID");
+  expect(() => parseSnowflakeOptions({ SNOWFLAKE_WORKER_ID: "1" })).toThrow("SNOWFLAKE_PROCESS_ID");
 });
 
 test("parses configured worker and process identities", () => {
@@ -17,5 +18,7 @@ test.each([
   ["SNOWFLAKE_PROCESS_ID", "-1"],
   ["SNOWFLAKE_PROCESS_ID", "not-an-integer"],
 ])("rejects invalid %s values", (name, value) => {
-  expect(() => parseSnowflakeOptions({ [name]: value })).toThrow(name);
+  expect(() =>
+    parseSnowflakeOptions({ SNOWFLAKE_WORKER_ID: "1", SNOWFLAKE_PROCESS_ID: "1", [name]: value }),
+  ).toThrow(name);
 });

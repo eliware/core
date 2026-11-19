@@ -66,7 +66,7 @@ export default function createHealthMonitor({
       while (nextIndex < units.length) {
         const index = nextIndex;
         nextIndex += 1;
-        results[index] = await checkHealthUnit(units[index], checkUnit, now);
+        results[index] = await checkHealthUnit(units[index], checkUnit, now, healthCheckTimeoutMs);
       }
     }
     const workers = Array.from({ length: Math.min(units.length, maxConcurrentUnitChecks) }, () =>
@@ -80,17 +80,10 @@ export default function createHealthMonitor({
     if (checkGeneration !== generation) return;
     checks = checks.map((item) => ({
       ...item,
-      status: "unhealthy",
+      status: "unknown",
       checkedAt: null,
       detail: "Health check could not start",
     }));
-    for (const result of checks) {
-      try {
-        await onUnhealthy(result);
-      } catch {
-        // Notification failures do not change health results or stop future checks.
-      }
-    }
   }
 
   function startCheck() {

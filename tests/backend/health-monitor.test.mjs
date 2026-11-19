@@ -117,10 +117,10 @@ test("records and reports a health check setup failure", async () => {
   monitor.start();
   for (let attempt = 0; attempt < 6; attempt += 1) await Promise.resolve();
   expect(monitor.getStatus()).toMatchObject({
-    status: "unhealthy",
-    units: [{ name: "frr.service", status: "unhealthy", detail: "Health check could not start" }],
+    status: "unknown",
+    units: [{ name: "frr.service", status: "unknown", detail: "Health check could not start" }],
   });
-  expect(onUnhealthy).toHaveBeenCalledWith(monitor.getStatus().units[0]);
+  expect(onUnhealthy).not.toHaveBeenCalled();
   await monitor.stop();
 });
 test("ignores a setup failure after shutdown starts", async () => {

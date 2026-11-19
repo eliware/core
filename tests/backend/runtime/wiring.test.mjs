@@ -32,8 +32,12 @@ test("assembles the production application dependencies", () => {
 test("loads application configuration through the production dependency", () => {
   const originalPort = process.env.PORT;
   const originalLogLevel = process.env.LOG_LEVEL;
+  const originalWorkerId = process.env.SNOWFLAKE_WORKER_ID;
+  const originalProcessId = process.env.SNOWFLAKE_PROCESS_ID;
   process.env.PORT = "8080";
   process.env.LOG_LEVEL = "debug";
+  process.env.SNOWFLAKE_WORKER_ID = "1";
+  process.env.SNOWFLAKE_PROCESS_ID = "2";
 
   try {
     expect(runtimeDependencies.loadConfig()).toEqual({
@@ -45,12 +49,16 @@ test("loads application configuration through the production dependency", () => 
       discordWebhookUrl: undefined,
       githubBranch: "main",
       healthUnits: [],
-      snowflake: { workerId: 0 },
+      snowflake: { workerId: 1, processId: 2 },
     });
   } finally {
     if (originalPort === undefined) delete process.env.PORT;
     else process.env.PORT = originalPort;
     if (originalLogLevel === undefined) delete process.env.LOG_LEVEL;
     else process.env.LOG_LEVEL = originalLogLevel;
+    if (originalWorkerId === undefined) delete process.env.SNOWFLAKE_WORKER_ID;
+    else process.env.SNOWFLAKE_WORKER_ID = originalWorkerId;
+    if (originalProcessId === undefined) delete process.env.SNOWFLAKE_PROCESS_ID;
+    else process.env.SNOWFLAKE_PROCESS_ID = originalProcessId;
   }
 });

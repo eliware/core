@@ -31,11 +31,11 @@ export default function registerWebhookRoutes(
       return reply.code(202).send({ accepted: false, reason: "branch ignored" });
     }
 
-    const result = deployment.start(delivery);
-    if (!result.accepted) return reply.code(409).send(result);
     deliveries.set(delivery, true);
     if (deliveries.size > maximumRememberedDeliveries)
       deliveries.delete(deliveries.keys().next().value);
+    const result = deployment.start(delivery);
+    if (!result.accepted) return reply.code(409).send(result);
     return reply.code(202).send(result);
   });
 }

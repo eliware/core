@@ -37,18 +37,18 @@ Open `http://localhost:9300/` to view the dashboard.
 The server reads values from its process environment and the `.env` file in its working directory.
 Copy `.env.example` to `.env`, then set values for each router.
 
-| Name                    | Required | Default         | Accepted values                                                                                                             |
-| ----------------------- | -------- | --------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `PORT`                  | No       | `9300`          | Dashboard port from `1` through `65535`.                                                                                    |
-| `WEBHOOK_PORT`          | No       | `9301`          | Webhook port from `1` through `65535`, separate from `PORT`.                                                                |
-| `LOG_LEVEL`             | No       | `info`          | `error`, `warn`, `info`, `http`, `verbose`, `debug`, or `silly`.                                                            |
-| `CORE_REPO_PATH`        | No       | None            | Repository path. Set this value to enable deployment hooks.                                                                 |
-| `GITHUB_WEBHOOK_SECRET` | No       | None            | Secret used to authenticate GitHub webhook signatures.                                                                      |
-| `DISCORD_WEBHOOK_URL`   | No       | —               | Discord webhook URL for rich embed notifications.                                                                           |
-| `CORE_GITHUB_BRANCH`    | No       | `main`          | Branch deployed from the configuration repository.                                                                          |
-| `CORE_HEALTH_UNITS`     | No       | Empty list      | Unit names to monitor. An empty list disables health monitoring.                                                            |
-| `SNOWFLAKE_WORKER_ID`   | No       | `0`             | Snowflake worker value from `0` through `31`.                                                                               |
-| `SNOWFLAKE_PROCESS_ID`  | No       | Package default | Optional process value from `0` through `31`. The snowflake package uses `process.pid % 32` when you do not set this value. |
+| Name                    | Required | Default    | Accepted values                                                                  |
+| ----------------------- | -------- | ---------- | -------------------------------------------------------------------------------- |
+| `PORT`                  | No       | `9300`     | Dashboard port from `1` through `65535`.                                         |
+| `WEBHOOK_PORT`          | No       | `9301`     | Webhook port from `1` through `65535`, separate from `PORT`.                     |
+| `LOG_LEVEL`             | No       | `info`     | `error`, `warn`, `info`, `http`, `verbose`, `debug`, or `silly`.                 |
+| `CORE_REPO_PATH`        | No       | None       | Repository path. Set this value to enable deployment hooks.                      |
+| `GITHUB_WEBHOOK_SECRET` | No       | None       | Secret used to authenticate GitHub webhook signatures.                           |
+| `DISCORD_WEBHOOK_URL`   | No       | —          | Discord webhook URL for rich embed notifications.                                |
+| `CORE_GITHUB_BRANCH`    | No       | `main`     | Branch deployed from the configuration repository.                               |
+| `CORE_HEALTH_UNITS`     | No       | Empty list | Unit names to monitor. An empty list disables health monitoring.                 |
+| `SNOWFLAKE_WORKER_ID`   | Yes      | None       | Unique worker value from `0` through `31` for this active application instance.  |
+| `SNOWFLAKE_PROCESS_ID`  | Yes      | None       | Unique process value from `0` through `31` for this active application instance. |
 
 The server rejects invalid ports and rejects equal dashboard and webhook ports.
 The dashboard and webhook TCP endpoint numbers must not be the same.
@@ -58,9 +58,10 @@ The `LOG_LEVEL` value sets the minimum level for application log messages.
 
 The screenshot and PWA audit commands also read these process environment values:
 
-| Name      | Default                  | Purpose                            |
-| --------- | ------------------------ | ---------------------------------- |
-| `WEB_URL` | `http://127.0.0.1:9300/` | Server URL used by browser checks. |
+| Name              | Default                  | Purpose                                     |
+| ----------------- | ------------------------ | ------------------------------------------- |
+| `WEB_URL`         | `http://127.0.0.1:9300/` | Server URL used by browser checks.          |
+| `SCREENSHOT_PATH` | `artifacts/home.png`     | Output file used by the screenshot command. |
 
 These values do not configure the web server.
 
@@ -102,7 +103,7 @@ The application preserves untracked files during recovery.
 Set the systemd unit umask to `0022` so router processes can read files that Git pulls.
 The dashboard shows the latest deployment result until the process restarts.
 The application creates decimal deployment IDs with `@eliware/common` snowflakes.
-Set a unique worker and process pair for every active instance.
+Set a unique worker and process pair for every active instance. The application exits when one value is missing or invalid.
 
 ## Health monitoring and notifications
 
@@ -221,8 +222,9 @@ Run the aggregate checks before you commit:
 npm test
 ```
 
-`npm test` runs the aggregate command for tests, lint, formatting, dependency checks, and package rules.
-Run `npm run build` separately to build browser assets.
+`npm test` runs tests, lint, formatting, dependency checks, and package rules.
+It checks the committed browser bundles but does not assemble them from frontend source.
+Run `npm run build` separately before you validate frontend changes.
 Run focused tests by passing one or more test file paths:
 
 ```sh

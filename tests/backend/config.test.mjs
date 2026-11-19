@@ -33,5 +33,9 @@ test.each([
   [{ DISCORD_WEBHOOK_URL: "invalid" }, "valid Discord"],
   [{ CORE_HEALTH_UNITS: "bad unit" }, "CORE_HEALTH_UNITS"],
 ])("rejects invalid configuration %s", (environment, message) => {
-  expect(() => loadApplicationConfig({ environment })).toThrow(message);
+  expect(() =>
+    loadApplicationConfig({
+      environment: { SNOWFLAKE_WORKER_ID: "1", SNOWFLAKE_PROCESS_ID: "1", ...environment },
+    }),
+  ).toThrow(message);
 });

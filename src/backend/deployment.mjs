@@ -9,6 +9,7 @@ import reportSetupFailure from "./deployment/setup-failure.mjs";
 import createDeploymentAdmission from "./deployment/admission.mjs";
 import createFailureStatus from "./deployment/failure-status.mjs";
 import verifyDeploymentWorktree from "./deployment/worktree.mjs";
+import validateDeploymentRepository from "./deployment/validate-repository.mjs";
 
 const execFile = promisify(nodeExecFile);
 export default function createDeploymentManager({
@@ -66,21 +67,7 @@ export default function createDeploymentManager({
     try {
       startedAt = now().toISOString();
       status.set({ runId, event, status: "running", startedAt, finishedAt: null, steps });
-      const dirty = await run("git", ["status", "--porcelain"], { cwd: repositoryPath });
-      const statusCode = dirty?.code ?? dirty?.exitCode ?? dirty?.status;
-      if (statusCode !== undefined && statusCode !== 0)
-        throw new Error(`Git status exited with code ${statusCode}.`);
-      if (String(dirty.stdout ?? "").trim())
-        throw new Error("Configuration repository has uncommitted changes.");
-      const currentBranch = await run("git", ["branch", "--show-current"], {
-        cwd: repositoryPath,
-      });
-      if (String(currentBranch.stdout ?? "").trim() !== branch)
-        throw new Error(`Configuration repository must be on branch ${branch}.`);
-      const revision = await run("git", ["rev-parse", "HEAD"], { cwd: repositoryPath });
-      const commit = String(revision.stdout ?? "").trim();
-      if (!/^[a-f0-9]{40,64}$/.test(commit)) throw new Error("Git returned an invalid commit ID.");
-      previousCommit = commit;
+      previousCommit = await validateDeploymentRepository({ run, repositoryPath, branch });
       await step("git pull", "git", ["pull", "--ff-only", "--", "origin", branch]);
       await verifyCleanWorktree("git pull");
       await step("npm ci --include=dev", "npm", ["ci", "--include=dev"]);

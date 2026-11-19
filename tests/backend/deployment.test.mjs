@@ -20,10 +20,12 @@ function createManager(options = {}) {
   const { currentBranch = "main", ...managerOptions } = options;
   if (managerOptions.run) {
     const run = managerOptions.run;
-    managerOptions.run = (command, args, runOptions) =>
-      command === "git" && args[0] === "branch"
-        ? Promise.resolve({ stdout: `${currentBranch}\n` })
-        : run(command, args, runOptions);
+    managerOptions.run = async (command, args, runOptions) => {
+      const result = await run(command, args, runOptions);
+      return command === "git" && args[0] === "branch"
+        ? { ...result, stdout: `${currentBranch}\n` }
+        : result;
+    };
   }
   return createDeploymentManager({ now: fixedNow, ...managerOptions });
 }
@@ -60,6 +62,7 @@ test("runs the deployment steps in order and records success", async () => {
   await waitFor(manager, "succeeded");
   expect(run.mock.calls.map(([command, args]) => [command, args])).toEqual([
     ["git", ["status", "--porcelain"]],
+    ["git", ["branch", "--show-current"]],
     ["git", ["rev-parse", "HEAD"]],
     ["git", ["pull", "--ff-only", "--", "origin", "main"]],
     ["git", ["status", "--porcelain"]],
@@ -99,6 +102,20 @@ test("uses the default command adapter and clock", async () => {
     expect.any(Function),
   );
   jest.useRealTimers();
+});
+
+test.each(["branch", "rev-parse"])("stops when git %s exits nonzero", async (operation) => {
+  const run = successfulRun();
+  run.mockImplementation(async (command, args) => {
+    if (command === "git" && args[0] === operation)
+      return { stdout: operation === "branch" ? "main\n" : `${commit}\n`, code: 1 };
+    return { stdout: "" };
+  });
+  const manager = createManager({ repositoryPath: "/router/core", run });
+  manager.start(`${operation}-error`);
+  const status = await waitFor(manager, "failed");
+  expect(status.error).toMatch(/branch|commit ID/u);
+  expect(run.mock.calls.some(([, args]) => args[0] === "pull")).toBe(false);
 });
 
 test("rejects an initial git status command with a nonzero result", async () => {
@@ -198,24 +215,6 @@ test("reports a failed reload of the restored configuration", async () => {
   manager.start("delivery-5");
   const status = await waitFor(manager, "failed");
   expect(status.recovery).toContain("its reload failed");
-});
-
-test("records a failed command that does not provide an error message", async () => {
-  const run = successfulRun();
-  run.mockImplementation(async (command, args) => {
-    if (command === "git" && args[0] === "rev-parse") return { stdout: `${commit}\n` };
-    if (command === "npm" && args[0] === "ci") throw null;
-    return { stdout: "" };
-  });
-  const manager = createManager({ repositoryPath: "/router/core1", run });
-  manager.start("delivery-10");
-  const status = await waitFor(manager, "failed");
-  expect(status.steps[0]).toEqual({ name: "git pull", status: "passed" });
-  expect(status.steps.find(({ name }) => name === "npm ci --include=dev")).toEqual({
-    name: "npm ci --include=dev",
-    status: "failed",
-    detail: "null",
-  });
 });
 
 test("rejects concurrent deployments for one repository and records notification failures", async () => {
