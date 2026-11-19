@@ -1,6 +1,5 @@
 import { expect, jest, test } from "@jest/globals";
 import renderHome from "../../src/frontend/client.mjs";
-import "../../test-fixtures/frontend-client-aux-tests.mjs";
 
 function element() {
   return {

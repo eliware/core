@@ -8,7 +8,7 @@ export default {
   mode: "production",
   target: "web",
   entry: {
-    client: "./src/frontend/client-entry.mjs",
+    client: "./src/frontend/client/entry.mjs",
     "service-worker": "./src/frontend/service/worker-entry.mjs",
   },
   output: {

@@ -1,4 +1,5 @@
 import renderMetrics from "./render-metrics.mjs";
+import createClientStatus from "./client/status.mjs";
 
 function formatTime(value) {
   if (!value) return "—";
@@ -103,10 +104,8 @@ export default function renderHome(
   { fetcher = fetch, setIntervalFn = setInterval, now = () => new Date() } = {},
 ) {
   const status = document.querySelector("[data-status]");
-  if (!document.querySelector("[data-health-list]")) {
-    if (status) status.textContent = "Core dashboard assets loaded.";
-    return undefined;
-  }
+  const clientStatus = createClientStatus(document, status);
+  if (!clientStatus.canRender) return undefined;
 
   let refreshing = false;
   async function refresh() {
@@ -121,7 +120,7 @@ export default function renderHome(
       renderDeployment(document, data?.deployment);
       if (status) status.textContent = `Updated ${formatTime(now())}`;
     } catch {
-      if (status) status.textContent = "Status is unavailable. Retrying shortly.";
+      clientStatus.showUnavailable();
     } finally {
       refreshing = false;
     }
