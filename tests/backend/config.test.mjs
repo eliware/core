@@ -28,16 +28,16 @@ test("assembles and validates parsed application configuration", () => {
   });
 });
 
-test("uses service catalog health units instead of environment unit overrides", () => {
+test("keeps environment health units alongside the service catalog", () => {
   const configuration = loadApplicationConfig({
     environment: {
       CORE_REPO_PATH: resolve("test-fixtures/router-catalog"),
-      CORE_HEALTH_UNITS: "invalid unit value",
+      CORE_HEALTH_UNITS: "core.service",
       SNOWFLAKE_WORKER_ID: "1",
       SNOWFLAKE_PROCESS_ID: "1",
     },
   });
 
   expect(configuration.catalog.components[0].health.unit).toBe("named.service");
-  expect(configuration.healthUnits).toEqual([]);
+  expect(configuration.healthUnits).toEqual(["core.service"]);
 });

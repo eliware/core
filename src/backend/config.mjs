@@ -17,7 +17,7 @@ export default function loadApplicationConfig({ environment }) {
   const dashboardUrl = validateDashboardUrl(application.dashboardUrl, tcpEndpoint);
   const discordWebhookUrl = validateDiscordUrl(application.discordWebhookUrl);
   const catalog = loadServiceCatalog(application.repositoryPath ?? process.cwd());
-  const healthUnits = catalog ? [] : parseHealthUnits(application.healthUnits);
+  const healthUnits = parseHealthUnits(application.healthUnits);
   const snowflake = parseSnowflakeOptions({
     SNOWFLAKE_WORKER_ID: application.workerId,
     SNOWFLAKE_PROCESS_ID: application.processId,

@@ -107,10 +107,14 @@ test("uses catalog health units for the dashboard", () => {
     ],
   };
 
-  createApplicationIntegrations({ repositoryPath: "/router", catalog }, dependencies, log);
+  createApplicationIntegrations(
+    { repositoryPath: "/router", catalog, healthUnits: ["core.service"] },
+    dependencies,
+    log,
+  );
 
   expect(dependencies.createHealthMonitor).toHaveBeenCalledWith({
-    units: ["named.service", "frr.service"],
+    units: ["named.service", "frr.service", "core.service"],
     onUnhealthy: expect.any(Function),
     onSystemdEvent: expect.any(Function),
   });

@@ -7,6 +7,10 @@
 - Refresh VRRP metrics with Keepalived's JSON signal and parent process ID.
 - Resolve dashboard assets from the installed package and include the built client files in release tarballs.
 
+### Changed
+
+- Include `CORE_HEALTH_UNITS` in dashboard health checks when a catalog exists.
+
 ## 15.2.3 — 2026-11-19
 
 ### Changed

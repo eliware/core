@@ -47,7 +47,7 @@ Copy `.env.example` to `.env`, then set values for each router.
 | `GITHUB_WEBHOOK_SECRET` | No       | None         | Secret used to authenticate GitHub webhook signatures.                           |
 | `DISCORD_WEBHOOK_URL`   | No       | —            | Discord webhook URL for rich embed notifications.                                |
 | `CORE_GITHUB_BRANCH`    | No       | `main`       | Branch deployed from the configuration repository.                               |
-| `CORE_HEALTH_UNITS`     | No       | Empty list   | Unit names to monitor. An empty list disables health monitoring.                 |
+| `CORE_HEALTH_UNITS`     | No       | Empty list   | More systemd units to monitor with or without a catalog.                         |
 | `SNOWFLAKE_WORKER_ID`   | Yes      | None         | Unique worker value from `0` through `31` for this active application instance.  |
 | `SNOWFLAKE_PROCESS_ID`  | Yes      | None         | Unique process value from `0` through `31` for this active application instance. |
 
@@ -133,7 +133,8 @@ Set a unique worker and process pair for every active instance. The application 
 ## Health monitoring and notifications
 
 When `core-catalog.yaml` exists in the configuration repository, the dashboard monitors its component health units.
-If no catalog exists, set `CORE_HEALTH_UNITS` to a comma-separated list of systemd unit names such as `named.service,kea-dhcp4.service`.
+It also monitors units from `CORE_HEALTH_UNITS`, such as `core.service`.
+If no catalog exists, set `CORE_HEALTH_UNITS` to a comma-separated list of systemd unit names.
 The application checks each unit at startup and every five minutes.
 The application marks a unit unhealthy when its systemd check runs longer than ten seconds.
 An empty list reports the monitored units as unconfigured.

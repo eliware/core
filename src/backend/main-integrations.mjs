@@ -1,7 +1,7 @@
 export default function createApplicationIntegrations(configuration, dependencies, log) {
-  const healthUnits = configuration.catalog
-    ? [...new Set(configuration.catalog.components.map(({ health }) => health.unit))]
-    : configuration.healthUnits;
+  const catalogHealthUnits =
+    configuration.catalog?.components.map(({ health }) => health.unit) ?? [];
+  const healthUnits = [...new Set([...catalogHealthUnits, ...(configuration.healthUnits ?? [])])];
   const notify = (notification) =>
     dependencies.sendDiscordNotification({
       webhookUrl: configuration.discordWebhookUrl,
