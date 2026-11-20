@@ -36,6 +36,8 @@ Install Bash when the router repository contains shell scripts.
 
 Select the repository URL and directory for this router.
 Use a separate repository and directory on each router.
+Add `@eliware/core` as a development dependency in the router repository.
+Commit `package.json` and `package-lock.json` before you clone the repository.
 
 ```sh
 sudo mkdir -p /eliware

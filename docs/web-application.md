@@ -74,8 +74,10 @@ The application rejects equal dashboard and webhook ports.
 
 Set both `CORE_REPO_PATH` and `GITHUB_WEBHOOK_SECRET` to enable deployment hooks.
 The application disables webhook routes when one value is missing.
-Configure the GitHub webhook to send JSON push events to `http://<router>:<WEBHOOK_PORT>/api/github/webhook`.
-Forward that external address and port to `127.0.0.1` on `WEBHOOK_PORT`.
+Configure GitHub to send push events to the externally reachable webhook address.
+Use `https://router.example:9301/api/github/webhook` when a proxy provides TLS.
+Forward the webhook path to `127.0.0.1` on `WEBHOOK_PORT`.
+
 The listener requires `application/json` with a JSON object body.
 It returns HTTP 415 for non-JSON content types and HTTP 400 for JSON values that are not objects.
 
@@ -268,8 +270,12 @@ Stop the server after browser validation.
 
 ## npm publication
 
-The package includes the CLI and web application. The npm workflow validates tagged releases and publishes the package with provenance.
-The release tag must match the package version. Follow the approved release process before publication.
+The public npm package includes the CLI and web application.
+Its tarball contains `bin/`, `src/`, `public/`, `docs/`, `specs/`, and the package documentation.
+The tarball does not include tests, `node_modules/`, generated `dist/` files, or the lockfile.
+The npm workflow validates tagged releases and publishes the package with provenance.
+Use a numeric `MAJOR.MINOR.PATCH` version and a matching `vMAJOR.MINOR.PATCH` release tag.
+Follow the approved release process before publication.
 
 ## Extend the web app
 
@@ -293,9 +299,8 @@ npm test
 ```
 
 `npm test` runs the configured `eliware-test` checks for this repository.
-The checks include tests, lint, formatting, dependency audits, and package rules.
-The command does not build browser assets.
-Run `npm run build` after you change frontend source files.
+The checks include tests, lint, formatting, dependency audits, package rules, and the browser build.
+Run `npm run build` to build browser assets directly.
 Run focused tests by passing one or more test file paths:
 
 ```sh

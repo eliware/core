@@ -29,8 +29,8 @@ Core Networking Manager.
 
 ## Features
 
-The `core-cli` tool validates and compares router configuration repositories.
-The `core-web` application provides router health, metrics, and GitHub deployment hooks.
+`core-cli` validates and compares router configuration repositories.
+`core-web` provides a read-only dashboard, health monitoring, metrics, and GitHub deployment hooks.
 
 ## Requirements
 
@@ -39,8 +39,13 @@ Install Bash when the router repository contains shell scripts.
 
 ## Setup
 
-Follow the [router installation guide](docs/router-installation.md) to prepare a CentOS 10 router.
-Install the package in a router repository with `npm install --save-dev @eliware/core@latest`.
+Install Core as a development dependency in each router configuration repository:
+
+```sh
+npm install --save-dev @eliware/core@latest
+```
+
+Follow the [router installation guide](docs/router-installation.md) to prepare a router host.
 
 ## Usage
 
@@ -52,33 +57,34 @@ Read [release notes](RELEASE_NOTES.md) for version history.
 ## Development
 
 Run `npm ci` from this repository root.
-Read [AGENTS.md](AGENTS.md), the [documentation index](docs/README.md), and the [specifications index](specs/README.md) for maintained guidance.
+Read [AGENTS.md](AGENTS.md), the [documentation index](docs/README.md), and the [specifications index](specs/README.md) before you change files.
 
 ## Testing
 
-Run `npm test` for aggregate repository validation.
-Run `npm run build` after changing browser source files.
+Run `npm test` for aggregate checks with the browser build.
+Run `npm run build` to build browser bundles directly.
+Run the browser checks separately with `npm run screenshots` or `npm run lighthouse`.
 
 ## Troubleshooting
 
 Read the [CLI guide](docs/cli-application.md) for validation errors.
-Read the [installation guide](docs/router-installation.md) for router setup problems.
+Read the [installation guide](docs/router-installation.md) for host setup problems.
 Read the [web application guide](docs/web-application.md) for server and webhook problems.
 
 ## Security
 
 Keep credentials, private data, and runtime state out of Git.
-Limit dashboard and webhook access through the router firewall or an approved proxy.
+Limit dashboard and webhook access with the router firewall or an approved proxy.
 
 ## Configuration
 
 The web application reads environment values and `.env` from its working directory.
-Read the [configuration guide](docs/web-application.md#configuration) for defaults and requirements.
+Read the [configuration guide](docs/web-application.md#configuration) for variable defaults and requirements.
 
 ## Operations
 
 Use the [router installation guide](docs/router-installation.md) to install services and configuration links.
-Read the [web application guide](docs/web-application.md) to configure dashboard and webhook operations.
+Read the [web application guide](docs/web-application.md) for dashboard and deployment operations.
 
 ## Commands
 
@@ -91,10 +97,13 @@ Read the [web application guide](docs/web-application.md) to configure dashboard
 | `core-cli reload [component] [--repo <path>]` | Run component reload actions.                |
 | `core-web`                                    | Start the dashboard and webhook application. |
 
-Run `core-cli --help` or `core-web --help` for help.
+Run `core-cli --help` or `core-web --help` for command help.
 Run `core-cli --version` or `core-web --version` for the package version.
+Read the [CLI guide](docs/cli-application.md) for arguments, defaults, and command results.
 
 ## Exit codes
+
+The CLI commands return these codes:
 
 | Code | Meaning                                                       |
 | ---- | ------------------------------------------------------------- |
@@ -104,23 +113,26 @@ Run `core-cli --version` or `core-web --version` for the package version.
 
 ## Routes
 
-The dashboard listener serves the application, assets, health, readiness, and status routes.
+The dashboard serves `/`, `/health`, `/ready`, and `/api/status`.
 The webhook listener accepts `POST /api/github/webhook` on its configured port.
-Read the [route guide](docs/web-application.md#routes) for paths and results.
+Read the [route guide](docs/web-application.md#routes) for assets and response details.
 
 ## Assets
 
-Keep browser source assets in `public/`.
+Keep browser source files in `src/frontend/` and served assets in `public/`.
 The build creates `dist/client.js` and `dist/service-worker.js`.
+Run `node bin/copy-web-assets.mjs` to copy the bundles into `public/`.
 
 ## Development server
 
 Run `core-web` from a router repository.
-The dashboard defaults to port `9300`, and the webhook listener defaults to port `9301`.
+The dashboard defaults to loopback port `9300`, and the webhook defaults to loopback port `9301`.
+Read the [web application guide](docs/web-application.md#configuration) for proxy settings.
 
 ## Build
 
 Run `npm run build` to create browser bundles in `dist/`.
+Run `node bin/copy-web-assets.mjs` to update the packaged browser assets.
 Read the [browser validation guide](docs/web-application.md#browser-validation) for browser checks.
 
 ## Deployment

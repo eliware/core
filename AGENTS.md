@@ -29,7 +29,7 @@ Keep credentials, secrets, private data, and runtime state out of Git.
 
 ## Changes
 
-Update user documentation and release notes when user-visible behavior changes.
+Update documentation and release notes when user-visible behavior changes.
 
 ## Application
 
