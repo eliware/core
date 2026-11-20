@@ -3,6 +3,7 @@ import notifyDeployment from "./notify.mjs";
 import createDeploymentOperations from "./operations.mjs";
 import prepareDeployment from "./prepare-deployment.mjs";
 import restartCoreAfterUpdate from "./core/restart.mjs";
+import releaseDeploymentLock from "./lock/release.mjs";
 
 export default async function executeDeployment({
   event,
@@ -25,13 +26,7 @@ export default async function executeDeployment({
   let startedAt;
   const steps = [];
   const deploymentState = { reloadStarted: false };
-  const releaseLockSafely = () => {
-    try {
-      releaseLock?.();
-    } catch {
-      status.update({ lockReleaseError: "Deployment lock cleanup failed." });
-    }
-  };
+  const releaseLockSafely = () => releaseDeploymentLock({ releaseLock, status });
   const operations = createDeploymentOperations({ repositoryPath, run, steps, status });
   try {
     startedAt = now().toISOString();
