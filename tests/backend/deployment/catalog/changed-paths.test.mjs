@@ -17,3 +17,11 @@ test("handles missing or incomplete output", () => {
   expect(parseChangedPaths("M\0")).toEqual([]);
   expect(parseChangedPaths("R100\0old/name\0")).toEqual(["old/name"]);
 });
+
+test("keeps later paths when a rename record is truncated", () => {
+  expect(parseChangedPaths("R100\0old/name\0M\0etc/named.conf\0")).toEqual([
+    "old/name",
+    "M",
+    "etc/named.conf",
+  ]);
+});

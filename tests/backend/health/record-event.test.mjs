@@ -29,3 +29,17 @@ test("notifies when a failed unit restarts", () => {
     createUnitEventUpdate([unhealthy], { ...event, event: "restarted", status: "healthy" }),
   ).toMatchObject({ shouldNotify: true, result: { status: "healthy" } });
 });
+
+test("keeps an unhealthy state when a started event has unknown live state", () => {
+  const unhealthy = { ...unit, status: "unhealthy" };
+  const started = createUnitEventUpdate([unhealthy], {
+    ...event,
+    event: "started",
+    status: "unknown",
+    state: "unknown",
+  });
+  expect(started.result.status).toBe("unhealthy");
+  expect(createUnitEventUpdate(started.checks, { ...event, event: "failed" }).shouldNotify).toBe(
+    false,
+  );
+});

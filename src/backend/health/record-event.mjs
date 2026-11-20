@@ -2,9 +2,11 @@ export default function createUnitEventUpdate(checks, event) {
   const index = checks.findIndex(({ name }) => name === event.name);
   if (index < 0) return undefined;
   const previous = checks[index];
+  const status =
+    event.status === "unknown" && previous.status === "unhealthy" ? previous.status : event.status;
   const result = {
     ...previous,
-    status: event.status,
+    status,
     checkedAt: event.checkedAt,
     state: event.state,
     detail: event.detail,
