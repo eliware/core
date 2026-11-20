@@ -6,7 +6,7 @@ test("assembles and validates application settings", () => {
   expect(
     loadApplicationSettings({
       port: "8080",
-      dashboardUrl: "https://router.example/",
+      dashboardUrl: "https://router.example.com/",
       webhookPort: "8081",
       logLevel: "debug",
       githubBranch: "production",
@@ -16,7 +16,7 @@ test("assembles and validates application settings", () => {
     }),
   ).toMatchObject({
     tcpEndpoint: 8080,
-    dashboardUrl: "https://router.example/",
+    dashboardUrl: "https://router.example.com/",
     webhookEndpoint: 8081,
     logLevel: "debug",
     githubBranch: "production",

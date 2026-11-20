@@ -7,7 +7,10 @@ export default function isPublicHost(hostname) {
     host.endsWith(".localhost") ||
     host.endsWith(".local") ||
     host.endsWith(".internal") ||
-    host.endsWith(".lan")
+    host.endsWith(".lan") ||
+    [".example", ".invalid", ".test", ".onion", ".alt", ".arpa"].some((suffix) =>
+      host.endsWith(suffix),
+    )
   ) {
     return false;
   }

@@ -50,6 +50,17 @@ test("reloads all configuration when no catalog actions exist", async () => {
   expect(steps).toContainEqual({ name: "reload previous configuration", status: "passed" });
 });
 
+test("does not run the legacy reload when a catalog has no changed actions", async () => {
+  const run = jest.fn().mockResolvedValue({ stdout: "" });
+  const steps = [];
+  await restore(payload({ catalogActions: [] }), steps, {
+    run,
+    checkReady: jest.fn().mockResolvedValue(undefined),
+  });
+  expect(run).not.toHaveBeenCalledWith("npm", ["run", "reload"], expect.anything());
+  expect(run).toHaveBeenCalledWith("systemctl", ["restart", "core.service"]);
+});
+
 test("reports recovery failures and records the failed step", async () => {
   const steps = [];
   await expect(
