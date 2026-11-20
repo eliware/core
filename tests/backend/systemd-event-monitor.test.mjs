@@ -1,19 +1,8 @@
-import { EventEmitter } from "node:events";
-import { PassThrough } from "node:stream";
 import { expect, jest, test } from "@jest/globals";
+import createSystemdEventChild from "../../test-fixtures/systemd-event-child.mjs";
 import createSystemdEventMonitor from "../../src/backend/systemd-event-monitor.mjs";
 
-function childProcess() {
-  const child = new EventEmitter();
-  child.stdout = new PassThrough();
-  child.stderr = new PassThrough();
-  child.kill = jest.fn(() => {
-    child.killed = true;
-    child.emit("close", 0);
-  });
-  child.killed = false;
-  return child;
-}
+const childProcess = () => createSystemdEventChild(jest);
 
 test("streams failures, stops, and restarts while suppressing duplicate events", async () => {
   const child = childProcess();
@@ -182,6 +171,59 @@ test("waits for the journal child to exit during shutdown", async () => {
   expect(alreadyKilled.kill).not.toHaveBeenCalled();
   alreadyKilled.emit("close", 0);
   await secondStop;
+});
+
+test("waits for accepted event callbacks during shutdown", async () => {
+  const child = childProcess();
+  let finishEvent;
+  let signalStarted;
+  const eventStarted = new Promise((resolve) => {
+    signalStarted = resolve;
+  });
+  const monitor = createSystemdEventMonitor({
+    units: ["named.service"],
+    spawn: () => child,
+    onEvent: () =>
+      new Promise((resolve) => {
+        finishEvent = resolve;
+        signalStarted();
+      }),
+  });
+  monitor.start();
+  child.stdout.write(
+    `${JSON.stringify({ UNIT: "named.service", MESSAGE: "Stopped Name Server." })}\n`,
+  );
+  await eventStarted;
+  let stopped = false;
+  const stopping = monitor.stop().then(() => {
+    stopped = true;
+  });
+  await Promise.resolve();
+  expect(stopped).toBe(false);
+  finishEvent();
+  await stopping;
+  expect(stopped).toBe(true);
+});
+
+test("allows an event callback to stop the monitor without deadlock", async () => {
+  const child = childProcess();
+  let monitor;
+  let eventFinished = false;
+  monitor = createSystemdEventMonitor({
+    units: ["named.service"],
+    spawn: () => child,
+    onEvent: async () => {
+      await monitor.stop();
+      eventFinished = true;
+    },
+  });
+  monitor.start();
+  child.stdout.write(
+    `${JSON.stringify({ UNIT: "named.service", MESSAGE: "Stopped Name Server." })}\n`,
+  );
+  for (let index = 0; index < 12 && !eventFinished; index += 1) await Promise.resolve();
+  expect(eventFinished).toBe(true);
+  await monitor.stop();
 });
 
 test("force-stops journal children that ignore SIGTERM", async () => {

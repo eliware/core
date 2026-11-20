@@ -1,4 +1,6 @@
-import { expect, test } from "@jest/globals";
+import { expect, jest, test } from "@jest/globals";
+import * as healthMonitorHelpers from "../../../test-fixtures/health-monitor.mjs";
+const { createHealthMonitor } = healthMonitorHelpers;
 import createUnitEventUpdate from "../../../src/backend/health/record-event.mjs";
 
 const unit = { name: "frr.service", status: "healthy", checkedAt: null };
@@ -42,4 +44,28 @@ test("keeps an unhealthy state when a started event has unknown live state", () 
   expect(createUnitEventUpdate(started.checks, { ...event, event: "failed" }).shouldNotify).toBe(
     false,
   );
+});
+
+test("allows a systemd event callback to stop during a replacement health check", async () => {
+  const checkCompletions = [];
+  const checkUnit = jest.fn(() => new Promise((resolve) => checkCompletions.push(resolve)));
+  let monitor;
+  const onSystemdEvent = jest.fn(async () => monitor.stop());
+  monitor = createHealthMonitor({
+    units: ["frr.service"],
+    checkUnit,
+    onSystemdEvent,
+    setIntervalFn: () => 1,
+  });
+  monitor.start();
+  const firstStop = monitor.stop();
+  monitor.start();
+  const recorded = monitor.recordEvent(healthMonitorHelpers.systemdFailureEvent);
+  checkCompletions[0]();
+  await recorded;
+  await firstStop;
+  expect(onSystemdEvent).toHaveBeenCalledTimes(1);
+  expect(checkCompletions).toHaveLength(2);
+  checkCompletions[1]();
+  await monitor.stop();
 });

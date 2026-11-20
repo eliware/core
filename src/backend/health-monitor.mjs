@@ -67,7 +67,10 @@ export default function createHealthMonitor({
     checks = update.checks;
     if (update.shouldNotify && !polling.isStopped()) {
       try {
-        await onSystemdEvent({ ...event, result: update.result });
+        const activeCheck = polling.getActiveCheck();
+        await notificationContext.run(activeCheck, () =>
+          onSystemdEvent({ ...event, result: update.result }),
+        );
       } catch {
         // Notification failures do not change health results or stop future checks.
       }

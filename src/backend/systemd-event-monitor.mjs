@@ -1,6 +1,8 @@
 import { spawn as nodeSpawn } from "node:child_process";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { createInterface } from "node:readline";
 import parseJournalEvent from "./systemd/journal-event.mjs";
+const deliveryContext = new AsyncLocalStorage();
 
 export default function createSystemdEventMonitor({
   units = [],
@@ -51,13 +53,16 @@ export default function createSystemdEventMonitor({
   }
 
   function deliver(event) {
-    deliveryQueue = deliveryQueue.then(async () => {
+    const previousDelivery = deliveryQueue;
+    const currentDelivery = previousDelivery.then(async () => {
       try {
-        await onEvent(event);
+        await deliveryContext.run(true, () => onEvent(event));
       } catch {
         log.warn(`Systemd event handling failed for ${event.name}`);
       }
     });
+    deliveryQueue = currentDelivery;
+    return currentDelivery;
   }
 
   function scheduleRestart(message, failedChild) {
@@ -110,33 +115,35 @@ export default function createSystemdEventMonitor({
   }
 
   async function stop() {
-    if (stopped) return;
-    stopped = true;
-    if (restartTimer !== undefined) clearTimeoutFn(restartTimer);
-    restartTimer = undefined;
-    reader?.close();
-    const active = child;
-    child = undefined;
-    reader = undefined;
-    if (active) {
-      if (!active.killed) active.kill("SIGTERM");
-      let timeout;
-      const timedOut = await Promise.race([
-        childExit.then(() => false),
-        new Promise((resolve) => {
-          timeout = setTimeoutFn(() => resolve(true), shutdownTimeoutMs);
-        }),
-      ]);
-      if (timeout !== undefined) clearTimeoutFn(timeout);
-      if (timedOut && !childExited) {
-        log.warn("Systemd event stream did not stop after SIGTERM");
-        try {
-          active.kill("SIGKILL");
-        } catch {
-          log.warn("Systemd event stream could not be force-stopped");
+    if (!stopped) {
+      stopped = true;
+      if (restartTimer !== undefined) clearTimeoutFn(restartTimer);
+      restartTimer = undefined;
+      reader?.close();
+      const active = child;
+      child = undefined;
+      reader = undefined;
+      if (active) {
+        if (!active.killed) active.kill("SIGTERM");
+        let timeout;
+        const timedOut = await Promise.race([
+          childExit.then(() => false),
+          new Promise((resolve) => {
+            timeout = setTimeoutFn(() => resolve(true), shutdownTimeoutMs);
+          }),
+        ]);
+        if (timeout !== undefined) clearTimeoutFn(timeout);
+        if (timedOut && !childExited) {
+          log.warn("Systemd event stream did not stop after SIGTERM");
+          try {
+            active.kill("SIGKILL");
+          } catch {
+            log.warn("Systemd event stream could not be force-stopped");
+          }
         }
       }
     }
+    if (deliveryContext.getStore() !== true) await deliveryQueue;
   }
 
   return { start, stop };
