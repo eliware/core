@@ -9,6 +9,7 @@ import isParseableConfig from "./preflight/config-files.mjs";
 import validateRepositoryCatalog from "./preflight/catalog.mjs";
 import checkJavaScriptSyntax from "./preflight/javascript-syntax.mjs";
 import checkShellSyntax from "./preflight/shell-syntax.mjs";
+import checkRepositoryFormatting from "./preflight/format-check.mjs";
 
 export default async function preflight(
   root,
@@ -49,12 +50,8 @@ export default async function preflight(
 
   errors.push(...validatePackageMetadata(packageJson, inventory.files, root, readFile));
 
-  const format = run(
-    platform === "win32" ? "cmd.exe" : "npm",
-    platform === "win32" ? ["/d", "/s", "/c", "npm run format:check"] : ["run", "format:check"],
-    { cwd: root, encoding: "utf8", maxBuffer: 4 * 1024 * 1024 },
-  );
-  if (format.error || format.status !== 0) errors.push("FAIL repository formatting check.");
+  const format = checkRepositoryFormatting(root, { run, platform });
+  if (!format.ok) errors.push("FAIL repository formatting check.");
   else lines.push("PASS repository formatting");
 
   const javascript = checkJavaScriptSyntax(root, inventory.files, { run, nodePath });

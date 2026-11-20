@@ -1,4 +1,4 @@
-export default function loadApplicationValues(environment) {
+export default function loadApplicationEnvironment(environment) {
   return {
     port: environment.PORT,
     dashboardUrl: environment.CORE_DASHBOARD_URL,

@@ -2,6 +2,7 @@ import { execFile as nodeExecFile } from "node:child_process";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { promisify } from "node:util";
 import checkHealthUnits from "./health/check/units.mjs";
+import createHealthPolling from "./health/polling.mjs";
 import createUnitEventUpdate from "./health/record-event.mjs";
 import createHealthStatus from "./health/status.mjs";
 
@@ -21,76 +22,50 @@ export default function createHealthMonitor({
   clearIntervalFn = clearInterval,
 } = {}) {
   let checks = units.map((name) => ({ name, status: "unknown", checkedAt: null }));
-  let timer;
-  let running;
-  let runningGeneration;
-  let restartScheduled = false;
-  let generation = 0;
-  let stopped = true;
-
-  async function check() {
-    if (running) return running;
-    const checkGeneration = generation;
-    const current = checkHealthUnits({ units, checks, checkUnit, now })
-      .then(async (results) => {
-        if (checkGeneration !== generation) return getStatus();
-        const previous = new Map(checks.map((item) => [item.name, item]));
-        checks = results;
-        for (const result of results) {
-          if (checkGeneration !== generation) break;
-          if (result.status === "unhealthy" && previous.get(result.name)?.status !== "unhealthy") {
-            try {
-              await notificationContext.run(current, () => onUnhealthy(result));
-            } catch {
-              // Notification failures do not change health results or stop future checks.
-            }
+  const polling = createHealthPolling({
+    intervalMs,
+    setIntervalFn,
+    clearIntervalFn,
+    onSetupFailure: (isCurrent) => {
+      if (!isCurrent()) return;
+      checks = checks.map((item) => ({
+        ...item,
+        status: "unknown",
+        checkedAt: null,
+        detail: "Health check could not start",
+      }));
+    },
+    runCheck: async (isCurrent) => {
+      const results = await checkHealthUnits({ units, checks, checkUnit, now });
+      if (!isCurrent()) return getStatus();
+      const previous = new Map(checks.map((item) => [item.name, item]));
+      checks = results;
+      for (const result of results) {
+        if (!isCurrent()) break;
+        if (result.status === "unhealthy" && previous.get(result.name)?.status !== "unhealthy") {
+          try {
+            const activeCheck = polling.getActiveCheck();
+            await notificationContext.run(activeCheck, () => onUnhealthy(result));
+          } catch {
+            // Notification failures do not change health results or stop future checks.
           }
         }
-        return getStatus();
-      })
-      .finally(() => {
-        running = undefined;
-        runningGeneration = undefined;
-        if (restartScheduled) {
-          restartScheduled = false;
-          startCheck();
-        }
-      });
-    running = current;
-    runningGeneration = checkGeneration;
-    return current;
-  }
-
-  async function recordCheckSetupFailure(checkGeneration) {
-    if (checkGeneration !== generation) return;
-    checks = checks.map((item) => ({
-      ...item,
-      status: "unknown",
-      checkedAt: null,
-      detail: "Health check could not start",
-    }));
-  }
-
-  function startCheck() {
-    if (stopped) return;
-    if (running && runningGeneration !== generation) {
-      restartScheduled = true;
-      return;
-    }
-    const checkGeneration = generation;
-    void check().catch(() => recordCheckSetupFailure(checkGeneration));
-  }
+      }
+      return getStatus();
+    },
+  });
 
   function getStatus() {
     return createHealthStatus(checks);
   }
 
   async function recordEvent(event) {
-    if (running) await running;
+    const activeCheck = polling.getActiveCheck();
+    if (activeCheck) await activeCheck;
     const update = createUnitEventUpdate(checks, event);
     if (!update) return undefined;
     checks = update.checks;
-    if (update.shouldNotify && !stopped) {
+    if (update.shouldNotify && !polling.isStopped()) {
       try {
         await onSystemdEvent({ ...event, result: update.result });
       } catch {
@@ -100,26 +75,16 @@ export default function createHealthMonitor({
     return update.result;
   }
 
+  async function stop() {
+    const activeCheck = polling.getActiveCheck();
+    await polling.stop({ waitForActive: notificationContext.getStore() !== activeCheck });
+  }
+
   return {
-    check,
+    check: polling.check,
     getStatus,
     recordEvent,
-    start() {
-      if (timer !== undefined) return;
-      const nextTimer = setIntervalFn(startCheck, intervalMs);
-      timer = nextTimer;
-      stopped = false;
-      timer.unref?.();
-      startCheck();
-    },
-    async stop() {
-      stopped = true;
-      generation += 1;
-      restartScheduled = false;
-      if (timer !== undefined) clearIntervalFn(timer);
-      timer = undefined;
-      const activeCheck = running;
-      if (activeCheck && notificationContext.getStore() !== activeCheck) await activeCheck;
-    },
+    start: polling.start,
+    stop,
   };
 }

@@ -1,9 +1,9 @@
 import { expect, test } from "@jest/globals";
-import loadApplicationValues from "../../../src/backend/config/loader.mjs";
+import loadApplicationEnvironment from "../../../src/backend/config/environment.mjs";
 
 test("maps configured environment values", () => {
   expect(
-    loadApplicationValues({
+    loadApplicationEnvironment({
       PORT: "8080",
       WEBHOOK_PORT: "8081",
       LOG_LEVEL: "debug",
@@ -30,7 +30,7 @@ test("maps configured environment values", () => {
 });
 
 test("maps optional values to their defaults", () => {
-  expect(loadApplicationValues({})).toEqual({
+  expect(loadApplicationEnvironment({})).toEqual({
     port: undefined,
     webhookPort: "9301",
     logLevel: "info",

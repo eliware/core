@@ -1,43 +1,25 @@
-import { expect, test } from "@jest/globals";
-import { resolve } from "node:path";
-import loadApplicationConfig from "../../src/backend/config.mjs";
+import { expect, jest, test } from "@jest/globals";
 
-test("assembles and validates parsed application configuration", () => {
-  expect(
-    loadApplicationConfig({
-      environment: {
-        PORT: "8080",
-        CORE_DASHBOARD_URL: "https://router.example/",
-        WEBHOOK_PORT: "8081",
-        LOG_LEVEL: "debug",
-        CORE_GITHUB_BRANCH: "production",
-        CORE_HEALTH_UNITS: "sshd.service, frr.service",
-        SNOWFLAKE_WORKER_ID: "7",
-        SNOWFLAKE_PROCESS_ID: "11",
-      },
-    }),
-  ).toMatchObject({
-    tcpEndpoint: 8080,
-    dashboardUrl: "https://router.example/",
-    webhookEndpoint: 8081,
-    logLevel: "debug",
-    githubBranch: "production",
-    healthUnits: ["sshd.service", "frr.service"],
-    catalog: null,
-    snowflake: { workerId: 7, processId: 11 },
-  });
-});
+const loadApplicationEnvironment = jest.fn();
+const loadApplicationSettings = jest.fn();
+jest.unstable_mockModule("../../src/backend/config/environment.mjs", () => ({
+  default: loadApplicationEnvironment,
+}));
+jest.unstable_mockModule("../../src/backend/config/application.mjs", () => ({
+  default: loadApplicationSettings,
+}));
+const { default: loadApplicationConfig } = await import("../../src/backend/config.mjs");
 
-test("keeps environment health units alongside the service catalog", () => {
-  const configuration = loadApplicationConfig({
-    environment: {
-      CORE_REPO_PATH: resolve("test-fixtures/router-catalog"),
-      CORE_HEALTH_UNITS: "core.service",
-      SNOWFLAKE_WORKER_ID: "1",
-      SNOWFLAKE_PROCESS_ID: "1",
-    },
-  });
+test("coordinates environment mapping and settings validation", () => {
+  const environment = { PORT: "8080" };
+  const values = { port: "8080" };
+  const settings = { tcpEndpoint: 8080 };
+  loadApplicationEnvironment.mockReturnValue(values);
+  loadApplicationSettings.mockReturnValue(settings);
 
-  expect(configuration.catalog.components[0].health.unit).toBe("named.service");
-  expect(configuration.healthUnits).toEqual(["core.service"]);
+  expect(loadApplicationConfig({ environment })).toBe(settings);
+  expect(loadApplicationEnvironment).toHaveBeenCalledWith(environment);
+  expect(loadApplicationSettings).toHaveBeenCalledWith(values);
+  loadApplicationEnvironment.mockReset();
+  loadApplicationSettings.mockReset();
 });
