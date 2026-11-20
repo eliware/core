@@ -200,3 +200,9 @@ test("uses default filesystem, signal, wait, and timeout dependencies", async ()
   defaultReadFile.mockImplementation(async (path) => (path === "/pid" ? "0" : state));
   await collectVrrpSnapshot({ pidPath: "/pid", path: "/state" }, { run });
 });
+
+test("reads the configured snapshot with default dependencies", async () => {
+  defaultReadFile.mockResolvedValue(state);
+  await expect(collectVrrpSnapshot({ path: "/state" })).resolves.toBe(state);
+  expect(defaultReadFile).toHaveBeenCalledWith("/state", "utf8");
+});

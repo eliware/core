@@ -1,37 +1,26 @@
 import notifyDeployment from "./notify.mjs";
 import restore from "./restart-worker/restore.mjs";
+import createRestartStatusUpdater from "./restart-worker/status.mjs";
 
 export default async function runRestartWorker(payload, { run, checkReady, saveStatus, notify }) {
   const steps = payload.status.steps;
+  const status = createRestartStatusUpdater(payload);
   let activeStep;
   try {
     activeStep = steps.findLast((step) => step.name === "restart Core service");
     await saveStatus(payload.status);
     await run("systemctl", ["restart", payload.serviceUnit]);
-    if (activeStep) activeStep.status = "passed";
-    else steps.push({ name: "restart Core service", status: "passed" });
-    activeStep = { name: "check Core health after restart", status: "running" };
-    steps.push(activeStep);
+    status.markRestartPassed(activeStep);
+    activeStep = status.startHealthCheck();
     await checkReady(payload.port, payload.serviceUnit, run);
-    activeStep.status = "passed";
-    payload.status.status = "succeeded";
-    payload.status.finishedAt = new Date().toISOString();
+    status.markHealthCheckPassed(activeStep);
+    status.markSucceeded(new Date().toISOString());
   } catch (error) {
-    const detail = String(error.message).slice(0, 300);
-    if (activeStep) {
-      activeStep.status = "failed";
-      activeStep.detail = detail;
-    } else {
-      activeStep = { name: "restart Core service", status: "failed", detail };
-      steps.push(activeStep);
-    }
-    payload.status.status = "failed";
-    payload.status.failedStep = activeStep.name;
-    payload.status.error = detail;
+    activeStep = status.markFailed(activeStep, error);
     payload.status.recovery = await restore(payload, steps, { run, checkReady });
     payload.status.finishedAt = new Date().toISOString();
   }
-  payload.status.currentStep = null;
+  status.finish();
   await saveStatusSafely(saveStatus, payload.status);
   await notifyDeployment({
     status: {

@@ -4,32 +4,7 @@ import escapeMarkdown from "./notification/escape.mjs";
 import formatCommits from "./notification/commits.mjs";
 import formatFileChanges from "./notification/files.mjs";
 import formatSteps from "./notification/steps.mjs";
-
-function resolveRepository(githubPayload) {
-  const name = githubPayload?.repository?.full_name;
-  if (typeof name !== "string" || !/^[\w.-]+\/[\w.-]+$/u.test(name)) return null;
-  return { name, url: `https://github.com/${name}` };
-}
-
-function resolveCompareUrl(githubPayload, repository) {
-  if (!repository) return undefined;
-  if (typeof githubPayload?.compare !== "string") return undefined;
-  try {
-    const compare = new URL(githubPayload.compare);
-    if (
-      compare.protocol !== "https:" ||
-      compare.hostname !== "github.com" ||
-      compare.username ||
-      compare.password ||
-      !compare.pathname.startsWith(`/${repository.name}/compare/`)
-    ) {
-      return undefined;
-    }
-    return compare.toString();
-  } catch {
-    return undefined;
-  }
-}
+import resolveNotificationLinks from "./notification/links.mjs";
 
 function duration(startedAt, finishedAt) {
   const start = Date.parse(startedAt ?? "");
@@ -52,11 +27,10 @@ export default function createDeploymentDiscordNotification({
 }) {
   const succeeded = status === "succeeded";
   const commits = Array.isArray(githubPayload.commits) ? githubPayload.commits : [];
-  const repository = resolveRepository(githubPayload);
+  const { repository, compareUrl } = resolveNotificationLinks(githubPayload);
   const ref =
     typeof githubPayload.ref === "string" ? githubPayload.ref.replace(/^refs\/heads\//u, "") : "";
   const targetBranch = ref || branch;
-  const compareUrl = resolveCompareUrl(githubPayload, repository);
   const fields = [
     { name: "Deployment ID", value: String(runId ?? "unknown"), inline: true },
     { name: "Branch", value: escapeMarkdown(targetBranch), inline: true },

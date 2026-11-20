@@ -1,0 +1,41 @@
+export default function validateFrrWeights(left, right) {
+  const errors = [];
+  const keys1 = [...left.weights.keys()]
+    .map((key) => (key === left.peer.ip ? "@peer" : key))
+    .sort();
+  const keys2 = [...right.weights.keys()]
+    .map((key) => (key === right.peer.ip ? "@peer" : key))
+    .sort();
+  if (JSON.stringify(keys1) !== JSON.stringify(keys2)) {
+    errors.push("FRR route preference weights must cover the same neighbors on both routers.");
+    return errors;
+  }
+  const peers1 = [...left.neighbors].map((key) => (key === left.peer.ip ? "@peer" : key)).sort();
+  const peers2 = [...right.neighbors].map((key) => (key === right.peer.ip ? "@peer" : key)).sort();
+  if (JSON.stringify(peers1) !== JSON.stringify(peers2)) {
+    errors.push("FRR neighbor sets must match across both repositories.");
+    return errors;
+  }
+  const changed = keys1.filter(
+    (key) => key !== "@peer" && left.weights.get(key) !== right.weights.get(key),
+  );
+  const first = new Map(changed.map((key) => [key, left.weights.get(key)]));
+  const second = new Map(changed.map((key) => [key, right.weights.get(key)]));
+  if (!hasReciprocalPreferences(changed, first, second)) {
+    errors.push("FRR weight differences must express reciprocal high availability preferences.");
+  }
+  return errors;
+}
+
+function hasReciprocalPreferences(neighbors, first, second) {
+  if (neighbors.every((neighbor) => first.get(neighbor) === second.get(neighbor))) return true;
+  for (let index = 0; index < neighbors.length; index += 1) {
+    const neighbor = neighbors[index];
+    for (const other of neighbors.slice(index + 1)) {
+      const firstOrder = Math.sign(first.get(neighbor) - first.get(other));
+      const secondOrder = Math.sign(second.get(neighbor) - second.get(other));
+      if (firstOrder !== -secondOrder) return false;
+    }
+  }
+  return neighbors.length > 1;
+}

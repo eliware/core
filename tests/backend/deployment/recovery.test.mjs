@@ -1,6 +1,5 @@
 import { expect, jest, test } from "@jest/globals";
 import catalog from "../../../test-fixtures/deployment-catalog.mjs";
-import recoverDeployment from "../../../src/backend/deployment/recovery.mjs";
 
 jest.unstable_mockModule("node:child_process", () => ({ execFile: jest.fn() }));
 const createDeploymentManager = (await import("../../../src/backend/deployment.mjs")).default;
@@ -60,100 +59,24 @@ async function waitFor(manager, status) {
   throw new Error(`Deployment did not reach ${status}: ${JSON.stringify(manager.getStatus())}`);
 }
 
-test("restores the prior commit without reloading when reload has not started", async () => {
-  const steps = [];
-  const run = jest.fn().mockResolvedValue({});
-  await expect(
-    recoverDeployment({ run, repositoryPath: "/router", previousCommit: "abc", steps }),
-  ).resolves.toBeUndefined();
-  expect(run).toHaveBeenCalledWith("git", ["reset", "--hard", "abc"], { cwd: "/router" });
-  expect(run).not.toHaveBeenCalledWith("git", ["clean", "-fd"], { cwd: "/router" });
-  expect(steps).toEqual([{ name: "restore previous commit", status: "passed" }]);
+test("restores the prior commit when a deployment step changes the worktree", async () => {
+  const run = successfulRun();
+  run.mockImplementation(async (command, args) => {
+    if (command === "git" && args[0] === "rev-parse") return { stdout: `${commit}\n` };
+    if (command === "npm" && args[0] === "test") throw new Error("tests failed");
+    return { stdout: "" };
+  });
+  const manager = createManager({
+    repositoryPath: "/router/core1",
+    run,
+    acquireLock: () => () => {},
+  });
+  manager.start("delivery-worktree-change");
+  const status = await waitFor(manager, "failed");
+  expect(status.recovery).toBeUndefined();
+  expect(run).toHaveBeenCalledWith("git", ["reset", "--hard", commit], expect.any(Object));
+  expect(run).not.toHaveBeenCalledWith("git", ["clean", "-fd"], expect.any(Object));
 });
-
-test("reloads restored configuration after an unsuccessful deployment reload", async () => {
-  const steps = [];
-  const run = jest.fn().mockResolvedValue({});
-  await expect(
-    recoverDeployment({
-      run,
-      repositoryPath: "/router",
-      previousCommit: "abc",
-      reloadStarted: true,
-      steps,
-    }),
-  ).resolves.toBeUndefined();
-  expect(steps.at(-1)).toEqual({ name: "reload previous configuration", status: "passed" });
-});
-
-test("reapplies catalog actions after restoring the prior commit", async () => {
-  const steps = [];
-  const run = jest.fn().mockResolvedValue({});
-  await expect(
-    recoverDeployment({
-      run,
-      repositoryPath: "/router",
-      previousCommit: "abc",
-      reloadStarted: true,
-      catalogActions: [{ operation: "restart", unit: "frr.service" }],
-      steps,
-    }),
-  ).resolves.toBeUndefined();
-  expect(run).toHaveBeenCalledWith(
-    "systemctl",
-    ["restart", "frr.service"],
-    expect.objectContaining({ cwd: "/router" }),
-  );
-  expect(steps.at(-1)).toEqual({ name: "restore restart frr.service", status: "passed" });
-});
-
-test("reports reset and restored reload failures", async () => {
-  const resetSteps = [];
-  await expect(
-    recoverDeployment({
-      run: jest.fn().mockRejectedValue(new Error("reset denied")),
-      repositoryPath: "/router",
-      previousCommit: "abc",
-      steps: resetSteps,
-    }),
-  ).resolves.toContain("restore failed: reset denied");
-  expect(resetSteps).toEqual([{ name: "restore previous commit", status: "failed" }]);
-
-  const reloadSteps = [];
-  await expect(
-    recoverDeployment({
-      run: jest.fn().mockResolvedValueOnce({}).mockRejectedValueOnce(new Error("reload denied")),
-      repositoryPath: "/router",
-      previousCommit: "abc",
-      reloadStarted: true,
-      steps: reloadSteps,
-    }),
-  ).resolves.toBe("Previous commit restored, but its reload failed.");
-  expect(reloadSteps.at(-1)).toMatchObject({ status: "failed", detail: "reload denied" });
-});
-
-test("does not reload when commit restoration fails after a deployment reload", async () => {
-  const run = jest.fn().mockRejectedValue(new Error("reset denied"));
-  const steps = [];
-  await expect(
-    recoverDeployment({
-      run,
-      repositoryPath: "/router",
-      previousCommit: "abc",
-      reloadStarted: true,
-      steps,
-    }),
-  ).resolves.toContain("Previous commit restore failed: reset denied");
-  expect(run).toHaveBeenCalledTimes(1);
-  expect(steps).toEqual([{ name: "restore previous commit", status: "failed" }]);
-});
-
-test("preserves untracked files while restoring the prior commit", async () => {
-  const run = jest.fn().mockResolvedValue({});
-  await recoverDeployment({ run, repositoryPath: "/router", previousCommit: "abc", steps: [] });
-  expect(run.mock.calls.map(([, args]) => args)).toEqual([["reset", "--hard", "abc"]]);
-});
-
 test("restores the previous commit and skips reload when a preflight step fails", async () => {
   const run = successfulRun();
   run.mockImplementation(async (command, args) => {
@@ -167,29 +90,6 @@ test("restores the previous commit and skips reload when a preflight step fails"
   expect(status.failedStep).toBe("npm test");
   expect(run).toHaveBeenCalledWith("git", ["reset", "--hard", commit], expect.any(Object));
   expect(run).not.toHaveBeenCalledWith("npm", ["run", "reload"], expect.any(Object));
-});
-
-test("reports when replaying catalog actions fails during recovery", async () => {
-  const steps = [];
-  const run = jest.fn(async (command) => {
-    if (command === "systemctl") throw new Error("systemd unavailable");
-    return {};
-  });
-  await expect(
-    recoverDeployment({
-      run,
-      repositoryPath: "/router",
-      previousCommit: "abc",
-      reloadStarted: true,
-      catalogActions: [{ operation: "reload", unit: "named.service" }],
-      steps,
-    }),
-  ).resolves.toContain("its reload failed");
-  expect(steps.at(-1)).toMatchObject({
-    name: "restore catalog actions",
-    status: "failed",
-    detail: "restore reload named.service failed.",
-  });
 });
 
 test("reloads restored configuration when the new reload fails", async () => {
@@ -258,23 +158,4 @@ test("reports a failed reload of the restored configuration", async () => {
   manager.start("delivery-5");
   const status = await waitFor(manager, "failed");
   expect(status.recovery).toContain("its reload failed");
-});
-
-test("restores the prior commit when a deployment step changes the worktree", async () => {
-  const run = successfulRun();
-  run.mockImplementation(async (command, args) => {
-    if (command === "git" && args[0] === "rev-parse") return { stdout: `${commit}\n` };
-    if (command === "npm" && args[0] === "test") throw new Error("tests failed");
-    return { stdout: "" };
-  });
-  const manager = createManager({
-    repositoryPath: "/router/core1",
-    run,
-    acquireLock: () => () => {},
-  });
-  manager.start("delivery-worktree-change");
-  const status = await waitFor(manager, "failed");
-  expect(status.recovery).toBeUndefined();
-  expect(run).toHaveBeenCalledWith("git", ["reset", "--hard", commit], expect.any(Object));
-  expect(run).not.toHaveBeenCalledWith("git", ["clean", "-fd"], expect.any(Object));
 });

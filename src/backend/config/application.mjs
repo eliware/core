@@ -3,7 +3,7 @@ import validateDiscordUrl from "./discord-url.mjs";
 import parseHealthUnits from "./health-units.mjs";
 import parseSnowflakeOptions from "./snowflake.mjs";
 import parseEndpoints from "./endpoints.mjs";
-import loadServiceCatalog from "../../service-catalog/load.mjs";
+import loadCatalog from "./catalog.mjs";
 import validateDashboardUrl from "./dashboard-url.mjs";
 
 export default function loadApplicationSettings(application) {
@@ -21,7 +21,7 @@ export default function loadApplicationSettings(application) {
     discordWebhookUrl: validateDiscordUrl(application.discordWebhookUrl),
     githubBranch: validateBranch(application.githubBranch),
     healthUnits: parseHealthUnits(application.healthUnits),
-    catalog: loadServiceCatalog(application.repositoryPath ?? process.cwd()),
+    catalog: loadCatalog(application.repositoryPath ?? process.cwd()),
     snowflake: parseSnowflakeOptions({
       SNOWFLAKE_WORKER_ID: application.workerId,
       SNOWFLAKE_PROCESS_ID: application.processId,
