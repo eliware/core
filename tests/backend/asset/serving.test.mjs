@@ -14,7 +14,7 @@ function createHandle(content = "asset") {
 
 test.each([
   ["public", { root: "public", file: "index.html" }, "public", "index.html"],
-  ["build", { root: "build", file: "client.js" }, "dist", "client.js"],
+  ["public client", { root: "public", file: "client.bundle" }, "public", "client.bundle"],
 ])("reads a route asset from the %s root", async (_name, route, rootName, file) => {
   const handle = createHandle();
   const openFile = jest.fn().mockResolvedValue(handle);

@@ -1,5 +1,12 @@
 # Release Notes
 
+## 15.2.4 — 2026-11-19
+
+### Fixed
+
+- Refresh VRRP metrics with Keepalived's JSON signal and parent process ID.
+- Resolve dashboard assets from the installed package and include the built client files in release tarballs.
+
 ## 15.2.3 — 2026-11-19
 
 ### Changed

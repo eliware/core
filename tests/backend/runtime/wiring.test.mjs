@@ -1,4 +1,6 @@
 import { expect, test } from "@jest/globals";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createLogger, registerHandlers, registerSignals } from "@eliware/common";
 import registerWebRoutes from "../../../src/backend/http.mjs";
 import loadRuntimeConfig from "../../../src/backend/runtime/config.mjs";
@@ -33,6 +35,12 @@ test("assembles the production application dependencies", () => {
     registerWebhookRoutes,
     resolve: expect.any(Function),
   });
+});
+
+test("resolves web assets from the installed package directory", () => {
+  const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+  expect(runtimeDependencies.resolve("public")).toBe(resolve(packageRoot, "public"));
+  expect(runtimeDependencies.resolve("dist")).toBe(resolve(packageRoot, "dist"));
 });
 
 test("loads application configuration through the production dependency", () => {

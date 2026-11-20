@@ -1,4 +1,5 @@
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createLogger, registerHandlers, registerSignals } from "@eliware/common";
 import registerWebRoutes from "../http.mjs";
 import loadRuntimeConfig from "./config.mjs";
@@ -12,6 +13,8 @@ import readSystemdUnitState from "../systemd/read-unit-state.mjs";
 import createDeploymentManager from "../deployment.mjs";
 import sendDiscordNotification from "../discord-notifier.mjs";
 import registerWebhookRoutes from "../webhook-routes.mjs";
+
+const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 
 export const runtimeDependencies = {
   loadConfig: loadRuntimeConfig,
@@ -29,5 +32,5 @@ export const runtimeDependencies = {
   createDeploymentManager,
   sendDiscordNotification,
   registerWebhookRoutes,
-  resolve,
+  resolve: (...paths) => resolve(packageRoot, ...paths),
 };

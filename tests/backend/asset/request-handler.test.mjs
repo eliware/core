@@ -34,7 +34,7 @@ test("resolves an asset request path without its query string", async () => {
 
   await requestHandler({ method: "GET", url: "/client.js?cache=1" }, reply);
 
-  expect(openFile).toHaveBeenCalledWith(resolve("dist", "client.js"), "r");
+  expect(openFile).toHaveBeenCalledWith(resolve("public", "client.bundle"), "r");
   expect(reply.type).toHaveBeenCalledWith("text/javascript");
   expect(reply.send).toHaveBeenCalledWith("client asset");
 });

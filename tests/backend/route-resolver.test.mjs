@@ -3,7 +3,7 @@ import resolveRoute from "../../src/backend/route-resolver.mjs";
 
 test.each([
   ["/", { root: "public", file: "index.html", contentType: "text/html" }],
-  ["/client.js", { root: "build", file: "client.js", contentType: "text/javascript" }],
+  ["/client.js", { root: "public", file: "client.bundle", contentType: "text/javascript" }],
   ["/styles.css", { root: "public", file: "styles.css", contentType: "text/css" }],
   [
     "/manifest.webmanifest",
@@ -11,7 +11,7 @@ test.each([
   ],
   [
     "/service-worker.js",
-    { root: "build", file: "service-worker.js", contentType: "text/javascript" },
+    { root: "public", file: "service-worker.bundle", contentType: "text/javascript" },
   ],
   [
     "/icons/template.svg",

@@ -33,7 +33,7 @@ function createHandle(content = "asset") {
 
 const resolvePath = async (file) => resolve(file);
 
-test("serves the public page and built client asset", async () => {
+test("serves the public page and packaged client asset", async () => {
   const handles = [createHandle(), createHandle()];
   const openFile = jest.fn().mockImplementation(() => Promise.resolve(handles.shift()));
   const app = createServer({
@@ -49,7 +49,7 @@ test("serves the public page and built client asset", async () => {
   expect(page.body).toBe("asset");
 
   const client = await app.inject({ method: "GET", url: "/client.js" });
-  expect(openFile).toHaveBeenLastCalledWith(resolve("dist", "client.js"), "r");
+  expect(openFile).toHaveBeenLastCalledWith(resolve("public", "client.bundle"), "r");
   expect(client.statusCode).toBe(200);
   expect(client.headers["content-type"]).toContain("text/javascript");
   expect(client.body).toBe("asset");

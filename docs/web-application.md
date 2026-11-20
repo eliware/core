@@ -139,6 +139,7 @@ The application marks a unit unhealthy when its systemd check runs longer than t
 An empty list reports the monitored units as unconfigured.
 
 The dashboard refreshes every 30 seconds.
+Run `npm run build` and then `node bin/copy-web-assets.mjs` to refresh packaged browser bundles.
 The server refreshes health checks and metric sources every five minutes.
 The server keeps the latest metric summary and totals in memory.
 It does not use a database or keep historical metric samples.
@@ -155,7 +156,7 @@ The dashboard shows FRR peer states and its route table.
 
 The dashboard shows a maximum of 100 entries in each table and reports the full total.
 VRRP data comes from the Keepalived JSON state dump and includes instance state, virtual addresses, and advertisement counters.
-Core sends `SIGUSR1` to the Keepalived VRRP process to refresh its JSON state dump.
+Core asks Keepalived for its platform-specific JSON signal and reads the configured parent PID file.
 Set `path` and `pidPath` in a catalog `vrrp` metric when Keepalived uses non-default files.
 
 Read HAProxy counters from its configured Unix socket.
@@ -198,9 +199,9 @@ The server serves the app page, built browser files, public assets, and status r
 | Method | Path                               | Result                                                                                    |
 | ------ | ---------------------------------- | ----------------------------------------------------------------------------------------- |
 | `GET`  | `/`                                | Serves `public/index.html`.                                                               |
-| `GET`  | `/client.js`                       | Serves `dist/client.js`.                                                                  |
+| `GET`  | `/client.js`                       | Serves the packaged client bundle from `public/client.bundle`.                            |
 | `GET`  | `/styles.css`                      | Serves `public/styles.css`.                                                               |
-| `GET`  | `/service-worker.js`               | Serves `dist/service-worker.js`.                                                          |
+| `GET`  | `/service-worker.js`               | Serves the packaged worker bundle from `public/service-worker.bundle`.                    |
 | `GET`  | `/manifest.webmanifest`            | Serves app install metadata.                                                              |
 | `GET`  | `/icons/template.svg`              | Serves the general app icon.                                                              |
 | `GET`  | `/icons/template-maskable.svg`     | Serves the scalable maskable icon.                                                        |
@@ -310,7 +311,8 @@ The build runs `npm run prebuild` first to check the webpack command.
 
 If the server rejects a port, set an integer from `1` through `65535` and use different values for both listeners.
 If the server cannot open its port, stop the process that uses it or set a different port.
-If `/client.js` returns HTTP 404, run `npm run build` and confirm that `dist/client.js` exists.
+If `/client.js` returns HTTP 404, run `npm run build` and `node bin/copy-web-assets.mjs`.
+Then confirm that `public/client.bundle` exists.
 
 If an API request returns HTTP 400, check its path, query, and JSON body against the schema above.
 If offline loading fails, reload after the worker controls the page and cache the app shell.

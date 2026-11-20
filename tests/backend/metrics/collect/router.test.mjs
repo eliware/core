@@ -2,6 +2,7 @@ import { expect, jest, test } from "@jest/globals";
 import collectRouterMetric from "../../../../src/backend/metrics/collect/router.mjs";
 
 const metricRun = jest.fn(async (command, args) => {
+  if (command === "keepalived") return { stdout: "36\n" };
   if (command === "ip" && args.includes("address"))
     return { stdout: '[{"ifname":"eth0","operstate":"UP","addr_info":[]}]' };
   if (command === "ip" && args.includes("route"))
@@ -47,10 +48,10 @@ test("collects VRRP state from Keepalived", async () => {
   await expect(
     collectRouterMetric(
       { type: "vrrp", pidPath: "/pid", path: "/vrrp.json" },
-      { readFile, signalProcess, vrrpDelayMs: 25, wait },
+      { run: metricRun, readFile, signalProcess, vrrpDelayMs: 25, wait },
     ),
   ).resolves.toMatchObject({ totals: { instances: 1, master: 1 } });
-  expect(signalProcess).toHaveBeenCalledWith(1234, "SIGUSR1");
+  expect(signalProcess).toHaveBeenCalledWith(1234, 36);
   expect(wait).toHaveBeenCalledWith(25);
   expect(readFile.mock.calls.map(([path]) => path)).toEqual(["/pid", "/vrrp.json"]);
 });
@@ -66,10 +67,10 @@ test("uses the configured VRRP snapshot when signaling is unavailable", async ()
   await expect(
     collectRouterMetric(
       { type: "vrrp", pidPath: "/pid", path: "/vrrp.json" },
-      { readFile, signalProcess, wait },
+      { run: metricRun, readFile, signalProcess, vrrpDelayMs: 25, wait },
     ),
   ).resolves.toMatchObject({ totals: { instances: 1, master: 1 } });
-  expect(signalProcess).toHaveBeenCalledWith(1234, "SIGUSR1");
+  expect(signalProcess).toHaveBeenCalledWith(1234, 36);
   expect(wait).not.toHaveBeenCalled();
   expect(readFile).toHaveBeenLastCalledWith("/vrrp.json", "utf8");
 });
@@ -83,6 +84,7 @@ test("uses the default delay while collecting VRRP state", async () => {
     collectRouterMetric(
       { type: "vrrp", pidPath: "/pid", path: "/vrrp.json" },
       {
+        run: metricRun,
         readFile: async (path) =>
           path === "/pid" ? "1234" : '{"v1":[{"data":{"iname":"VI_LAN","state":2}}]}',
         signalProcess: jest.fn(),

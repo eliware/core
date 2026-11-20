@@ -50,6 +50,12 @@ export default async function collectRouterMetric(
       return collectVrrp(metric, {
         readFile,
         signalProcess,
+        getJsonSignal: async () => {
+          const { stdout } = await run("keepalived", ["--signum=JSON"], {
+            timeout: timeoutMs,
+          });
+          return stdout.trim();
+        },
         wait: () => wait(vrrpDelayMs),
       });
     default:

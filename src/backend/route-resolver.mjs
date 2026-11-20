@@ -1,11 +1,11 @@
 export default function resolveRoute(path) {
   if (path === "/") return { root: "public", file: "index.html", contentType: "text/html" };
   if (path === "/client.js")
-    return { root: "build", file: "client.js", contentType: "text/javascript" };
+    return { root: "public", file: "client.bundle", contentType: "text/javascript" };
   const publicAssets = {
     "/styles.css": ["styles.css", "text/css"],
     "/manifest.webmanifest": ["manifest.webmanifest", "application/manifest+json"],
-    "/service-worker.js": ["service-worker.js", "text/javascript", "build"],
+    "/service-worker.js": ["service-worker.bundle", "text/javascript"],
     "/icons/template.svg": ["icons/template.svg", "image/svg+xml"],
     "/icons/template-maskable.svg": ["icons/template-maskable.svg", "image/svg+xml"],
     "/icons/template-192.png": ["icons/template-192.png", "image/png"],
