@@ -223,7 +223,7 @@ The server serves the app page, built browser files, public assets, and status r
 | `GET`  | `/screenshots/core-mobile.png`     | Serves the mobile preview.                                                                |
 | `GET`  | `/health`                          | Returns `{"status":"ok"}`.                                                                |
 | `GET`  | `/ready`                           | Returns HTTP 200 after both listeners start. Returns HTTP 503 during startup or shutdown. |
-| `GET`  | `/api/status`                      | Returns health and deployment status.                                                     |
+| `GET`  | `/api/status`                      | Returns health, metrics, and deployment status.                                           |
 
 Unsupported methods on page and asset routes return HTTP 405.
 Unknown paths return HTTP 404.

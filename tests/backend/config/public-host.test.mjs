@@ -21,6 +21,11 @@ test.each([
   "fd00::1",
   "fe80::1",
   "::ffff:c0a8:0101",
+  "::ffff:192.168.1.1",
+  "2001::1",
+  "2001:db8::1",
+  "3fff::1",
+  "5f00::1",
 ])("rejects non-public host %s", (host) => {
   expect(isPublicHost(host)).toBe(false);
 });
@@ -33,6 +38,9 @@ test.each([
   "192.0.2.1",
   "2001:4860:4860::8888",
   "::ffff:808:808",
+  "::ffff:8.8.8.8",
+  "2002:c000:201::1",
+  "2620:4f:8000::1",
 ])("accepts public host %s", (host) => {
   expect(isPublicHost(host)).toBe(true);
 });

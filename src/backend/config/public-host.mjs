@@ -27,14 +27,25 @@ export default function isPublicHost(hostname) {
   }
   if (version === 6) {
     if (host.startsWith("::ffff:")) {
-      const [high, low] = host
-        .slice("::ffff:".length)
-        .split(":")
-        .map((part) => parseInt(part, 16));
+      const mapped = host.slice("::ffff:".length);
+      if (mapped.includes(".")) return isPublicHost(mapped);
+      const [high, low] = mapped.split(":").map((part) => parseInt(part, 16));
       const address = [high >> 8, high & 255, low >> 8, low & 255].join(".");
       return isPublicHost(address);
     }
-    return !(host === "::" || host === "::1" || /^f[cd]/u.test(host) || /^fe[89ab]/u.test(host));
+    const [firstPart, secondPart] = host.split(":");
+    const first = Number.parseInt(firstPart || "0", 16);
+    const second = Number.parseInt(secondPart || "0", 16);
+    const isGlobalUnicast = first >= 0x2000 && first < 0x4000;
+    const isIetfProtocolAssignment = first === 0x2001 && second < 0x0200;
+    const isDocumentationAddress = first === 0x2001 && second === 0x0db8;
+    const isDocumentationRange = first === 0x3fff && second < 0x1000;
+    return (
+      isGlobalUnicast &&
+      !isIetfProtocolAssignment &&
+      !isDocumentationAddress &&
+      !isDocumentationRange
+    );
   }
   if (!host.includes(".")) return false;
   return true;
