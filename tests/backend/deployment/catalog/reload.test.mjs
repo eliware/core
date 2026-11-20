@@ -1,7 +1,7 @@
 import { expect, jest, test } from "@jest/globals";
 import reloadCatalogConfiguration from "../../../../src/backend/deployment/catalog/reload.mjs";
 
-function setup(stdout = "etc/named.conf\0") {
+function setup(stdout = "M\0etc/named.conf\0") {
   return {
     catalog: {
       components: [
@@ -33,7 +33,7 @@ test("plans and runs actions for changed catalog paths", async () => {
 });
 
 test("returns an empty plan without starting a reload", async () => {
-  const options = setup("README.md\0");
+  const options = setup("M\0README.md\0");
   await expect(reloadCatalogConfiguration(options)).resolves.toEqual({
     actions: [],
     started: false,

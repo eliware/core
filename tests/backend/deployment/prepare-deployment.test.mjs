@@ -47,7 +47,7 @@ test("records planned catalog actions for the restart worker", async () => {
         : args[0] === "rev-parse"
           ? `${"a".repeat(40)}\n`
           : args[0] === "diff"
-            ? "etc/named.conf\0"
+            ? "M\0etc/named.conf\0"
             : "",
   }));
   await prepareDeployment({

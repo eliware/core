@@ -90,7 +90,7 @@ test("passes catalog actions to recovery after a service reload fails", async ()
   const run = jest.fn(async (command, args) => {
     if (command === "git" && args[0] === "branch") return { stdout: "main\n" };
     if (command === "git" && args[0] === "rev-parse") return { stdout: `${commit}\n` };
-    if (command === "git" && args[0] === "diff") return { stdout: "etc/named.conf\0" };
+    if (command === "git" && args[0] === "diff") return { stdout: "M\0etc/named.conf\0" };
     if (command === "systemctl" && args[0] === "reload") throw new Error("reload failed");
     return { stdout: "" };
   });

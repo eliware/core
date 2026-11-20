@@ -15,7 +15,7 @@ function setup(overrides = {}) {
     loadCatalog: () => catalog,
     previousCommit: "abc",
     repositoryPath: "/router",
-    run: jest.fn().mockResolvedValue({ stdout: "etc/named.conf\0" }),
+    run: jest.fn().mockResolvedValue({ stdout: "M\0etc/named.conf\0" }),
     runStep: jest.fn(),
     steps: [],
     onStart: jest.fn(),
@@ -63,7 +63,7 @@ test("skips catalog components with unchanged paths", async () => {
   };
   const state = setup({
     loadCatalog: () => selectedCatalog,
-    run: jest.fn().mockResolvedValue({ stdout: "etc/named.conf\0" }),
+    run: jest.fn().mockResolvedValue({ stdout: "M\0etc/named.conf\0" }),
   });
   await reloadConfiguration(state);
   expect(state.run).toHaveBeenCalledTimes(2);
@@ -77,7 +77,7 @@ test("skips catalog components with unchanged paths", async () => {
 
 test("captures planned actions before attempting a reload", async () => {
   const run = jest.fn(async (command, args) => {
-    if (command === "git" && args[0] === "diff") return { stdout: "etc/named.conf\0" };
+    if (command === "git" && args[0] === "diff") return { stdout: "M\0etc/named.conf\0" };
     if (command === "systemctl") throw new Error("systemctl failed");
     return {};
   });
@@ -91,7 +91,7 @@ test("captures planned actions before attempting a reload", async () => {
 });
 
 test("records when no catalog component changed", async () => {
-  const state = setup({ run: jest.fn().mockResolvedValue({ stdout: "README.md\0" }) });
+  const state = setup({ run: jest.fn().mockResolvedValue({ stdout: "M\0README.md\0" }) });
 
   await expect(reloadConfiguration(state)).resolves.toEqual({ actions: [], started: false });
   expect(state.steps).toEqual([{ name: "No catalog components changed", status: "passed" }]);
