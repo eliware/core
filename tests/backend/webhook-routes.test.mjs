@@ -186,8 +186,8 @@ test("bounds remembered busy GitHub request IDs", async () => {
   for (const id of ["accepted-1", "accepted-2"]) await postWebhook(server, body, id);
   for (const id of ["busy-1", "busy-2"]) await postWebhook(server, body, id);
   const duplicate = await postWebhook(server, body, "accepted-1");
-  expect(duplicate.json()).toEqual({ accepted: false, reason: "duplicate delivery" });
-  expect(deployment.start).toHaveBeenCalledTimes(4);
+  expect(duplicate.json()).toEqual({ accepted: true, runId: "accepted-1" });
+  expect(deployment.start).toHaveBeenCalledTimes(5);
   await server.close();
 
   const busyDeployment = { start: jest.fn(() => ({ accepted: false, status: "busy" })) };
@@ -212,27 +212,17 @@ test("returns unavailable when deployment admission cannot start", async () => {
   await server.close();
 });
 
-test("retains accepted delivery IDs beyond the busy delivery cache limit", async () => {
+test("bounds accepted delivery IDs and rejects duplicates while remembered", async () => {
   const body = JSON.stringify({ ref: "refs/heads/main" });
-  const { server, deployment } = await setup();
-  for (let index = 0; index < 1001; index += 1) {
-    const response = await server.inject({
-      method: "POST",
-      url: "/api/github/webhook",
-      headers: signedHeaders(body, { "x-github-delivery": `delivery-${index}` }),
-      payload: body,
-    });
-    expect(response.statusCode).toBe(202);
-  }
-  const duplicate = await server.inject({
-    method: "POST",
-    url: "/api/github/webhook",
-    headers: signedHeaders(body, { "x-github-delivery": "delivery-0" }),
-    payload: body,
-  });
-  expect(duplicate.statusCode).toBe(202);
-  expect(deployment.start).toHaveBeenCalledTimes(1001);
+  const { server, deployment } = await setup({ maximumRememberedDeliveries: 2 });
+  await postWebhook(server, body, "delivery-0");
+  await postWebhook(server, body, "delivery-1");
+  const duplicate = await postWebhook(server, body, "delivery-1");
   expect(duplicate.json()).toEqual({ accepted: false, reason: "duplicate delivery" });
+  await postWebhook(server, body, "delivery-2");
+  const expired = await postWebhook(server, body, "delivery-0");
+  expect(expired.json()).toEqual({ accepted: true, runId: "run-1" });
+  expect(deployment.start).toHaveBeenCalledTimes(4);
   await server.close();
 });
 

@@ -59,7 +59,8 @@ Set `GITHUB_WEBHOOK_SECRET` to the matching GitHub webhook secret.
 Set `DISCORD_WEBHOOK_URL` to send Discord notifications.
 
 Set `PORT` and `WEBHOOK_PORT` to the ports used by the local proxy configuration.
-Set unique `SNOWFLAKE_WORKER_ID` and `SNOWFLAKE_PROCESS_ID` values for each active Core instance.
+Set `SNOWFLAKE_WORKER_ID` and `SNOWFLAKE_PROCESS_ID` to integers from `0` through `31`.
+Use a unique worker and process pair for each active Core instance.
 
 Create the file and edit it with `sudoedit`:
 

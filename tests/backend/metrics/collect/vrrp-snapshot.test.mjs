@@ -65,6 +65,16 @@ test("skips signaling for an invalid process ID or signal", async () => {
     { readFile: read, run: async () => ({ stdout: "unknown" }), signalProcess, wait: jest.fn() },
   );
   expect(signalProcess).not.toHaveBeenCalled();
+  await collectVrrpSnapshot(
+    { pidPath: "/pid", path: "/state" },
+    {
+      readFile: async (path) => (path === "/pid" ? "5" : state),
+      run: async () => ({ stdout: "9999" }),
+      signalProcess,
+      wait: jest.fn(),
+    },
+  );
+  expect(signalProcess).not.toHaveBeenCalled();
 });
 
 test("uses the snapshot when reading the process ID fails", async () => {

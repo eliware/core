@@ -54,7 +54,11 @@ Copy `.env.example` to `.env`, then set values for each router.
 The server rejects invalid ports and rejects equal dashboard and webhook ports.
 The dashboard and webhook TCP endpoint numbers must not be the same.
 The dashboard and webhook listener use loopback.
+
 Set `CORE_DASHBOARD_URL` to the dashboard address that Discord recipients can open.
+Set a public hostname or public IP address in this value.
+The application rejects loopback, private, and link-local addresses.
+It also rejects `localhost` and hostnames that end with `.local`, `.internal`, or `.lan`.
 The event notification links to the loopback dashboard URL when this value is unset.
 
 Configure a proxy or network port forward to route external requests to the configured loopback ports.
@@ -98,7 +102,8 @@ It checks that the repository remains clean after Git pull and each npm validati
 If a check finds changes, the sequence stops and recovery restores the previous commit.
 
 The server rejects JSON request bodies larger than 1 MiB.
-It remembers accepted GitHub request IDs until the application restarts.
+It remembers the most recent 1000 GitHub request IDs in memory.
+An older request ID can run again after the application removes it from that cache.
 On a GitHub retry after a busy response, the server tries deployment admission again.
 While a deployment runs, it returns HTTP 409.
 

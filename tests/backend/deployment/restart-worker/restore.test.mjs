@@ -42,11 +42,11 @@ test("reloads all configuration when no catalog actions exist", async () => {
     run,
     checkReady: jest.fn().mockResolvedValue(undefined),
   });
-  expect(run).toHaveBeenCalledWith(
-    "npm",
-    ["run", "reload"],
-    expect.objectContaining({ cwd: "/router/core" }),
-  );
+  expect(run).toHaveBeenCalledWith("npm", ["run", "reload"], {
+    cwd: "/router/core",
+    timeout: 15 * 60_000,
+    maxBuffer: 1024 * 1024,
+  });
   expect(steps).toContainEqual({ name: "reload previous configuration", status: "passed" });
 });
 

@@ -6,14 +6,10 @@ export default function registerWebhookRoutes(
 ) {
   const deliveries = new Map();
 
-  function rememberBusy(delivery) {
-    deliveries.set(delivery, "busy");
-    if (deliveries.size <= maximumRememberedDeliveries) return;
-    for (const [id, status] of deliveries) {
-      if (status !== "accepted") {
-        deliveries.delete(id);
-        if (deliveries.size <= maximumRememberedDeliveries) return;
-      }
+  function rememberDelivery(delivery, status) {
+    deliveries.set(delivery, status);
+    while (deliveries.size > maximumRememberedDeliveries) {
+      deliveries.delete(deliveries.keys().next().value);
     }
   }
 
@@ -48,13 +44,13 @@ export default function registerWebhookRoutes(
     const result = deployment.start(delivery, request.body);
     if (!result.accepted) {
       if (result.status === "busy") {
-        rememberBusy(delivery);
+        rememberDelivery(delivery, "busy");
       }
       if (result.status === "unavailable" || result.status === "unconfigured")
         return reply.code(503).send(result);
       return reply.code(409).send(result);
     }
-    deliveries.set(delivery, "accepted");
+    rememberDelivery(delivery, "accepted");
     return reply.code(202).send(result);
   });
 }

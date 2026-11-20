@@ -16,7 +16,11 @@ export default async function restore(payload, steps, { run, checkReady }) {
         prefix: "restore ",
       });
     } else {
-      await run("npm", ["run", "reload"], { cwd: payload.repositoryPath, timeout: 900_000 });
+      await run("npm", ["run", "reload"], {
+        cwd: payload.repositoryPath,
+        timeout: 15 * 60_000,
+        maxBuffer: 1024 * 1024,
+      });
       steps.push({ name: "reload previous configuration", status: "passed" });
     }
     await run("systemctl", ["restart", payload.serviceUnit]);

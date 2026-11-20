@@ -1,5 +1,7 @@
 import { readFile as nodeReadFile } from "node:fs/promises";
 
+const maximumSignal = 64;
+
 export default async function collectVrrpSnapshot(
   metric,
   {
@@ -17,7 +19,7 @@ export default async function collectVrrpSnapshot(
     if (Number.isSafeInteger(pid) && pid > 0) {
       const { stdout } = await run("keepalived", ["--signum=JSON"], { timeout: timeoutMs });
       const signal = Number(stdout.trim());
-      if (Number.isSafeInteger(signal) && signal > 0) {
+      if (Number.isSafeInteger(signal) && signal > 0 && signal <= maximumSignal) {
         signalProcess(pid, signal);
         await wait(vrrpDelayMs);
       }
