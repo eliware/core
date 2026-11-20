@@ -1,5 +1,5 @@
 import { expect, test } from "@jest/globals";
-import isUsableVirtualAddress from "../../../src/pair/keepalived/address-policy.mjs";
+import isUsableVirtualAddress from "../../../../src/pair/keepalived/address/policy.mjs";
 
 test.each([
   "192.0.2.0/24",

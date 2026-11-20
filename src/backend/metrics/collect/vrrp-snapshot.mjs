@@ -1,0 +1,29 @@
+import { readFile as nodeReadFile } from "node:fs/promises";
+
+export default async function collectVrrpSnapshot(
+  metric,
+  {
+    run,
+    readFile = nodeReadFile,
+    signalProcess = process.kill,
+    wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)),
+    vrrpDelayMs = 50,
+    timeoutMs = 10_000,
+  },
+) {
+  try {
+    const pidSource = await readFile(metric.pidPath ?? "/run/keepalived.pid", "utf8");
+    const pid = Number(pidSource.trim());
+    if (Number.isSafeInteger(pid) && pid > 0) {
+      const { stdout } = await run("keepalived", ["--signum=JSON"], { timeout: timeoutMs });
+      const signal = Number(stdout.trim());
+      if (Number.isSafeInteger(signal) && signal > 0) {
+        signalProcess(pid, signal);
+        await wait(vrrpDelayMs);
+      }
+    }
+  } catch {
+    // Use the configured snapshot when Keepalived cannot produce a new one.
+  }
+  return readFile(metric.path ?? "/tmp/keepalived.json", "utf8");
+}

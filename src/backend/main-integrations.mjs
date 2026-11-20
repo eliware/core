@@ -1,3 +1,6 @@
+import createSystemdAlert from "./notifications/systemd-alert.mjs";
+import createSystemdEventHandler from "./systemd/event-state.mjs";
+
 export default function createApplicationIntegrations(configuration, dependencies, log) {
   const catalogHealthUnits =
     configuration.catalog?.components.map(({ health }) => health.unit) ?? [];
@@ -7,35 +10,13 @@ export default function createApplicationIntegrations(configuration, dependencie
       webhookUrl: configuration.discordWebhookUrl,
       ...(typeof notification === "string" ? { message: notification } : notification),
     });
-  const componentNames = new Map(
-    (configuration.catalog?.components ?? []).map(({ name, health }) => [health.unit, name]),
-  );
   const dashboardUrl =
     configuration.dashboardUrl ?? `http://127.0.0.1:${configuration.tcpEndpoint}/`;
-  const sendSystemdAlert = (event) => {
-    const failed = event.event === "failed" || event.status === "unhealthy";
-    const title =
-      event.event === "restarted"
-        ? "🔄 Core component restarted"
-        : failed
-          ? "❌ Core component failure"
-          : "⚠️ Core component stopped";
-    return notify({
-      title,
-      message: "A systemd component changed state.",
-      color: failed ? 0xed4245 : event.event === "restarted" ? 0x57f287 : 0xfee75c,
-      url: dashboardUrl,
-      timestamp: event.checkedAt,
-      fields: [
-        { name: "Component", value: componentNames.get(event.name) ?? event.name, inline: true },
-        { name: "Unit", value: event.name, inline: true },
-        { name: "Event", value: event.event, inline: true },
-        { name: "Event time", value: event.checkedAt ?? "Unknown" },
-        { name: "Current state", value: event.state ?? event.result?.detail ?? "Unknown" },
-        { name: "Dashboard", value: `[Open dashboard](${dashboardUrl})` },
-      ],
-    });
-  };
+  const sendSystemdAlert = createSystemdAlert({
+    notify,
+    components: configuration.catalog?.components ?? [],
+    dashboardUrl,
+  });
   const healthMonitor = dependencies.createHealthMonitor({
     units: healthUnits,
     onUnhealthy: ({ name, detail, checkedAt }) =>
@@ -55,10 +36,10 @@ export default function createApplicationIntegrations(configuration, dependencie
   const systemdEventMonitor = dependencies.createSystemdEventMonitor({
     units: healthUnits,
     log,
-    onEvent: async (event) => {
-      const state = await dependencies.readSystemdUnitState(event.name);
-      await healthMonitor.recordEvent({ ...event, ...state });
-    },
+    onEvent: createSystemdEventHandler({
+      readUnitState: dependencies.readSystemdUnitState,
+      recordEvent: healthMonitor.recordEvent,
+    }),
   });
   const deployment = dependencies.createDeploymentManager({
     repositoryPath: configuration.repositoryPath,

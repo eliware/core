@@ -1,5 +1,4 @@
 import { execFile as nodeExecFile } from "node:child_process";
-import { readFile as nodeReadFile } from "node:fs/promises";
 import { promisify } from "node:util";
 import summarizeInterfaces from "../interfaces.mjs";
 import summarizeRoutes from "../routes.mjs";
@@ -13,8 +12,8 @@ export default async function collectRouterMetric(
   metric,
   {
     run = execFile,
-    readFile = nodeReadFile,
-    signalProcess = process.kill,
+    readFile,
+    signalProcess,
     vrrpDelayMs = 50,
     wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)),
     timeoutMs = 10_000,
@@ -47,17 +46,7 @@ export default async function collectRouterMetric(
       return summarizeFrr(summary.stdout, routes.stdout);
     }
     case "vrrp":
-      return collectVrrp(metric, {
-        readFile,
-        signalProcess,
-        getJsonSignal: async () => {
-          const { stdout } = await run("keepalived", ["--signum=JSON"], {
-            timeout: timeoutMs,
-          });
-          return stdout.trim();
-        },
-        wait: () => wait(vrrpDelayMs),
-      });
+      return collectVrrp(metric, { run, readFile, signalProcess, vrrpDelayMs, wait, timeoutMs });
     default:
       throw new Error("Unsupported metric type");
   }
