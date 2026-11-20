@@ -77,6 +77,25 @@ test("falls back to the snapshot when the signal command fails", async () => {
   ).resolves.toBe(state);
 });
 
+test("uses the snapshot when an asynchronous signal adapter rejects", async () => {
+  const read = jest.fn(async (path) =>
+    path === "/pid" ? "1234" : path === "/proc/1234/comm" ? "keepalived" : state,
+  );
+  await expect(
+    collectVrrpSnapshot(
+      { pidPath: "/pid", path: "/state" },
+      {
+        readFile: read,
+        readlink: async () => "/usr/sbin/keepalived",
+        run: async () => ({ stdout: "36" }),
+        signalProcess: async () => {
+          throw new Error("signal adapter failed");
+        },
+      },
+    ),
+  ).resolves.toBe(state);
+});
+
 test("skips signaling for an invalid process ID or signal", async () => {
   const read = jest.fn(async (path) => (path === "/pid" ? "0" : state));
   const signalProcess = jest.fn();

@@ -33,6 +33,7 @@ test.each([
   [["1", "IN", "PTR", "bad/name"], "PTR record has an invalid target name"],
   [["@", "IN", "UNKNOWN", "value"], "invalid DNS record"],
   [["@", "IN", "A"], "A record has an invalid address"],
+  [["www", "A", "192.0.2.1", "3600"], "A record has an invalid address"],
 ])("reports invalid DNS record tokens for %s", (tokens, message) => {
   expect(validateDnsRecord("test.zone", tokens, 2).errors.join(" ")).toContain(message);
 });

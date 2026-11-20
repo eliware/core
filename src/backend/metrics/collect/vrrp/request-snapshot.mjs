@@ -25,6 +25,6 @@ export default async function requestVrrpSnapshot(
   const { stdout } = await run(`/proc/${pid}/exe`, ["--signum=JSON"], { timeout: timeoutMs });
   const signal = Number(stdout.trim());
   if (!Number.isSafeInteger(signal) || signal <= 0 || signal > maximumSignal) return;
-  signalProcess(pid, signal);
+  await signalProcess(pid, signal);
   await wait(vrrpDelayMs);
 }

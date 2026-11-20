@@ -102,6 +102,23 @@ test("uses the default installed Core version reader", async () => {
   expect(manager.getStatus().status).toBe("succeeded");
 });
 
+test("uses distinct configured Snowflake identities for active instances", async () => {
+  const first = createManager({
+    repositoryPath: "/router/core1",
+    snowflake: { workerId: 1, processId: 2 },
+  });
+  const second = createManager({
+    repositoryPath: "/router/core2",
+    snowflake: { workerId: 2, processId: 1 },
+  });
+
+  const firstStart = first.start("delivery-one");
+  const secondStart = second.start("delivery-two");
+  expect(firstStart.runId).not.toBe(secondStart.runId);
+  await waitFor(first, "succeeded");
+  await waitFor(second, "succeeded");
+});
+
 test("rejects concurrent deployments for one repository and records notification failures", async () => {
   let finishStatus;
   let firstStatus = true;
