@@ -19,6 +19,7 @@ export default function createSystemdEventMonitor({
   let reader;
   let stopped = true;
   let restartTimer;
+  let deliveryQueue = Promise.resolve();
 
   function handleLine(line) {
     const parsed = parseJournalEvent(line, uniqueUnits, now);
@@ -28,6 +29,8 @@ export default function createSystemdEventMonitor({
       if (state.failed) return;
       state.failed = true;
       state.stopped = true;
+      void deliver(parsed);
+      return;
     } else if (parsed.event === "stopped") {
       if (state.stopped || state.failed) return;
       state.stopped = true;
@@ -43,12 +46,14 @@ export default function createSystemdEventMonitor({
     void deliver(parsed);
   }
 
-  async function deliver(event) {
-    try {
-      await onEvent(event);
-    } catch {
-      log.warn(`Systemd event handling failed for ${event.name}`);
-    }
+  function deliver(event) {
+    deliveryQueue = deliveryQueue.then(async () => {
+      try {
+        await onEvent(event);
+      } catch {
+        log.warn(`Systemd event handling failed for ${event.name}`);
+      }
+    });
   }
 
   function scheduleRestart(message, failedChild) {

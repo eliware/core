@@ -38,6 +38,7 @@ test("streams relevant unit events and suppresses duplicates during one failure 
   child.stdout.write(`${entry("Started Name Server.")}\n`);
   child.stdout.write(`${entry("Stopping Name Server.")}\n`);
   child.stdout.write(`${entry("Stopped Name Server.")}\n`);
+  for (let index = 0; index < 12; index += 1) await Promise.resolve();
   expect(onEvent.mock.calls.map(([event]) => event.event)).toEqual([
     "failed",
     "restarted",
@@ -165,8 +166,7 @@ test("logs when an event callback fails", async () => {
   child.stdout.write(
     `${JSON.stringify({ UNIT: "named.service", MESSAGE: "Stopped Name Server." })}\n`,
   );
-  await Promise.resolve();
-  await Promise.resolve();
+  for (let index = 0; index < 12; index += 1) await Promise.resolve();
   expect(log.warn).toHaveBeenCalledWith("Systemd event handling failed for named.service");
   await monitor.stop();
 });
