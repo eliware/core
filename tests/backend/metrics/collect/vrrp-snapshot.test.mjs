@@ -31,7 +31,7 @@ test("signals Keepalived and reads its refreshed snapshot", async () => {
       },
     ),
   ).resolves.toBe(state);
-  expect(run).toHaveBeenCalledWith("/usr/sbin/keepalived", ["--signum=JSON"], { timeout: 500 });
+  expect(run).toHaveBeenCalledWith("/proc/1234/exe", ["--signum=JSON"], { timeout: 500 });
   expect(signalProcess).toHaveBeenCalledWith(1234, 36);
   expect(wait).toHaveBeenCalledWith(25);
 });
@@ -141,7 +141,7 @@ test("does not signal a PID owned by another process", async () => {
   expect(signalProcess).not.toHaveBeenCalled();
 });
 
-test("runs the executable attached to the verified Keepalived process", async () => {
+test("runs the verified Keepalived executable through its proc entry", async () => {
   const run = jest.fn().mockResolvedValue({ stdout: "36" });
   await collectVrrpSnapshot(
     { pidPath: "/pid", path: "/state" },
@@ -157,9 +157,27 @@ test("runs the executable attached to the verified Keepalived process", async ()
       wait: jest.fn(),
     },
   );
-  expect(run).toHaveBeenCalledWith("/usr/sbin/keepalived", ["--signum=JSON"], {
+  expect(run).toHaveBeenCalledWith("/proc/1234/exe", ["--signum=JSON"], {
     timeout: 10_000,
   });
+});
+
+test("does not run a different executable with a Keepalived process name", async () => {
+  const run = jest.fn();
+  const signalProcess = jest.fn();
+  await collectVrrpSnapshot(
+    { pidPath: "/pid", path: "/state" },
+    {
+      readFile: async (path) =>
+        path === "/pid" ? "1234" : path === "/proc/1234/comm" ? "keepalived" : state,
+      readlink: async () => "/usr/bin/other-daemon",
+      run,
+      signalProcess,
+      wait: jest.fn(),
+    },
+  );
+  expect(run).not.toHaveBeenCalled();
+  expect(signalProcess).not.toHaveBeenCalled();
 });
 
 test("uses default filesystem, signal, wait, and timeout dependencies", async () => {
@@ -175,7 +193,7 @@ test("uses default filesystem, signal, wait, and timeout dependencies", async ()
       { run, signalProcess, vrrpDelayMs: 0 },
     ),
   ).resolves.toBe(state);
-  expect(run).toHaveBeenCalledWith("/usr/sbin/keepalived", ["--signum=JSON"], {
+  expect(run).toHaveBeenCalledWith("/proc/1234/exe", ["--signum=JSON"], {
     timeout: 10_000,
   });
   expect(defaultReadFile).toHaveBeenCalledWith("/state", "utf8");

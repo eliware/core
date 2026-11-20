@@ -7,7 +7,7 @@ const { default: collectRouterMetric } =
   await import("../../../../src/backend/metrics/collect/router.mjs");
 
 const metricRun = jest.fn(async (command, args) => {
-  if (command.endsWith("keepalived")) return { stdout: "36\n" };
+  if (command.endsWith("keepalived") || command === "/proc/1234/exe") return { stdout: "36\n" };
   if (command === "ip" && args.includes("address"))
     return { stdout: '[{"ifname":"eth0","operstate":"UP","addr_info":[]}]' };
   if (command === "ip" && args.includes("route"))

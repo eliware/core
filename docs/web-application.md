@@ -282,6 +282,7 @@ The public npm package includes the CLI and web application.
 Its tarball contains `bin/`, `src/`, `public/`, `docs/`, `specs/`, and the package documentation.
 The tarball does not include tests, `node_modules/`, generated `dist/` files, or the lockfile.
 It ships `public/client.bundle` and `public/service-worker.bundle` as browser assets.
+The `prepack` script rebuilds and copies these bundles before `npm pack` or `npm publish`.
 
 The npm workflow validates tagged releases and publishes the package with provenance.
 Use a numeric `MAJOR.MINOR.PATCH` version and a matching `vMAJOR.MINOR.PATCH` release tag.

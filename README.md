@@ -122,7 +122,8 @@ Read the [route guide](docs/web-application.md#routes) for assets and response d
 Keep browser source files in `src/frontend/` and served assets in `public/`.
 The build creates `dist/client.js` and `dist/service-worker.js` as local build artifacts.
 The npm package excludes `dist/` and ships browser bundles from `public/`.
-Run `node bin/copy-web-assets.mjs` to copy the build output into `public/` before publication.
+The `prepack` script rebuilds those bundles before `npm pack` or `npm publish`.
+Run `node bin/copy-web-assets.mjs` after a manual build to refresh local assets.
 
 ## Development server
 

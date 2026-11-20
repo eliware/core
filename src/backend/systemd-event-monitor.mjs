@@ -12,12 +12,14 @@ export default function createSystemdEventMonitor({
   setTimeoutFn = setTimeout,
   clearTimeoutFn = clearTimeout,
   restartDelayMs = 1000,
+  shutdownTimeoutMs = 5000,
 } = {}) {
   const uniqueUnits = [...new Set(units)];
   const states = new Map(uniqueUnits.map((unit) => [unit, { stopped: false, failed: false }]));
   let child;
   let reader;
   let childExit = Promise.resolve();
+  let childExited = true;
   let stopped = true;
   let restartTimer;
   let deliveryQueue = Promise.resolve();
@@ -86,11 +88,13 @@ export default function createSystemdEventMonitor({
       childExit = new Promise((resolve) => {
         resolveExit = resolve;
       });
+      childExited = false;
       child = active;
       reader = lineReader({ input: active.stdout, crlfDelay: Infinity });
       reader.on("line", handleLine);
       active.on("error", () => scheduleRestart("Systemd event stream is unavailable", active));
       active.on("close", () => {
+        childExited = true;
         resolveExit();
         scheduleRestart("Systemd event stream stopped", active);
       });
@@ -116,7 +120,22 @@ export default function createSystemdEventMonitor({
     reader = undefined;
     if (active) {
       if (!active.killed) active.kill("SIGTERM");
-      await childExit;
+      let timeout;
+      const timedOut = await Promise.race([
+        childExit.then(() => false),
+        new Promise((resolve) => {
+          timeout = setTimeoutFn(() => resolve(true), shutdownTimeoutMs);
+        }),
+      ]);
+      if (timeout !== undefined) clearTimeoutFn(timeout);
+      if (timedOut && !childExited) {
+        log.warn("Systemd event stream did not stop after SIGTERM");
+        try {
+          active.kill("SIGKILL");
+        } catch {
+          log.warn("Systemd event stream could not be force-stopped");
+        }
+      }
     }
   }
 

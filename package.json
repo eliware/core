@@ -42,6 +42,7 @@
     "format": "eliware-test --format",
     "format:check": "eliware-test --format-check",
     "build": "webpack --config webpack.config.mjs",
+    "prepack": "npm run build && node bin/copy-web-assets.mjs",
     "prebuild": "webpack-cli --version",
     "lighthouse": "lighthouse http://127.0.0.1:9300 --only-categories=performance,best-practices,seo,accessibility --output=json --output-path=artifacts/lighthouse.json --chrome-flags=--headless && node bin/pwa-audit.mjs",
     "screenshots": "node bin/screenshots.mjs",

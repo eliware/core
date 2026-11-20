@@ -4,6 +4,7 @@ directives:
   - id: E-9300.1
     dos:
       - Publish `@eliware/core` as an npm package.
+      - Build and copy the browser bundles before npm packs or publishes the package.
       - Install `@eliware/core` as a development dependency in each managed router repository.
       - Provide the `core-cli` command for router configuration work.
       - Keep `--help` and `--version` read-only.

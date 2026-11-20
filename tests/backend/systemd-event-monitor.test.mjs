@@ -114,8 +114,8 @@ test("restarts journal monitoring after the stream closes", async () => {
   let restart;
   const timeout = { unref: jest.fn() };
   const setTimeoutFn = jest.fn((callback, delay) => {
-    restart = callback;
-    expect(delay).toBe(250);
+    if (delay === 250) restart = callback;
+    else expect(delay).toBe(5000);
     return timeout;
   });
   const clearTimeoutFn = jest.fn();
@@ -140,8 +140,8 @@ test("restarts journal monitoring after the stream closes", async () => {
   const stoppedMonitor = createSystemdEventMonitor({
     units: ["named.service"],
     spawn: () => stoppedChild,
-    setTimeoutFn: (callback) => {
-      canceledRestart = callback;
+    setTimeoutFn: (callback, delay) => {
+      if (delay === 1000) canceledRestart = callback;
       return timeout;
     },
     clearTimeoutFn,
@@ -182,6 +182,56 @@ test("waits for the journal child to exit during shutdown", async () => {
   expect(alreadyKilled.kill).not.toHaveBeenCalled();
   alreadyKilled.emit("close", 0);
   await secondStop;
+});
+
+test("force-stops journal children that ignore SIGTERM", async () => {
+  const child = childProcess();
+  let stopTimer;
+  const log = { warn: jest.fn() };
+  child.kill.mockImplementation(() => {
+    child.killed = true;
+  });
+  const monitor = createSystemdEventMonitor({
+    units: ["named.service"],
+    spawn: () => child,
+    log,
+    setTimeoutFn: (callback) => {
+      stopTimer = callback;
+      return undefined;
+    },
+    clearTimeoutFn: jest.fn(),
+    shutdownTimeoutMs: 250,
+  });
+  monitor.start();
+  const stopped = monitor.stop();
+  stopTimer();
+  await stopped;
+  expect(child.kill.mock.calls.map(([signal]) => signal)).toEqual(["SIGTERM", "SIGKILL"]);
+  expect(log.warn).toHaveBeenCalledWith("Systemd event stream did not stop after SIGTERM");
+  expect(log.warn).not.toHaveBeenCalledWith("Systemd event stream could not be force-stopped");
+
+  const failedKill = childProcess();
+  const failedLog = { warn: jest.fn() };
+  failedKill.kill.mockImplementation((signal) => {
+    failedKill.killed = true;
+    if (signal === "SIGKILL") throw new Error("signal denied");
+  });
+  let forceTimer;
+  const failedMonitor = createSystemdEventMonitor({
+    units: ["named.service"],
+    spawn: () => failedKill,
+    log: failedLog,
+    setTimeoutFn: (callback) => {
+      forceTimer = callback;
+      return undefined;
+    },
+    shutdownTimeoutMs: 250,
+  });
+  failedMonitor.start();
+  const failedStop = failedMonitor.stop();
+  forceTimer();
+  await failedStop;
+  expect(failedLog.warn).toHaveBeenCalledWith("Systemd event stream could not be force-stopped");
 });
 
 test("logs when an event callback fails", async () => {
