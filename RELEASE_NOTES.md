@@ -1,15 +1,29 @@
 # Release Notes
 
-## 15.2.4 — 2026-11-19
-
-### Fixed
-
-- Refresh VRRP metrics with Keepalived's JSON signal and parent process ID.
-- Resolve dashboard assets from the installed package and include the built client files in release tarballs.
+## 15.2.4 — 2026-11-20
 
 ### Changed
 
-- Include `CORE_HEALTH_UNITS` in dashboard health checks when a catalog exists.
+- Set the package version to 15.2.4 and refresh browser build metadata dependencies.
+- Build and copy the dashboard client and `service-worker` bundles before npm pack.
+- Include configured health units when a component catalog defines monitored units.
+- Split configuration, deployment, health, metrics, and validator workflows into focused modules.
+- Update installation and web application guidance for current runtime, dashboard, and package behavior.
+
+### Fixed
+
+- Refresh VRRP metrics by verifying and signaling the Keepalived process, then reading its JSON snapshot.
+- Preserve the configured VRRP snapshot when process checks, signaling, or asynchronous adapters fail.
+- Resolve dashboard assets correctly from the installed package and include those assets in release tarballs.
+- Reject non-global IPv6 addresses and reserved-use dashboard hostnames.
+- Await the configured Snowflake generator identity and verify that separate worker and process pairs produce distinct deployment IDs.
+- Preserve catalog actions for renamed paths and restore safely when a changed-path record is incomplete.
+- Keep unhealthy systemd state until a confirmed recovery, and prevent repeat alerts during one failure period.
+- Drain accepted systemd event callbacks during shutdown without waiting on the callback that initiated shutdown.
+- Preserve deployment lock cleanup errors and detached Core worker status during shutdown and rollback.
+- Tighten DNS, HAProxy, Keepalived, webhook, and systemd configuration validation.
+- Record metrics and health status consistently when sources fail or systemd reports a stop or start.
+- Document the metrics field returned by `GET /api/status`.
 
 ## 15.2.3 — 2026-11-19
 
