@@ -44,13 +44,15 @@ function isPublicHost(hostname) {
     );
   }
   if (version === 6) {
-    return !(
-      host === "::" ||
-      host === "::1" ||
-      /^f[cd]/u.test(host) ||
-      /^fe[89ab]/u.test(host) ||
-      host.startsWith("::ffff:")
-    );
+    if (host.startsWith("::ffff:")) {
+      const [high, low] = host
+        .slice("::ffff:".length)
+        .split(":")
+        .map((part) => parseInt(part, 16));
+      const address = [high >> 8, high & 255, low >> 8, low & 255].join(".");
+      return isPublicHost(address);
+    }
+    return !(host === "::" || host === "::1" || /^f[cd]/u.test(host) || /^fe[89ab]/u.test(host));
   }
   if (!host.includes(".")) return false;
   return true;

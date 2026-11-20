@@ -32,8 +32,9 @@ export default function createSystemdEventMonitor({
       void deliver(parsed);
       return;
     } else if (parsed.event === "stopped") {
-      if (state.stopped || state.failed) return;
+      if (state.stopped && !state.failed) return;
       state.stopped = true;
+      state.failed = false;
       void deliver({ ...parsed, event: "stopped" });
       return;
     } else {

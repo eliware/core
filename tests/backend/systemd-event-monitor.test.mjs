@@ -14,7 +14,7 @@ function childProcess() {
   return child;
 }
 
-test("streams relevant unit events and suppresses duplicates during one failure or stop", async () => {
+test("streams failures, stops, and restarts while suppressing duplicate events", async () => {
   const child = childProcess();
   const spawn = jest.fn(() => child);
   const onEvent = jest.fn();
@@ -41,6 +41,7 @@ test("streams relevant unit events and suppresses duplicates during one failure 
   for (let index = 0; index < 12; index += 1) await Promise.resolve();
   expect(onEvent.mock.calls.map(([event]) => event.event)).toEqual([
     "failed",
+    "stopped",
     "restarted",
     "stopped",
   ]);

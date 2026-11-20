@@ -7,6 +7,7 @@ directives:
       - Keep the catalog versioned with the configuration repository.
       - List component IDs, names, configuration paths, health checks, and actions.
       - Allow supported local metric sources in component `metrics` entries.
+      - Collect every metric entry set by the operator.
       - Support `interfaces`, `routes`, `arp`, `frr`, and `vrrp` metrics.
       - Support `haproxy`, `dhcp-leases`, `dns-cache`, and `ntp` metrics.
       - Allow `path` and `pidPath` overrides for Keepalived VRRP JSON status files.

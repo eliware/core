@@ -154,6 +154,8 @@ It does not use a database or keep historical metric samples.
 The dashboard collects interface, route, IPv4 neighbor, FRR, and VRRP status without a catalog.
 
 Use component `metrics` entries in `core-catalog.yaml` to add or configure other metrics.
+The dashboard collects every metric entry set by the operator.
+It displays a separate result for each metric entry.
 The dashboard shows each result timestamp and marks a source unavailable when its local interface fails.
 
 Interface data comes from `ip -j -s address show` and includes addresses, link state, and traffic totals.

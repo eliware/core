@@ -44,6 +44,7 @@ test.each([
   "http://192.0.2.1/",
   "https://router.example.com/",
   "https://[2001:4860:4860::8888]/",
+  "http://[::ffff:808:808]/",
 ])("accepts a public dashboard host %s", (value) => {
   expect(validateDashboardUrl(value, 9300)).toBe(value);
 });

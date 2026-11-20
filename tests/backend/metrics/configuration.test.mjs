@@ -37,3 +37,16 @@ test("overrides built-ins and adds catalog metrics without empty components", ()
   ]);
   expect(initialStatus.components.map(({ type }) => type)).toContain("dns-cache");
 });
+
+test("configures every catalog metric that shares a built-in type", () => {
+  const catalog = {
+    components: [
+      { id: "wan", name: "WAN", metrics: [{ type: "interfaces" }, { type: "interfaces" }] },
+    ],
+  };
+  const { configured } = createMetricsConfiguration(catalog);
+  expect(configured.filter(({ metric }) => metric.type === "interfaces")).toEqual([
+    { component: catalog.components[0], metric: catalog.components[0].metrics[0] },
+    { component: catalog.components[0], metric: catalog.components[0].metrics[1] },
+  ]);
+});
