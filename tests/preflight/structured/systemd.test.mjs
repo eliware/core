@@ -40,3 +40,9 @@ test("checks unit sections, settings, and local script references", () => {
     validateSystemd("etc/systemd/system/app.service.d/empty.conf", "", files).join(" "),
   ).toContain("drop-in needs a unit section");
 });
+
+test("accepts extension sections and settings with hyphens", () => {
+  const text =
+    "[Unit]\nDescription=Start app\n[Service]\nExecStartPre=/usr/bin/check\n[X-Reload]\nX-Log-Detail=enabled\n";
+  expect(validateSystemd("etc/systemd/system/app.service", text, [])).toEqual([]);
+});

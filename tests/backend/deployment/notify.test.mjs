@@ -26,3 +26,18 @@ test("records notification failures without throwing", async () => {
   );
   expect(state.status.get().notificationError).toBe("Discord notification failed.");
 });
+
+test("does not throw when status storage rejects a notification failure update", async () => {
+  const status = {
+    get: () => ({ status: "failed", steps: [] }),
+    update: jest.fn(() => {
+      throw new Error("status storage unavailable");
+    }),
+  };
+  const notify = jest.fn().mockRejectedValue(new Error("Discord is unavailable"));
+
+  await expect(
+    notifyDeployment({ status, notify, branch: "main", githubPayload: {} }),
+  ).resolves.toBeUndefined();
+  expect(status.update).toHaveBeenCalledWith({ notificationError: "Discord notification failed." });
+});

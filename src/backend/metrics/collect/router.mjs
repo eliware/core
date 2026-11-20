@@ -13,6 +13,7 @@ export default async function collectRouterMetric(
   {
     run = execFile,
     readFile,
+    readlink,
     signalProcess,
     vrrpDelayMs = 50,
     wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)),
@@ -46,7 +47,15 @@ export default async function collectRouterMetric(
       return summarizeFrr(summary.stdout, routes.stdout);
     }
     case "vrrp":
-      return collectVrrp(metric, { run, readFile, signalProcess, vrrpDelayMs, wait, timeoutMs });
+      return collectVrrp(metric, {
+        run,
+        readFile,
+        readlink,
+        signalProcess,
+        vrrpDelayMs,
+        wait,
+        timeoutMs,
+      });
     default:
       throw new Error("Unsupported metric type");
   }

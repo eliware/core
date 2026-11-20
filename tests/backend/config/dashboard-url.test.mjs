@@ -14,6 +14,7 @@ test.each([
   "https://user:pass@router.example.com/",
   "https://user@router.example.com/",
   "http://127.0.0.1:9300/",
+  "http://127.1/",
   "http://0.0.0.0/",
   "http://10.1.2.3/",
   "http://192.168.1.1/",

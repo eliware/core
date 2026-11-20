@@ -13,10 +13,22 @@ function resolveRepository(githubPayload) {
 
 function resolveCompareUrl(githubPayload, repository) {
   if (!repository) return undefined;
-  const prefix = `${repository.url}/compare/`;
-  return typeof githubPayload?.compare === "string" && githubPayload.compare.startsWith(prefix)
-    ? githubPayload.compare
-    : undefined;
+  if (typeof githubPayload?.compare !== "string") return undefined;
+  try {
+    const compare = new URL(githubPayload.compare);
+    if (
+      compare.protocol !== "https:" ||
+      compare.hostname !== "github.com" ||
+      compare.username ||
+      compare.password ||
+      !compare.pathname.startsWith(`/${repository.name}/compare/`)
+    ) {
+      return undefined;
+    }
+    return compare.toString();
+  } catch {
+    return undefined;
+  }
 }
 
 function duration(startedAt, finishedAt) {

@@ -26,7 +26,15 @@ test("checks paths under the generic Core prefix as repository references", () =
       "[Service]\nExecStart=/eliware/core/scripts/start.sh\n",
       [],
     ),
-  ).toEqual([
-    "FAIL etc/core.service:2: referenced /eliware/core/scripts/start.sh file is missing.",
-  ]);
+  ).toEqual(["FAIL etc/core.service:2: referenced scripts/start.sh file is missing."]);
+});
+
+test("resolves script references for any Core repository directory", () => {
+  expect(
+    validateSystemdReferences(
+      "etc/core.service",
+      "[Service]\nExecStart=/eliware/core3/scripts/start.sh\n",
+      ["scripts/start.sh"],
+    ),
+  ).toEqual([]);
 });

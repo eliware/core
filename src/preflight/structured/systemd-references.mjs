@@ -4,8 +4,9 @@ export default function validateSystemdReferences(file, text, files) {
     const command = line
       .trim()
       .match(/^Exec(?:Start|StartPre|StartPost|Reload)=\s*(?:\+|-|!|@|:|\|)*([^\s]+)/u);
-    if (!command?.[1].startsWith("/eliware/core")) continue;
-    const target = command[1].replace(/^\/eliware\/core[12]\//u, "");
+    const reference = command?.[1].match(/^\/eliware\/core[^/]*\/(.+)$/u);
+    if (!reference) continue;
+    const target = reference[1];
     if (!files.includes(target))
       errors.push(`FAIL ${file}:${index + 1}: referenced ${target} file is missing.`);
   }

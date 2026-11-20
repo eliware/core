@@ -4,6 +4,10 @@ export default async function notifyDeployment({ status, notify, branch, githubP
   try {
     await notify(createDeploymentDiscordNotification({ ...status.get(), branch, githubPayload }));
   } catch {
-    status.update({ notificationError: "Discord notification failed." });
+    try {
+      status.update({ notificationError: "Discord notification failed." });
+    } catch {
+      // Notification errors do not stop deployment recovery or cleanup.
+    }
   }
 }

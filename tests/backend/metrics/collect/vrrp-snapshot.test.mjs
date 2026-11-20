@@ -1,7 +1,11 @@
 import { expect, jest, test } from "@jest/globals";
 
 const defaultReadFile = jest.fn();
-jest.unstable_mockModule("node:fs/promises", () => ({ readFile: defaultReadFile }));
+const defaultReadlink = jest.fn();
+jest.unstable_mockModule("node:fs/promises", () => ({
+  readFile: defaultReadFile,
+  readlink: defaultReadlink,
+}));
 const { default: collectVrrpSnapshot } =
   await import("../../../../src/backend/metrics/collect/vrrp-snapshot.mjs");
 const state = '{"v1":[{"data":{"iname":"VI_LAN","state":2}}]}';
@@ -16,10 +20,18 @@ test("signals Keepalived and reads its refreshed snapshot", async () => {
   await expect(
     collectVrrpSnapshot(
       { pidPath: "/pid", path: "/state" },
-      { readFile: read, run, signalProcess, wait, vrrpDelayMs: 25, timeoutMs: 500 },
+      {
+        readFile: read,
+        readlink: async () => "/usr/sbin/keepalived",
+        run,
+        signalProcess,
+        wait,
+        vrrpDelayMs: 25,
+        timeoutMs: 500,
+      },
     ),
   ).resolves.toBe(state);
-  expect(run).toHaveBeenCalledWith("keepalived", ["--signum=JSON"], { timeout: 500 });
+  expect(run).toHaveBeenCalledWith("/usr/sbin/keepalived", ["--signum=JSON"], { timeout: 500 });
   expect(signalProcess).toHaveBeenCalledWith(1234, 36);
   expect(wait).toHaveBeenCalledWith(25);
 });
@@ -31,7 +43,13 @@ test("uses default paths and delay", async () => {
   const wait = jest.fn();
   await collectVrrpSnapshot(
     {},
-    { readFile: read, run: async () => ({ stdout: "36" }), signalProcess: jest.fn(), wait },
+    {
+      readFile: read,
+      readlink: async () => "/usr/sbin/keepalived",
+      run: async () => ({ stdout: "36" }),
+      signalProcess: jest.fn(),
+      wait,
+    },
   );
   expect(read.mock.calls).toEqual([
     ["/run/keepalived.pid", "utf8"],
@@ -50,6 +68,7 @@ test("falls back to the snapshot when the signal command fails", async () => {
       { pidPath: "/pid", path: "/state" },
       {
         readFile: read,
+        readlink: async () => "/usr/sbin/keepalived",
         run: async () => {
           throw new Error("unsupported");
         },
@@ -71,7 +90,13 @@ test("skips signaling for an invalid process ID or signal", async () => {
   );
   await collectVrrpSnapshot(
     { pidPath: "/pid", path: "/state" },
-    { readFile: read, run: async () => ({ stdout: "unknown" }), signalProcess, wait: jest.fn() },
+    {
+      readFile: read,
+      readlink: async () => "/usr/sbin/keepalived",
+      run: async () => ({ stdout: "unknown" }),
+      signalProcess,
+      wait: jest.fn(),
+    },
   );
   expect(signalProcess).not.toHaveBeenCalled();
   await collectVrrpSnapshot(
@@ -79,6 +104,7 @@ test("skips signaling for an invalid process ID or signal", async () => {
     {
       readFile: async (path) =>
         path === "/pid" ? "5" : path === "/proc/5/comm" ? "keepalived" : state,
+      readlink: async () => "/usr/sbin/keepalived",
       run: async () => ({ stdout: "9999" }),
       signalProcess,
       wait: jest.fn(),
@@ -115,10 +141,32 @@ test("does not signal a PID owned by another process", async () => {
   expect(signalProcess).not.toHaveBeenCalled();
 });
 
+test("runs the executable attached to the verified Keepalived process", async () => {
+  const run = jest.fn().mockResolvedValue({ stdout: "36" });
+  await collectVrrpSnapshot(
+    { pidPath: "/pid", path: "/state" },
+    {
+      readFile: async (path) =>
+        path === "/pid" ? "1234" : path === "/proc/1234/comm" ? "keepalived" : state,
+      readlink: async (path) => {
+        expect(path).toBe("/proc/1234/exe");
+        return "/usr/sbin/keepalived";
+      },
+      run,
+      signalProcess: jest.fn(),
+      wait: jest.fn(),
+    },
+  );
+  expect(run).toHaveBeenCalledWith("/usr/sbin/keepalived", ["--signum=JSON"], {
+    timeout: 10_000,
+  });
+});
+
 test("uses default filesystem, signal, wait, and timeout dependencies", async () => {
   defaultReadFile.mockImplementation(async (path) =>
     path === "/pid" ? "1234" : path === "/proc/1234/comm" ? "keepalived" : state,
   );
+  defaultReadlink.mockResolvedValue("/usr/sbin/keepalived");
   const run = jest.fn().mockResolvedValue({ stdout: "36" });
   const signalProcess = jest.fn();
   await expect(
@@ -127,7 +175,9 @@ test("uses default filesystem, signal, wait, and timeout dependencies", async ()
       { run, signalProcess, vrrpDelayMs: 0 },
     ),
   ).resolves.toBe(state);
-  expect(run).toHaveBeenCalledWith("keepalived", ["--signum=JSON"], { timeout: 10_000 });
+  expect(run).toHaveBeenCalledWith("/usr/sbin/keepalived", ["--signum=JSON"], {
+    timeout: 10_000,
+  });
   expect(defaultReadFile).toHaveBeenCalledWith("/state", "utf8");
   defaultReadFile.mockImplementation(async (path) => (path === "/pid" ? "0" : state));
   await collectVrrpSnapshot({ pidPath: "/pid", path: "/state" }, { run });

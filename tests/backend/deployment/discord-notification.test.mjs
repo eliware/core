@@ -176,6 +176,26 @@ test("formats missing commit details, file overflow, and incomplete failure deta
   );
 });
 
+test("rejects compare links outside the exact GitHub repository path", () => {
+  const notification = createDeploymentDiscordNotification({
+    status: "succeeded",
+    githubPayload: {
+      repository: { full_name: "eliware/core" },
+      compare: "https://github.com/eliware/core.evil/compare/before...after",
+    },
+  });
+
+  expect(notification.url).toBe("https://github.com/eliware/core");
+  const invalid = createDeploymentDiscordNotification({
+    status: "succeeded",
+    githubPayload: {
+      repository: { full_name: "eliware/core" },
+      compare: "not a URL",
+    },
+  });
+  expect(invalid.url).toBe("https://github.com/eliware/core");
+});
+
 test("uses defaults when notification metadata is omitted", () => {
   const notification = createDeploymentDiscordNotification({ status: "succeeded" });
 

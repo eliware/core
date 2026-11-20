@@ -59,11 +59,11 @@ test("ignores malformed and unrelated journal entries and uses a fallback event 
   ).toMatchObject({ checkedAt: now().toISOString() });
   expect(
     parseJournalEvent(
-      JSON.stringify({ MESSAGE: "Stopped named.service: Name Server." }),
+      JSON.stringify({ MESSAGE: "A backup for named.service stopped unexpectedly." }),
       ["named.service"],
       now,
     ),
-  ).toMatchObject({ event: "stopped" });
+  ).toBeNull();
   expect(
     parseJournalEvent(
       JSON.stringify({ UNIT: "named.service", MESSAGE: "Stopped Name Server." }),

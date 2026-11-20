@@ -13,8 +13,9 @@ export default function parseJournalEvent(source, units, now = () => new Date())
   }
   if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
   const message = typeof entry.MESSAGE === "string" ? entry.MESSAGE : "";
+  const entryUnits = fieldUnits(entry);
   const unit = units.find(
-    (candidate) => fieldUnits(entry).includes(candidate) || message.includes(candidate),
+    (candidate) => entryUnits.includes(candidate) || message.startsWith(`${candidate}:`),
   );
   if (!unit) return null;
   const event =

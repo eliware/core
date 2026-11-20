@@ -8,13 +8,13 @@ export default function validateSystemd(file, text, files) {
   for (const [index, line] of text.split(/\r?\n/u).entries()) {
     const value = line.trim();
     if (!value || value.startsWith("#") || value.startsWith(";")) continue;
-    const heading = value.match(/^\[([A-Za-z]+)\]$/u);
+    const heading = value.match(/^\[([A-Za-z][A-Za-z0-9-]*)\]$/u);
     if (heading) {
       section = heading[1];
       sections.add(section);
       continue;
     }
-    const setting = value.match(/^([A-Za-z][A-Za-z0-9]+)\s*=/u);
+    const setting = value.match(/^([A-Za-z][A-Za-z0-9-]*)\s*=/u);
     if (!section || !setting)
       errors.push(`FAIL ${file}:${index + 1}: expected a section or key-value setting.`);
     else {

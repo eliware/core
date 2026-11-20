@@ -17,6 +17,7 @@ export default function createSystemdEventMonitor({
   const states = new Map(uniqueUnits.map((unit) => [unit, { stopped: false, failed: false }]));
   let child;
   let reader;
+  let childExit = Promise.resolve();
   let stopped = true;
   let restartTimer;
   let deliveryQueue = Promise.resolve();
@@ -81,11 +82,18 @@ export default function createSystemdEventMonitor({
     for (const unit of uniqueUnits) args.push("--unit", unit);
     try {
       const active = spawn("journalctl", args, { stdio: ["ignore", "pipe", "pipe"] });
+      let resolveExit;
+      childExit = new Promise((resolve) => {
+        resolveExit = resolve;
+      });
       child = active;
       reader = lineReader({ input: active.stdout, crlfDelay: Infinity });
       reader.on("line", handleLine);
       active.on("error", () => scheduleRestart("Systemd event stream is unavailable", active));
-      active.on("close", () => scheduleRestart("Systemd event stream stopped", active));
+      active.on("close", () => {
+        resolveExit();
+        scheduleRestart("Systemd event stream stopped", active);
+      });
     } catch {
       scheduleRestart("Systemd event stream could not start");
     }
@@ -106,7 +114,10 @@ export default function createSystemdEventMonitor({
     const active = child;
     child = undefined;
     reader = undefined;
-    if (active && !active.killed) active.kill("SIGTERM");
+    if (active) {
+      if (!active.killed) active.kill("SIGTERM");
+      await childExit;
+    }
   }
 
   return { start, stop };

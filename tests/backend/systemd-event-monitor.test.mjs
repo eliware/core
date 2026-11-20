@@ -9,6 +9,7 @@ function childProcess() {
   child.stderr = new PassThrough();
   child.kill = jest.fn(() => {
     child.killed = true;
+    child.emit("close", 0);
   });
   child.killed = false;
   return child;
@@ -150,6 +151,37 @@ test("restarts journal monitoring after the stream closes", async () => {
   await stoppedMonitor.stop();
   expect(clearTimeoutFn).toHaveBeenCalledWith(timeout);
   canceledRestart();
+});
+
+test("waits for the journal child to exit during shutdown", async () => {
+  const child = childProcess();
+  child.kill = jest.fn(() => {
+    child.killed = true;
+  });
+  const monitor = createSystemdEventMonitor({ units: ["named.service"], spawn: () => child });
+  monitor.start();
+  let stopped = false;
+  const stopping = monitor.stop().then(() => {
+    stopped = true;
+  });
+  await Promise.resolve();
+  expect(child.kill).toHaveBeenCalledWith("SIGTERM");
+  expect(stopped).toBe(false);
+  child.emit("close", 0);
+  await stopping;
+  expect(stopped).toBe(true);
+
+  const alreadyKilled = childProcess();
+  alreadyKilled.killed = true;
+  const secondMonitor = createSystemdEventMonitor({
+    units: ["named.service"],
+    spawn: () => alreadyKilled,
+  });
+  secondMonitor.start();
+  const secondStop = secondMonitor.stop();
+  expect(alreadyKilled.kill).not.toHaveBeenCalled();
+  alreadyKilled.emit("close", 0);
+  await secondStop;
 });
 
 test("logs when an event callback fails", async () => {

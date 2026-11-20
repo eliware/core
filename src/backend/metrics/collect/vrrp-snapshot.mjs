@@ -1,4 +1,5 @@
 import { readFile as nodeReadFile } from "node:fs/promises";
+import { readlink as nodeReadlink } from "node:fs/promises";
 
 const maximumSignal = 64;
 
@@ -7,6 +8,7 @@ export default async function collectVrrpSnapshot(
   {
     run,
     readFile = nodeReadFile,
+    readlink = nodeReadlink,
     signalProcess = process.kill,
     wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)),
     vrrpDelayMs = 50,
@@ -19,7 +21,8 @@ export default async function collectVrrpSnapshot(
     if (Number.isSafeInteger(pid) && pid > 0) {
       const processName = await readFile(`/proc/${pid}/comm`, "utf8");
       if (processName.trim() === "keepalived") {
-        const { stdout } = await run("keepalived", ["--signum=JSON"], { timeout: timeoutMs });
+        const executable = await readlink(`/proc/${pid}/exe`);
+        const { stdout } = await run(executable, ["--signum=JSON"], { timeout: timeoutMs });
         const signal = Number(stdout.trim());
         if (Number.isSafeInteger(signal) && signal > 0 && signal <= maximumSignal) {
           signalProcess(pid, signal);

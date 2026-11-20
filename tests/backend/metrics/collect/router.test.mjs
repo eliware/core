@@ -1,8 +1,13 @@
 import { expect, jest, test } from "@jest/globals";
-import collectRouterMetric from "../../../../src/backend/metrics/collect/router.mjs";
+const execFile = jest.fn((command, args, options, callback) =>
+  callback(null, { stdout: '[{"ifname":"eth0","operstate":"UP","addr_info":[]}]' }),
+);
+jest.unstable_mockModule("node:child_process", () => ({ execFile }));
+const { default: collectRouterMetric } =
+  await import("../../../../src/backend/metrics/collect/router.mjs");
 
 const metricRun = jest.fn(async (command, args) => {
-  if (command === "keepalived") return { stdout: "36\n" };
+  if (command.endsWith("keepalived")) return { stdout: "36\n" };
   if (command === "ip" && args.includes("address"))
     return { stdout: '[{"ifname":"eth0","operstate":"UP","addr_info":[]}]' };
   if (command === "ip" && args.includes("route"))
@@ -52,7 +57,14 @@ test("collects VRRP state from Keepalived", async () => {
   await expect(
     collectRouterMetric(
       { type: "vrrp", pidPath: "/pid", path: "/vrrp.json" },
-      { run: metricRun, readFile, signalProcess, vrrpDelayMs: 25, wait },
+      {
+        run: metricRun,
+        readFile,
+        readlink: async () => "/usr/sbin/keepalived",
+        signalProcess,
+        vrrpDelayMs: 25,
+        wait,
+      },
     ),
   ).resolves.toMatchObject({ totals: { instances: 1, master: 1 } });
   expect(signalProcess).toHaveBeenCalledWith(1234, 36);
@@ -79,7 +91,14 @@ test("uses the configured VRRP snapshot when signaling is unavailable", async ()
   await expect(
     collectRouterMetric(
       { type: "vrrp", pidPath: "/pid", path: "/vrrp.json" },
-      { run: metricRun, readFile, signalProcess, vrrpDelayMs: 25, wait },
+      {
+        run: metricRun,
+        readFile,
+        readlink: async () => "/usr/sbin/keepalived",
+        signalProcess,
+        vrrpDelayMs: 25,
+        wait,
+      },
     ),
   ).resolves.toMatchObject({ totals: { instances: 1, master: 1 } });
   expect(signalProcess).toHaveBeenCalledWith(1234, 36);
@@ -91,12 +110,25 @@ test("rejects unknown metrics", async () => {
   await expect(collectRouterMetric({ type: "unknown" })).rejects.toThrow("Unsupported metric type");
 });
 
+test("uses the default command runner", async () => {
+  await expect(collectRouterMetric({ type: "interfaces" })).resolves.toMatchObject({
+    totals: { interfaces: 1, up: 1 },
+  });
+  expect(execFile).toHaveBeenCalledWith(
+    "ip",
+    ["-j", "-s", "address", "show"],
+    { timeout: 10_000 },
+    expect.any(Function),
+  );
+});
+
 test("uses the default delay while collecting VRRP state", async () => {
   await expect(
     collectRouterMetric(
       { type: "vrrp", pidPath: "/pid", path: "/vrrp.json" },
       {
         run: metricRun,
+        readlink: async () => "/usr/sbin/keepalived",
         readFile: async (path) =>
           path === "/pid"
             ? "1234"

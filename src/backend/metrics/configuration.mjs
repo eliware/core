@@ -11,10 +11,16 @@ export default function createMetricsConfiguration(catalog) {
     (component.metrics ?? []).map((metric) => ({ component, metric })),
   );
   const builtInTypes = new Set(builtInMetrics.map(({ metric }) => metric.type));
+  const metricsByType = new Map();
+  for (const entry of catalogMetrics) {
+    const entries = metricsByType.get(entry.metric.type) ?? [];
+    entries.push(entry);
+    metricsByType.set(entry.metric.type, entries);
+  }
   const configured = [
     ...builtInMetrics.flatMap((builtIn) => {
-      const matches = catalogMetrics.filter(({ metric }) => metric.type === builtIn.metric.type);
-      return matches.length > 0 ? matches : [builtIn];
+      const matches = metricsByType.get(builtIn.metric.type);
+      return matches?.length ? matches : [builtIn];
     }),
     ...catalogMetrics.filter(({ metric }) => !builtInTypes.has(metric.type)),
   ];
