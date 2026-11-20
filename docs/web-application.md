@@ -164,7 +164,8 @@ The dashboard shows FRR peer states and its route table.
 
 The dashboard shows a maximum of 100 entries in each table and reports the full total.
 VRRP data comes from the Keepalived JSON state dump and includes instance state, virtual addresses, and advertisement counters.
-Core asks Keepalived for its platform-specific JSON signal and reads the configured parent PID file.
+Core verifies the configured PID belongs to Keepalived before it sends the platform-specific JSON signal.
+It reads the Keepalived parent PID file and its process name from `/proc`.
 Set `path` and `pidPath` in a catalog `vrrp` metric when Keepalived uses non-default files.
 
 Read HAProxy counters from its configured Unix socket.
@@ -278,6 +279,8 @@ Stop the server after browser validation.
 The public npm package includes the CLI and web application.
 Its tarball contains `bin/`, `src/`, `public/`, `docs/`, `specs/`, and the package documentation.
 The tarball does not include tests, `node_modules/`, generated `dist/` files, or the lockfile.
+It ships `public/client.bundle` and `public/service-worker.bundle` as browser assets.
+
 The npm workflow validates tagged releases and publishes the package with provenance.
 Use a numeric `MAJOR.MINOR.PATCH` version and a matching `vMAJOR.MINOR.PATCH` release tag.
 Follow the approved release process before publication.

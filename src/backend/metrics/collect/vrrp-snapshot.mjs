@@ -17,11 +17,14 @@ export default async function collectVrrpSnapshot(
     const pidSource = await readFile(metric.pidPath ?? "/run/keepalived.pid", "utf8");
     const pid = Number(pidSource.trim());
     if (Number.isSafeInteger(pid) && pid > 0) {
-      const { stdout } = await run("keepalived", ["--signum=JSON"], { timeout: timeoutMs });
-      const signal = Number(stdout.trim());
-      if (Number.isSafeInteger(signal) && signal > 0 && signal <= maximumSignal) {
-        signalProcess(pid, signal);
-        await wait(vrrpDelayMs);
+      const processName = await readFile(`/proc/${pid}/comm`, "utf8");
+      if (processName.trim() === "keepalived") {
+        const { stdout } = await run("keepalived", ["--signum=JSON"], { timeout: timeoutMs });
+        const signal = Number(stdout.trim());
+        if (Number.isSafeInteger(signal) && signal > 0 && signal <= maximumSignal) {
+          signalProcess(pid, signal);
+          await wait(vrrpDelayMs);
+        }
       }
     }
   } catch {

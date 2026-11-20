@@ -102,6 +102,24 @@ test("uses a generic detail when a metric collector throws a non-error value", a
   });
 });
 
+test("marks sources unavailable and refreshes status when the clock fails", async () => {
+  const monitor = createMetricsMonitor({
+    catalog: { components: [{ id: "ntp", name: "NTP", metrics: [{ type: "ntp" }] }] },
+    now: () => {
+      throw new Error("clock unavailable");
+    },
+  });
+  const result = await monitor.check();
+  expect(result.checkedAt).toBeNull();
+  expect(result.components.find(({ id }) => id === "ntp")).toMatchObject({
+    status: "unavailable",
+    checkedAt: null,
+    detail: "clock unavailable",
+    values: null,
+  });
+  expect(monitor.getStatus().components[0].status).toBe("unavailable");
+});
+
 test("marks HAProxy metrics unhealthy when any server is down", async () => {
   const monitor = createMetricsMonitor({
     catalog: {

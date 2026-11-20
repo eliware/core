@@ -7,7 +7,9 @@ const { default: collectVrrpSnapshot } =
 const state = '{"v1":[{"data":{"iname":"VI_LAN","state":2}}]}';
 
 test("signals Keepalived and reads its refreshed snapshot", async () => {
-  const read = jest.fn(async (path) => (path === "/pid" ? "1234" : state));
+  const read = jest.fn(async (path) =>
+    path === "/pid" ? "1234" : path === "/proc/1234/comm" ? "keepalived" : state,
+  );
   const run = jest.fn().mockResolvedValue({ stdout: "36\n" });
   const signalProcess = jest.fn();
   const wait = jest.fn().mockResolvedValue(undefined);
@@ -23,7 +25,9 @@ test("signals Keepalived and reads its refreshed snapshot", async () => {
 });
 
 test("uses default paths and delay", async () => {
-  const read = jest.fn(async (path) => (path === "/run/keepalived.pid" ? "1" : state));
+  const read = jest.fn(async (path) =>
+    path === "/run/keepalived.pid" ? "1" : path === "/proc/1/comm" ? "keepalived" : state,
+  );
   const wait = jest.fn();
   await collectVrrpSnapshot(
     {},
@@ -31,13 +35,16 @@ test("uses default paths and delay", async () => {
   );
   expect(read.mock.calls).toEqual([
     ["/run/keepalived.pid", "utf8"],
+    ["/proc/1/comm", "utf8"],
     ["/tmp/keepalived.json", "utf8"],
   ]);
   expect(wait).toHaveBeenCalledWith(50);
 });
 
 test("falls back to the snapshot when the signal command fails", async () => {
-  const read = jest.fn(async (path) => (path === "/pid" ? "1234" : state));
+  const read = jest.fn(async (path) =>
+    path === "/pid" ? "1234" : path === "/proc/1234/comm" ? "keepalived" : state,
+  );
   await expect(
     collectVrrpSnapshot(
       { pidPath: "/pid", path: "/state" },
@@ -59,7 +66,9 @@ test("skips signaling for an invalid process ID or signal", async () => {
     { readFile: read, run: jest.fn(), signalProcess, wait: jest.fn() },
   );
   expect(signalProcess).not.toHaveBeenCalled();
-  read.mockImplementation(async (path) => (path === "/pid" ? "5" : state));
+  read.mockImplementation(async (path) =>
+    path === "/pid" ? "5" : path === "/proc/5/comm" ? "keepalived" : state,
+  );
   await collectVrrpSnapshot(
     { pidPath: "/pid", path: "/state" },
     { readFile: read, run: async () => ({ stdout: "unknown" }), signalProcess, wait: jest.fn() },
@@ -68,7 +77,8 @@ test("skips signaling for an invalid process ID or signal", async () => {
   await collectVrrpSnapshot(
     { pidPath: "/pid", path: "/state" },
     {
-      readFile: async (path) => (path === "/pid" ? "5" : state),
+      readFile: async (path) =>
+        path === "/pid" ? "5" : path === "/proc/5/comm" ? "keepalived" : state,
       run: async () => ({ stdout: "9999" }),
       signalProcess,
       wait: jest.fn(),
@@ -87,8 +97,28 @@ test("uses the snapshot when reading the process ID fails", async () => {
   ).resolves.toBe(state);
 });
 
+test("does not signal a PID owned by another process", async () => {
+  const run = jest.fn();
+  const signalProcess = jest.fn();
+  const read = jest.fn(async (path) => {
+    if (path === "/pid") return "1234";
+    if (path === "/proc/1234/comm") return "systemd";
+    return state;
+  });
+  await expect(
+    collectVrrpSnapshot(
+      { pidPath: "/pid", path: "/state" },
+      { readFile: read, run, signalProcess, wait: jest.fn() },
+    ),
+  ).resolves.toBe(state);
+  expect(run).not.toHaveBeenCalled();
+  expect(signalProcess).not.toHaveBeenCalled();
+});
+
 test("uses default filesystem, signal, wait, and timeout dependencies", async () => {
-  defaultReadFile.mockImplementation(async (path) => (path === "/pid" ? "1234" : state));
+  defaultReadFile.mockImplementation(async (path) =>
+    path === "/pid" ? "1234" : path === "/proc/1234/comm" ? "keepalived" : state,
+  );
   const run = jest.fn().mockResolvedValue({ stdout: "36" });
   const signalProcess = jest.fn();
   await expect(

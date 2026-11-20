@@ -19,8 +19,9 @@ export default function createMetricsMonitor({
     if (running) return running;
     running = Promise.all(
       configured.map(async ({ component, metric }) => {
-        const checkedAt = now().toISOString();
+        let checkedAt = null;
         try {
+          checkedAt = now().toISOString();
           const values = await collect(metric, { now });
           const unhealthy = metricIsUnhealthy(metric.type, values);
           return {
@@ -46,7 +47,13 @@ export default function createMetricsMonitor({
       }),
     )
       .then((components) => {
-        status = { checkedAt: now().toISOString(), components };
+        let checkedAt = status.checkedAt;
+        try {
+          checkedAt = now().toISOString();
+        } catch {
+          // Keep the previous timestamp when the clock source fails.
+        }
+        status = { checkedAt, components };
         return getStatus();
       })
       .finally(() => {

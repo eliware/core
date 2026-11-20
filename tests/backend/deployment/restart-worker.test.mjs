@@ -52,6 +52,33 @@ test("records restart success when no pending status step exists", async () => {
   expect(payload.status.steps.map(({ status }) => status)).toEqual(["passed", "passed"]);
 });
 
+test("sends the deployment notification when final status persistence fails", async () => {
+  const payload = setup();
+  const saveStatus = jest
+    .fn()
+    .mockResolvedValueOnce(undefined)
+    .mockRejectedValueOnce(new Error("status store unavailable"))
+    .mockResolvedValueOnce(undefined);
+  const notify = jest.fn();
+  const logError = jest.spyOn(console, "error").mockImplementation(() => {});
+  try {
+    await runWorker(payload, {
+      run: jest.fn().mockResolvedValue({ stdout: "" }),
+      checkReady: jest.fn().mockResolvedValue(undefined),
+      saveStatus,
+      notify,
+    });
+    expect(logError).toHaveBeenCalledWith(
+      "Core could not save the final deployment status.",
+      expect.any(Error),
+    );
+  } finally {
+    logError.mockRestore();
+  }
+  expect(payload.status.status).toBe("succeeded");
+  expect(notify).toHaveBeenCalledTimes(1);
+});
+
 test("records restart failure when no pending status step exists", async () => {
   const payload = setup();
   payload.status.steps = [];

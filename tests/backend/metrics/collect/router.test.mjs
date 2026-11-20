@@ -41,7 +41,11 @@ test("collects interface, route, neighbor, and FRR metrics", async () => {
 
 test("collects VRRP state from Keepalived", async () => {
   const readFile = jest.fn(async (path) =>
-    path === "/pid" ? "1234" : '{"v1":[{"data":{"iname":"VI_LAN","state":2}}]}',
+    path === "/pid"
+      ? "1234"
+      : path === "/proc/1234/comm"
+        ? "keepalived"
+        : '{"v1":[{"data":{"iname":"VI_LAN","state":2}}]}',
   );
   const signalProcess = jest.fn();
   const wait = jest.fn().mockResolvedValue(undefined);
@@ -53,12 +57,20 @@ test("collects VRRP state from Keepalived", async () => {
   ).resolves.toMatchObject({ totals: { instances: 1, master: 1 } });
   expect(signalProcess).toHaveBeenCalledWith(1234, 36);
   expect(wait).toHaveBeenCalledWith(25);
-  expect(readFile.mock.calls.map(([path]) => path)).toEqual(["/pid", "/vrrp.json"]);
+  expect(readFile.mock.calls.map(([path]) => path)).toEqual([
+    "/pid",
+    "/proc/1234/comm",
+    "/vrrp.json",
+  ]);
 });
 
 test("uses the configured VRRP snapshot when signaling is unavailable", async () => {
   const readFile = jest.fn(async (path) =>
-    path === "/pid" ? "1234" : '{"v1":[{"data":{"iname":"VI_LAN","state":2}}]}',
+    path === "/pid"
+      ? "1234"
+      : path === "/proc/1234/comm"
+        ? "keepalived"
+        : '{"v1":[{"data":{"iname":"VI_LAN","state":2}}]}',
   );
   const signalProcess = jest.fn(() => {
     throw new Error("permission denied");
@@ -86,7 +98,11 @@ test("uses the default delay while collecting VRRP state", async () => {
       {
         run: metricRun,
         readFile: async (path) =>
-          path === "/pid" ? "1234" : '{"v1":[{"data":{"iname":"VI_LAN","state":2}}]}',
+          path === "/pid"
+            ? "1234"
+            : path === "/proc/1234/comm"
+              ? "keepalived"
+              : '{"v1":[{"data":{"iname":"VI_LAN","state":2}}]}',
         signalProcess: jest.fn(),
         vrrpDelayMs: 0,
       },

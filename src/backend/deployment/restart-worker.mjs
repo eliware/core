@@ -32,7 +32,7 @@ export default async function runRestartWorker(payload, { run, checkReady, saveS
     payload.status.finishedAt = new Date().toISOString();
   }
   payload.status.currentStep = null;
-  await saveStatus(payload.status);
+  await saveStatusSafely(saveStatus, payload.status);
   await notifyDeployment({
     status: {
       get: () => payload.status,
@@ -42,5 +42,13 @@ export default async function runRestartWorker(payload, { run, checkReady, saveS
     branch: payload.branch,
     githubPayload: payload.githubPayload,
   });
-  await saveStatus(payload.status);
+  await saveStatusSafely(saveStatus, payload.status);
+}
+
+async function saveStatusSafely(saveStatus, status) {
+  try {
+    await saveStatus(status);
+  } catch (error) {
+    console.error("Core could not save the final deployment status.", error);
+  }
 }
